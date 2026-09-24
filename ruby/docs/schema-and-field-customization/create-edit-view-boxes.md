@@ -25,9 +25,9 @@ views [
 Habarico::CreateView.new(
   box: Habarico::GridBox.new(
     boxes: [
-      Habarico::GridItemBox.new(boxes: [:variable_symbol, :specific_symbol]),
-      Habarico::GridItemBox.new(boxes: [:maturity_date, :amount_major]),
-      Habarico::GridItemBox.new(
+      Habarico::Box.new(boxes: [:variable_symbol, :specific_symbol]),
+      Habarico::Box.new(boxes: [:maturity_date, :amount_major]),
+      Habarico::Box.new(
         boxes: [
           :shipping_method,
           Habarico::FieldReference.new(
@@ -41,20 +41,23 @@ Habarico::CreateView.new(
 )
 ```
 
-**Grid layout** — control column widths on a 12-column grid:
+**Grid layout** — control column widths on a 12-column grid with `grid_item`:
 
 ```ruby
 Habarico::EditView.new(
   box: Habarico::GridBox.new(
     boxes: [
-      Habarico::GridItemBox.new(boxes: [:product, :customer, :status], md: 8),
-      Habarico::GridItemBox.new(boxes: [:placed_at, :delivered_at], md: 4),
+      Habarico::Box.new(boxes: [:product, :customer, :status], grid_item: { md: 8 }),
+      Habarico::ListBox.new(label: 'Documents', reference: 'documents', target: 'order_id', grid_item: { md: 4 }),
     ]
   )
 )
 ```
 
-`GridItemBox` supports responsive breakpoint attributes: `xs`, `sm`, `md`, `lg`, `xl`.
+`grid_item` takes the responsive breakpoints `xs`, `sm`, `md`, `lg` and `xl` (1–12 columns each); an
+omitted breakpoint inherits the one below it. Every box type accepts it, so a grid cell can be a list,
+gallery or array box itself — and because the box carrying the span is the box drawing the card, that
+card stretches to the height of its row.
 
 **Tab layout**:
 

@@ -21,7 +21,7 @@ class BoxSchemaTest < Minitest::Test
   # -------------------------------------------------------------------------
 
   def test_box_schema_declares_all_box_types_as_intended
-    %w[tab tab-item wizard simple list object array grid grid-item].each do |type|
+    %w[tab tab-item wizard simple list object array grid gallery].each do |type|
       assert_includes Habarico::BoxSchema.intended_for_types, type
     end
   end

@@ -5,15 +5,15 @@ sidebar_position: 6
 
 Arranges its children side by side on a responsive 12-column grid.
 
-Use it whenever a section reads better in columns than as one long stack. Nest a `grid-item` box
-inside it to control the widths yourself; leave them out and the widths are computed.
+Use it whenever a section reads better in columns than as one long stack. Give a child its own
+`gridItem` to control the widths yourself; leave them out and the widths are computed.
 
 ## Example
 
 ```python
 EditViewSchemaGenerator(box=GridBox(boxes=[
-    GridItemBox(md=8, boxes=[Box(label="Product", boxes=["name", "sku", "description"])]),
-    GridItemBox(md=4, boxes=[Box(label="Pricing", boxes=["price", "vat_rate", "stock"])]),
+    Box(label="Product", grid_item={"md": 8}, boxes=["name", "sku", "description"]),
+    ListBox(label="Documents", grid_item={"md": 4}, reference="document", target="product"),
 ]))
 ```
 
@@ -21,8 +21,8 @@ EditViewSchemaGenerator(box=GridBox(boxes=[
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `boxes` | `BoxItem[]` | `[]` | Children; a child with `type: 'grid-item'` carries its own widths |
-| `gridItem.xs` … `gridItem.xl` | `number` | computed | Column span (1–12) of a `grid-item` child at that breakpoint |
+| `boxes` | `BoxItem[]` | `[]` | Children; a child carrying `gridItem` sets its own widths |
+| `gridItem.xs` … `gridItem.xl` | `number` | computed | Column span (1–12) of a child at that breakpoint — on a box of any type |
 | `label` | `string` | — | Heading in the card header; setting it is enough to turn the card frame on |
 | `card` | `boolean \| null` | `null` | Three-state card frame — see [Card frame](./index.md#card-frame) |
 | `collapsible` | `'open' \| 'closed'` | — | Wraps the grid in a collapsible card |
@@ -31,7 +31,7 @@ EditViewSchemaGenerator(box=GridBox(boxes=[
 
 ## Computed widths
 
-When **no** child is a `grid-item`, the grid computes a span for every child from the number of
+When **no** child carries a `gridItem`, the grid computes a span for every child from the number of
 children and the width the grid itself was given, capped per breakpoint:
 
 | Breakpoint | Max columns | Minimum span |
@@ -43,7 +43,7 @@ children and the width the grid itself was given, capped per breakpoint:
 | `xs` | 1 | 3 |
 
 So four children fill a row on `xl`, drop to three on `lg`, two on `md`, and stack on `sm` and
-below. A single explicit `grid-item` child switches the whole grid to explicit mode — then every
+below. A single child with its own `gridItem` switches the whole grid to explicit mode — then every
 child needs its own widths, and the ones without any fall back to full width.
 
 Cells are spaced like the fields inside a column, by the density setting (8px compact, 14.4px
@@ -55,13 +55,14 @@ A grid box renders no card frame of its own unless it has a `label`, `card: true
 `collapsible`, has `toolbarActions`, or is the view's first box on a page **and holds fields
 directly**; a first-box grid that only wraps other boxes hands the card default to them instead
 (see [Card frame](./index.md#card-frame)). `card: false` turns the frame off in every one of those
-cases. To give a **column** a heading, put a labelled `Box`
-**inside** the `grid-item`, not on the grid — a label on the grid frames the whole grid in one card.
+cases. To give a **column** a heading, label the child box that carries the `gridItem`, not the grid
+— a label on the grid frames the whole grid in one card.
 :::
 
 :::tip
 Cards placed side by side only line up to equal heights when the box goes directly into the grid.
-Wrapping each one in an extra container of your own breaks the height chain.
+Wrapping each one in an extra container of your own breaks the height chain — which is why the
+widths belong on the box that draws the card: `{"type": "list", "gridItem": {"md": 9}, …}`.
 :::
 
 ## See also

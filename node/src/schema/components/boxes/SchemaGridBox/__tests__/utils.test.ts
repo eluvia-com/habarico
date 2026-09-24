@@ -9,6 +9,7 @@ import {
   partitionCells,
   pickReference,
   resolveCellSpans,
+  shouldAutoComputeSpans,
 } from '../utils';
 
 const box = (name: string, over: Partial<BoxSchema> = {}): BoxSchema => ({
@@ -61,6 +62,28 @@ describe('partitionCells', () => {
       {kind: 'box', box: nested},
       {kind: 'fields', fields: [field('b')]},
     ]);
+  });
+});
+
+describe('shouldAutoComputeSpans', () => {
+  it('computes the spans when no cell carries one', () => {
+    expect(shouldAutoComputeSpans([box('one'), box('two'), field('price')])).toBe(true);
+  });
+
+  it('steps aside for a cell that carries its own span', () => {
+    expect(shouldAutoComputeSpans([box('one'), box('two', {gridItem: {md: 6}})])).toBe(false);
+  });
+
+  // The placement is not a box type: a list box sitting straight in the grid carries its own span,
+  // and the grid has to read it the same way it reads a plain box's.
+  it('steps aside for any box type that carries a gridItem', () => {
+    expect(
+      shouldAutoComputeSpans([box('one'), box('docs', {type: 'list', gridItem: {md: 9}})])
+    ).toBe(false);
+  });
+
+  it('ignores a field descriptor, which has no placement of its own', () => {
+    expect(shouldAutoComputeSpans([field('price'), field('vat')])).toBe(true);
   });
 });
 

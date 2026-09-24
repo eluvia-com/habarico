@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   A `DashboardPreference` instance given as a default now dumps the three keys as `null` when unset.
   (HAB-1006)
 
+- `grid_item` - the placement of a box inside its parent `GridBox` - is accepted by every box class:
+  `ListBox(label="Documents", grid_item={"md": 9}, reference="document")` is a grid cell and a list
+  box at once. It takes a `GridItem` descriptor or a plain dict of breakpoint spans, and the new
+  `GridItem` is exported from `habarico.schema`. A box that sets no span emits no `grid_item` key at
+  all, so a grid whose cells carry none still computes their widths itself. Overriding
+  `_get_grid_item()` makes the placement context-dependent. (HAB-963)
+
 ### Changed
 
 - **BREAKING:** The `upload-images` action is renamed to `upload-files`: it bulk-uploads documents
@@ -34,6 +41,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only with a frontend that contains HAB-993: one that knows only `upload-images` renders no button
   and reports no error, so upgrade the backend and the frontend together.
   (HAB-999)
+
+- `GridFieldsBox` forwards `xs`/`sm`/`md`/`lg`/`xl` to the boxes it generates, one `grid_item` each.
+  It accepted them and silently ignored them before, so `GridFieldsBox("price", "vat_rate", md=4)`
+  now lays the fields out as it always read like it would. (HAB-963)
+
+### Removed
+
+- **BREAKING:** `GridItemBox`, the `BoxType.GRID_ITEM` value and the `GridItemBoxParameters` alias of
+  `GridItem`. A grid cell is now the box that draws it, carrying `grid_item` - which is also what
+  makes its card stretch to the height of its row, where a wrapper left the card at the height of
+  its content. Replace `GridItemBox(md=9, boxes=[X])` with `X` carrying `grid_item={"md": 9}`, or
+  with `Box(grid_item={"md": 9}, boxes=[...])` where the cell really does group several boxes. An
+  override of `_get_grid_item_kwargs()` becomes an override of `_get_grid_item()` returning a
+  `GridItem`. (HAB-963)
 
 ## [7.2.0] — 2026-10-19
 

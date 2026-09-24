@@ -24,16 +24,7 @@ export type ActionType =
 export type {ColorType};
 export type ColorWithInherit = ColorType | 'inherit';
 export type BoxType =
-  | 'tab'
-  | 'tab-item'
-  | 'wizard'
-  | 'simple'
-  | 'list'
-  | 'array'
-  | 'object'
-  | 'grid'
-  | 'grid-item'
-  | 'gallery';
+  'tab' | 'tab-item' | 'wizard' | 'simple' | 'list' | 'array' | 'object' | 'grid' | 'gallery';
 export type MenuType = 'view' | 'link' | 'text';
 export type ViewModeType = 'dialog' | 'redirect' | 'sidepanel';
 export type ActionStateType = 'running' | 'success' | 'error';

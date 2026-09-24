@@ -50,7 +50,6 @@ class BoxType(str, Enum):
     OBJECT = "object"
     ARRAY = "array"
     GRID = "grid"
-    GRID_ITEM = "grid-item"
     GALLERY = "gallery"
 
 

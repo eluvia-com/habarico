@@ -114,12 +114,12 @@ class Apps::Admin::OrdersController < ApplicationController
             boxes: [
               Habarico::GridBox.new(
                 boxes: [
-                  Habarico::GridItemBox.new(
-                    md: 6,
+                  Habarico::Box.new(
+                    grid_item: { md: 6 },
                     boxes: [:product, :customer, :status],
                   ),
-                  Habarico::GridItemBox.new(
-                    md: 6,
+                  Habarico::Box.new(
+                    grid_item: { md: 6 },
                     boxes: [:placed_at, :delivered_at, :total_amount, :paid_amount, :outstanding_amount],
                   ),
                 ]
