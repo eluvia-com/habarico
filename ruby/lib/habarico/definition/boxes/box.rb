@@ -10,8 +10,9 @@ module Habarico
     # Array
     attr_accessor :target, :inline # rubocop:disable Lint/DuplicateMethods -- intentional for readability
 
-    # Grid Item
-    attr_accessor :xs, :sm, :md, :lg, :xl
+    # Grid Item - placement of the box inside its parent grid box, a hash of breakpoint spans
+    # ({ md: 9 }). Accepted by every box type, so a grid cell can be a list/gallery/array box itself.
+    attr_accessor :grid_item
 
     # List
     attr_accessor :reference, :target, :extra_filters, :row_actions, :list_toolbar_actions, :list_actions, :filters, :default_sorting, # rubocop:disable Lint/DuplicateMethods -- intentional for readability

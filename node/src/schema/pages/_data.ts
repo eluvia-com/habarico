@@ -1086,17 +1086,17 @@ const HALF: GridItemBoxParameters = {xs: 12, sm: 12, md: 6, lg: 6, xl: 6};
 const FULL: GridItemBoxParameters = {xs: 12, sm: 12, md: 12, lg: 12, xl: 12};
 
 // Shared detail layout, wrapped in a tab box (show renders read-only, edit renders inputs — the view
-// type decides). Tab 1 "Adresa a parcely" is a grid box whose cells are `grid-item` boxes carrying
-// the column width (`gridItem`) — the production convention: a grid never sizes its children by their
-// own type, the layout width lives on an explicit `grid-item` wrapper (6/12 → two-per-row, 12/12 →
-// full row). A `grid-item` is a transparent width carrier (it renders as a card-less group) unless it
-// is given a label/card of its own, in which case it doubles as the card holding the fields directly
-// (the two production patterns: wrap-a-box vs. be-the-card). Here Fotografie / Další čísla budovy /
-// Parcely wrap a content box (gallery / array), while Lokace / Poznámka are card `grid-item`s holding
-// fields. Tab 2 "Vlastníci" is a single list box.
+// type decides). Tab 1 "Adresa a parcely" is a grid box whose cells carry their own column width in
+// `gridItem` (6/12 → two-per-row, 12/12 → full row). The width is a placement rather than a box type
+// (HAB-963), so a cell is simply the box that draws the card: Fotografie is the gallery box itself,
+// Další čísla budovy / Parcely / Vybavení are array boxes, Lokace / Poznámka are card boxes holding
+// fields. Each card is then the direct child of its grid item and stretches to the height of the
+// row — a wrapper around it would be the thing that stretches instead, leaving the card inside at
+// the height of its content.
+// Tab 2 "Vlastníci" is a single list box.
 //
 // Tabs 3-5 are HAB-687 box-layout coverage (see the comment inside `boxes`): "Kontakt" (object box),
-// "Rozšířené" (a grid of `grid-item`s — a collapsible card holding fields + a wrapper field and a
+// "Rozšířené" (a grid of placed cards — a collapsible card holding fields + a wrapper field and a
 // nested collapsible box) and "Dokumenty" (a nested-fill-height list) — so these box types and the
 // tricky compositions the redesign touches are visually verifiable in both show and edit views. The
 // `wizard` box lives on the create view (see PROPERTY_CREATE_BOX), where a stepper actually makes
@@ -1114,42 +1114,34 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
       card: false,
       readOnly: false,
       boxes: [
-        // Half-width `grid-item` wrapping the gallery card (transparent width carrier).
+        // Half-width gallery card sitting straight in the grid — the cell and the card are one box.
         {
-          name: 'photos_item',
-          type: 'grid-item',
-          card: false,
+          name: 'photos',
+          type: 'gallery',
+          label: 'Fotografie',
+          card: true,
           readOnly: true,
           gridItem: HALF,
-          boxes: [
+          gallery: {reference: PHOTOS_RESOURCE, target: 'property_id', imageField: 'image'},
+          // Header toolbar action → navigates to the "Správa fotografií" subpage
+          // (`/…/properties/:id/a/manage_photos`), a detail-scoped routed action view.
+          toolbarActions: [
             {
-              name: 'photos',
-              type: 'gallery',
-              label: 'Fotografie',
-              card: true,
-              readOnly: true,
-              gallery: {reference: PHOTOS_RESOURCE, target: 'property_id', imageField: 'image'},
-              // Header toolbar action → navigates to the "Správa fotografií" subpage
-              // (`/…/properties/:id/a/manage_photos`), a detail-scoped routed action view.
-              toolbarActions: [
-                {
-                  name: 'manage_photos',
-                  label: 'Spravovat fotografie',
-                  icon: 'PhotoLibrary',
-                  action: {
-                    type: 'view',
-                    isDetail: true,
-                    view: redirectActionView('manage_photos', 'manage_photos'),
-                  },
-                },
-              ],
+              name: 'manage_photos',
+              label: 'Spravovat fotografie',
+              icon: 'PhotoLibrary',
+              action: {
+                type: 'view',
+                isDetail: true,
+                view: redirectActionView('manage_photos', 'manage_photos'),
+              },
             },
           ],
         },
-        // Half-width `grid-item` that *is* the card and holds fields directly.
+        // Half-width card holding fields directly — a plain box with a placement.
         {
           name: 'location',
-          type: 'grid-item',
+          type: 'simple',
           label: 'Lokace',
           card: true,
           readOnly: false,
@@ -1158,81 +1150,57 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
         },
         {
           name: 'note',
-          type: 'grid-item',
+          type: 'simple',
           label: 'Poznámka',
           card: true,
           readOnly: false,
           gridItem: HALF,
           boxes: [fd('note')],
         },
-        // Half-width `grid-item` wrapping an array card.
+        // Half-width array card.
         {
-          name: 'building_numbers_item',
-          type: 'grid-item',
-          card: false,
+          name: 'building_numbers',
+          type: 'array',
+          label: 'Další čísla budovy',
+          card: true,
           readOnly: false,
           gridItem: HALF,
-          boxes: [
-            {
-              name: 'building_numbers',
-              type: 'array',
-              label: 'Další čísla budovy',
-              card: true,
-              readOnly: false,
-              // Non-inline array (contrast with the inline `parcels` datagrid below): each row renders
-              // as a headerless nested panel holding a PropertyList of the row's attributes.
-              array: {target: 'building_numbers'},
-              boxes: [fd('number'), fd('kind')],
-            },
-          ],
+          // Non-inline array (contrast with the inline `parcels` datagrid below): each row renders
+          // as a headerless nested panel holding a PropertyList of the row's attributes.
+          array: {target: 'building_numbers'},
+          boxes: [fd('number'), fd('kind')],
         },
-        // Full-width `grid-item` wrapping the parcels array card.
+        // Full-width parcels array card.
         {
-          name: 'parcels_item',
-          type: 'grid-item',
-          card: false,
+          name: 'parcels',
+          type: 'array',
+          label: 'Parcely',
+          card: true,
           readOnly: false,
           gridItem: FULL,
-          boxes: [
-            {
-              name: 'parcels',
-              type: 'array',
-              label: 'Parcely',
-              card: true,
-              readOnly: false,
-              array: {target: 'parcels', inline: true},
-              boxes: [fd('parcel_number'), fd('parcel_area'), fd('parcel_type')],
-            },
-          ],
+          array: {target: 'parcels', inline: true},
+          boxes: [fd('parcel_number'), fd('parcel_area'), fd('parcel_type')],
         },
-        // Full-width `grid-item` wrapping the equipment checklist — HAB-837 coverage:
+        // Full-width equipment checklist — HAB-837 coverage:
         // `SchemaChoicesArrayBox` (checkbox-per-enum-value rows, plus a free "Jiné" row via
         // `otherValues`), the box type HAB-837 fixed row/checkbox alignment for.
         {
-          name: 'equipment_item',
-          type: 'grid-item',
-          card: false,
+          name: 'equipment',
+          type: 'array',
+          label: 'Vybavení',
+          card: true,
           readOnly: false,
           gridItem: FULL,
-          boxes: [
-            {
-              name: 'equipment',
-              type: 'array',
-              label: 'Vybavení',
-              card: true,
-              readOnly: false,
-              array: {
-                target: 'equipment',
-                inline: true,
-                listed: {fieldName: 'equipment_type', otherValues: ['Jiné']},
-              },
-              // `note`'s `helpText` is deliberate regression coverage: a React Admin input with
-              // visible helper text renders taller than its row siblings, which is what first
-              // exposed the checkbox column floating above center instead of centering against the
-              // row's real control height (fixed via `FormTableColumn.align: 'center'`).
-              boxes: [fd('equipment_type'), fd('note', {helpText: 'Volitelný doplňující popis'})],
-            },
-          ],
+          array: {
+            target: 'equipment',
+            inline: true,
+            listed: {fieldName: 'equipment_type', otherValues: ['Jiné']},
+          },
+          // `note`'s `helpText` is deliberate regression coverage: a React Admin input with
+          // visible helper text renders taller than its row siblings, which is what first
+          // exposed the checkbox column floating above center instead of centering against the
+          // row's real control height (fixed via `FormTableColumn.align: 'center'`).
+          boxes: [fd('equipment_type'), fd('note', {helpText: 'Volitelný doplňující popis'})],
         },
       ],
     },
@@ -1295,10 +1263,10 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
       object: {target: 'contact'},
       boxes: [fd('email'), fd('phone')],
     },
-    // A grid of two half-width `grid-item`s exercising the tricky field compositions:
-    //  - `flags`     — a card `grid-item` (collapsible open) holding plain boolean fields directly.
-    //  - `technical` — a `grid-item` wrapping a MIXED simple box: plain fields + a `wrapper` field
-    //                  (two inputs under one label) + a nested collapsible (closed) box, as siblings.
+    // A grid of two half-width cells exercising the tricky field compositions:
+    //  - `flags`     — a card (collapsible open) holding plain boolean fields directly.
+    //  - `technical` — a MIXED simple box: plain fields + a `wrapper` field (two inputs under one
+    //                  label) + a nested collapsible (closed) box, as siblings.
     {
       name: 'advanced',
       type: 'grid',
@@ -1308,7 +1276,7 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
       boxes: [
         {
           name: 'flags',
-          type: 'grid-item',
+          type: 'simple',
           label: 'Příznaky',
           card: true,
           readOnly: false,
@@ -1317,36 +1285,28 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
           boxes: [fd('residential'), fd('barrier_free'), fd('active'), fd('complete')],
         },
         {
-          name: 'technical_item',
-          type: 'grid-item',
-          card: false,
+          name: 'technical',
+          type: 'simple',
+          label: 'Technické parametry',
+          card: true,
           readOnly: false,
           gridItem: HALF,
           boxes: [
+            fd('heating'),
+            // wrapper field — groups two inputs under a single label / outlined group.
+            fd('gps', {
+              label: 'GPS (šířka / délka)',
+              wrapper: {fields: [fd('gps_lat'), fd('gps_lng')]},
+            }),
+            // nested box among fields → makes `technical` a mixed field+box container.
             {
-              name: 'technical',
+              name: 'floors',
               type: 'simple',
-              label: 'Technické parametry',
+              label: 'Podlaží',
               card: true,
               readOnly: false,
-              boxes: [
-                fd('heating'),
-                // wrapper field — groups two inputs under a single label / outlined group.
-                fd('gps', {
-                  label: 'GPS (šířka / délka)',
-                  wrapper: {fields: [fd('gps_lat'), fd('gps_lng')]},
-                }),
-                // nested box among fields → makes `technical` a mixed field+box container.
-                {
-                  name: 'floors',
-                  type: 'simple',
-                  label: 'Podlaží',
-                  card: true,
-                  readOnly: false,
-                  collapsible: 'closed',
-                  boxes: [fd('floor_number'), fd('floor_count')],
-                },
-              ],
+              collapsible: 'closed',
+              boxes: [fd('floor_number'), fd('floor_count')],
             },
           ],
         },
@@ -1616,7 +1576,7 @@ const OWNER_LIST_FILTERS: FilterDescriptor[] = [{name: 'q', isAlwaysOn: true}];
 // card whose fields differ per view.
 const OWNER_CONTACT_CARD: BoxSchema = {
   name: 'contact',
-  type: 'grid-item',
+  type: 'simple',
   label: 'Kontakt',
   card: true,
   readOnly: false,
@@ -1635,7 +1595,7 @@ const OWNER_DETAIL_BOX: BoxSchema = {
   boxes: [
     {
       name: 'name',
-      type: 'grid-item',
+      type: 'simple',
       label: 'Jméno',
       card: true,
       readOnly: false,
@@ -2113,8 +2073,7 @@ const PAYMENT_RECORD_ACTIONS: ResourceActionSchema[] = [
   PAYMENT_MARK_PAID_ACTION,
 ];
 
-// Payment detail (show) layout — two half-width cards, mirroring the owner detail's grid /
-// `grid-item` shape. "Úhrada" carries the same `mark_paid` field action as the list column, and
+// Payment detail (show) layout — two half-width cards, mirroring the owner detail's grid shape. "Úhrada" carries the same `mark_paid` field action as the list column, and
 // that is the point of the pairing: one descriptor, two renderings. Outside a collection nothing
 // sets `isInCollection`, so `SchemaActionField` leaves `showLabel` undefined and the button keeps
 // its label instead of collapsing to the bare icon it becomes in a datagrid cell.
@@ -2126,7 +2085,7 @@ const PAYMENT_DETAIL_BOX: BoxSchema = {
   boxes: [
     {
       name: 'summary',
-      type: 'grid-item',
+      type: 'simple',
       label: 'Platba',
       card: true,
       readOnly: false,
@@ -2141,7 +2100,7 @@ const PAYMENT_DETAIL_BOX: BoxSchema = {
     },
     {
       name: 'settlement',
-      type: 'grid-item',
+      type: 'simple',
       label: 'Úhrada',
       card: true,
       readOnly: false,
@@ -2159,7 +2118,7 @@ const PAYMENT_DETAIL_BOX: BoxSchema = {
     },
     {
       name: 'note_item',
-      type: 'grid-item',
+      type: 'simple',
       label: 'Poznámka',
       card: true,
       readOnly: false,

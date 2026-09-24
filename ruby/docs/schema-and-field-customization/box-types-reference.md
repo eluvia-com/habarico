@@ -9,7 +9,6 @@ All available box types and their attributes:
 |-------|-------------|-------------|
 | `Habarico::Box` | `'simple'` | Basic labeled container for fields |
 | `Habarico::GridBox` | `'grid'` | 12-column responsive grid container |
-| `Habarico::GridItemBox` | `'grid-item'` | Grid column; accepts `xs`, `sm`, `md`, `lg`, `xl` breakpoints |
 | `Habarico::TabBox` | `'tab'` | Tabbed container; children must be `TabItemBox` |
 | `Habarico::WizardBox` | `'wizard'` | Step-by-step container; children must be `TabItemBox` (each is a step) |
 | `Habarico::TabItemBox` | `'tab-item'` | Individual tab / wizard step pane |
@@ -32,8 +31,12 @@ All available box types and their attributes:
 | `required_query` | Condition expression to conditionally require the box |
 | `toolbar_actions` | Actions rendered in the box's local toolbar (box header / card header area), relative to the box root. On a tab/wizard container they appear on the last step. On a `ListBox` this is the box-level toolbar; use `list_toolbar_actions` for the table's own toolbar |
 | `bottom_actions` | Actions rendered at the bottom of the box, below the fields - similar to form submit buttons at the view level |
+| `grid_item` | Placement of the box inside its parent `GridBox`: a hash of MUI grid column widths per breakpoint, `{ xs:, sm:, md:, lg:, xl: }` (integer 1–12). An omitted breakpoint inherits the one below it, so `{ md: 9 }` is a complete placement; omit the attribute entirely to let the frontend compute the spans from the number of cells |
 
-**`GridItemBox`-specific**: `xs`, `sm`, `md`, `lg`, `xl` (MUI grid column widths, integer 1–12)
+Because `grid_item` is a placement rather than a box type, a grid cell can be a `ListBox`,
+`GalleryBox` or `ArrayBox` itself, and its card stretches to the height of the row. `GridItemBox`
+and the `'grid-item'` box type were removed in HAB-963, along with the flat `xs`/`sm`/`md`/`lg`/`xl`
+attributes that went with them.
 
 **`TabBox`-specific**: `show_toolbar_navigation` (show previous/next buttons in the box toolbar; default `false`)
 

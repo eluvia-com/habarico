@@ -23,6 +23,7 @@ import {
   partitionCells,
   pickReference,
   resolveCellSpans,
+  shouldAutoComputeSpans,
 } from './utils';
 
 type LabelWidthOverrideProps = {
@@ -66,7 +67,7 @@ export const SchemaGridBox = ({
     );
     return {items, cells: partitionCells(items)};
   }, [schema.boxes, excludeFields]);
-  const autoComputeGridItems = items.every((item) => item.type !== 'grid-item');
+  const autoComputeGridItems = shouldAutoComputeSpans(items);
   const {xs, sm, md, lg, xl} = computeAutoSpans(
     parentColumns,
     cells.length || 1,

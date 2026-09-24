@@ -13,6 +13,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **BREAKING:** `grid_item` is a placement rather than a box type: every `BoxSchema` may carry it, so
+  a cell of a `grid` box is simply the box that draws it - a `list`, `gallery`, `array` or `object`
+  box sizes itself - and the `grid-item` value is removed from `BoxType`. The spans of
+  `GridItemBoxParameters` are no longer declared `required`: both backends emit only the breakpoints
+  that are set, and an omitted one inherits the span below it, so `{"md": 9}` alone is a complete
+  placement. A box with no placement omits the key entirely - one cell carrying `grid_item` switches
+  the whole grid to explicit spans, so an empty object would silently turn the computed ones off.
+  `info.version` 3.3.4 -> 4.0.0. Implemented in the Python and Ruby backends and in the frontend;
+  `contract/schema.drawio` drops the value too. (HAB-963)
+
 - The `filter` query parameter is written down, on the list endpoint that has always taken it and
   on the new export endpoint: the `field=<JSON value>` terms it carries as one percent-encoded
   value, that `field` is a filter the resource schema advertises (lookup suffix included), that an

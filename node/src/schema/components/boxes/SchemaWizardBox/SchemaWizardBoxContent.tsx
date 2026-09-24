@@ -19,17 +19,24 @@ import {BoxItem, BoxSchema, BoxType, FieldDescriptor} from '@schema/types';
 import {isBoxSchema} from '@schema/utils/api';
 import {SchemaWizardBoxStep} from './SchemaWizardBoxStep';
 
-const LAYOUT_BOX_TYPES: BoxType[] = ['simple', 'tab', 'tab-item', 'wizard', 'grid', 'grid-item'];
+// Box types that show a collection of *another* resource: their children are that resource's
+// columns, not form fields of this step. Everything else — `simple`, `tab`, `tab-item`, `wizard`,
+// `grid`, and any type a backend of another version sends — is a layout box whose children sit at
+// the same path, so an unknown type contributes its fields rather than silently dropping them from
+// the step's validation.
+const COLLECTION_BOX_TYPES: BoxType[] = ['list', 'gallery'];
 
 const collectFieldNames = (items: BoxItem[], prefix = ''): string[] => {
   const path = (name: string) => (prefix ? `${prefix}.${name}` : name);
   return items.flatMap((item) => {
     if (!isBoxSchema(item)) return [path((item as FieldDescriptor).name)];
-    if (LAYOUT_BOX_TYPES.includes(item.type)) return collectFieldNames(item.boxes || [], prefix);
-    if (item.type === 'object' && item.object?.target)
-      return collectFieldNames(item.boxes || [], path(item.object.target));
-    if (item.type === 'array' && item.array?.target) return [path(item.array.target)];
-    return []; // list, gallery — not form fields
+    if (COLLECTION_BOX_TYPES.includes(item.type)) return [];
+    if (item.type === 'object')
+      return item.object?.target
+        ? collectFieldNames(item.boxes || [], path(item.object.target))
+        : [];
+    if (item.type === 'array') return item.array?.target ? [path(item.array.target)] : [];
+    return collectFieldNames(item.boxes || [], prefix);
   });
 };
 

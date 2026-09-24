@@ -152,8 +152,13 @@ module Habarico
       end
     end
 
+    # Unlike the other type-specific parameters, `grid_item` is a placement rather than a box type:
+    # any box carries it, so a grid cell can be a list/gallery/array box itself (HAB-963). A box
+    # without a placement must emit no `grid_item` key at all - the frontend turns the computed spans
+    # of the whole grid off as soon as one cell carries one, so an empty object would silently switch
+    # every other cell to a full-width row.
     def generate_grid_item(_view, box, _index, context)
-      return nil unless box.type == 'grid-item'
+      return nil if box.grid_item.blank?
       grid_item_box_parameters_generator.generate(box, context)
     end
 

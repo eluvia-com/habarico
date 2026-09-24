@@ -6,6 +6,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [7.2.0] — 2026-10-19
+## [Unreleased]
+
+### Added
+
+- `grid_item` - the placement of a box inside its parent `GridBox` - is accepted by every box class:
+  `ListBox(label="Documents", grid_item={"md": 9}, reference="document")` is a grid cell and a list
+  box at once. It takes a `GridItem` descriptor or a plain dict of breakpoint spans, and the new
+  `GridItem` is exported from `habarico.schema`. A box that sets no span emits no `grid_item` key at
+  all, so a grid whose cells carry none still computes their widths itself. Overriding
+  `_get_grid_item()` makes the placement context-dependent. (HAB-963)
+
+### Changed
+
+- `GridFieldsBox` forwards `xs`/`sm`/`md`/`lg`/`xl` to the boxes it generates, one `grid_item` each.
+  It accepted them and silently ignored them before, so `GridFieldsBox("price", "vat_rate", md=4)`
+  now lays the fields out as it always read like it would. (HAB-963)
+
+### Removed
+
+- **BREAKING:** `GridItemBox`, the `BoxType.GRID_ITEM` value and the `GridItemBoxParameters` alias of
+  `GridItem`. A grid cell is now the box that draws it, carrying `grid_item` - which is also what
+  makes its card stretch to the height of its row, where a wrapper left the card at the height of
+  its content. Replace `GridItemBox(md=9, boxes=[X])` with `X` carrying `grid_item={"md": 9}`, or
+  with `Box(grid_item={"md": 9}, boxes=[...])` where the cell really does group several boxes. An
+  override of `_get_grid_item_kwargs()` becomes an override of `_get_grid_item()` returning a
+  `GridItem`. (HAB-963)
+
+### Fixed
+
+- `default_sorting` is no longer refused at registration when it names an annotation rather than a
+  model field. Where an annotation comes from is not knowable then - it may sit on the viewset's
+  queryset, be added in a custom `get_queryset()`, or be attached by the ordering filter itself
+  (`OrderingFilter` annotates `<field>__choice_label` inside `_order_queryset`, and any lookup
+  class may do the same from `update_queryset`) - so the check refused configurations that work.
+  It is gone, for the resource-level `default_sorting` and for a view generator's alike; a typo
+  surfaces on the first list request as a Django `FieldError` naming the keyword. `ordering_fields`
+  is still checked, now against the *lookup* of a `(key, lookup, label)` triple rather than the
+  client-facing key, and tolerating annotations declared on the viewset's queryset and anything in
+  its `extra_ordering_fields`.
+  ([HAB-915](https://sparktech.myjetbrains.com/youtrack/issue/HAB-915))
+
+- A list accepts the ordering its own schema asks the frontend for: the `default_sorting` a list
+  view publishes, and the primary key, which is what `serializeOrderBy` sends for a list with no
+  sorting of its own. An admin narrowing `ordering_fields` refused both with
+  `422 Unknown field name.` - on the first load of the list, before the user had touched anything.
+  `ordering_fields` still bounds what a client may choose.
+  ([HAB-915](https://sparktech.myjetbrains.com/youtrack/issue/HAB-915))
 
 ### Changed
 

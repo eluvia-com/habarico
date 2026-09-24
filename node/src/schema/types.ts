@@ -32,7 +32,6 @@ export type BoxType =
   | 'array'
   | 'object'
   | 'grid'
-  | 'grid-item'
   | 'gallery';
 export type MenuType = 'view' | 'link' | 'text';
 export type ViewModeType = 'dialog' | 'redirect' | 'sidepanel';

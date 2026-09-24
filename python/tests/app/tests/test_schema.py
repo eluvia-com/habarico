@@ -19,7 +19,16 @@ from habarico.schema.actions import (
     UploadImagesActionDescriptor,
     UploadImagesActionParameters,
 )
-from habarico.schema.boxes import Box, TabBox, TabItemBox, WizardBox
+from habarico.schema.boxes import (
+    Box,
+    GridBox,
+    GridFieldsBox,
+    GridItem,
+    ListBox,
+    TabBox,
+    TabItemBox,
+    WizardBox,
+)
 from habarico.schema.fields import (
     Field,
     MaxLengthValidatorRule,
@@ -1652,6 +1661,58 @@ class TestBoxNavigation:
         result = TabItemBox(label="Step 1", boxes=["a"]).to_dict()
         assert "tab_item" not in result
         assert result["label"] == "Step 1"
+
+
+class TestBoxGridItem:
+    """``grid_item`` is a placement, not a box type: every box accepts it, and a box that sets no
+    span at all must not emit the key (the frontend reads its presence as "this grid is explicit").
+    """
+
+    def test_box_has_no_grid_item_by_default(self):
+        assert "grid_item" not in Box(boxes=["a"]).to_dict()
+
+    def test_box_emits_grid_item_from_dict(self):
+        assert Box(boxes=["a"], grid_item={"md": 9}).to_dict()["grid_item"] == {"md": 9}
+
+    def test_box_emits_grid_item_from_descriptor(self):
+        result = Box(boxes=["a"], grid_item=GridItem(xs=12, md=6)).to_dict()
+        assert result["grid_item"] == {"xs": 12, "md": 6}
+
+    def test_grid_item_without_spans_is_not_emitted(self):
+        assert "grid_item" not in Box(boxes=["a"], grid_item=GridItem()).to_dict()
+
+    def test_list_box_is_a_grid_cell_and_a_list_at_once(self):
+        result = ListBox(reference="article", grid_item={"md": 9}).to_dict()
+        assert result["type"] == "list"
+        assert result["grid_item"] == {"md": 9}
+        assert result["list"]["reference"] == "article"
+
+    def test_grid_item_override_point_is_context_aware(self):
+        class _ContextualBox(Box):
+            def _get_grid_item(self):
+                return GridItem(md=12) if self.get_read_only() else GridItem(md=6)
+
+        assert _ContextualBox(boxes=["a"]).to_dict()["grid_item"] == {"md": 6}
+        assert _ContextualBox(boxes=["a"], read_only=True).to_dict()["grid_item"] == {"md": 12}
+
+    def test_grid_cells_keep_their_own_spans(self):
+        box = GridBox(
+            boxes=[
+                Box(label="Unit management", grid_item={"md": 3}, boxes=["a"]),
+                ListBox(label="Documents", reference="document", grid_item={"md": 9}),
+            ]
+        )
+        cells = box.to_dict()["boxes"]
+        assert [cell["grid_item"] for cell in cells] == [{"md": 3}, {"md": 9}]
+        assert [cell["type"] for cell in cells] == ["simple", "list"]
+
+    def test_grid_fields_box_forwards_spans_to_its_cells(self):
+        cells = GridFieldsBox("price", "vat_rate", md=4).to_dict()["boxes"]
+        assert [cell["grid_item"] for cell in cells] == [{"md": 4}, {"md": 4}]
+
+    def test_grid_fields_box_without_spans_emits_none(self):
+        cells = GridFieldsBox("price", "vat_rate").to_dict()["boxes"]
+        assert all("grid_item" not in cell for cell in cells)
 
 
 class TestBoxToolbarActions:

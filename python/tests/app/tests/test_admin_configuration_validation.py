@@ -12,7 +12,6 @@ from habarico.schema import (
     FieldWrapper,
     Filter,
     GridBox,
-    GridItemBox,
     ListBox,
     ObjectBox,
     Sorting,
@@ -487,7 +486,7 @@ class TestValidateDescriptors:
                     box=WizardBox(
                         boxes=[
                             TabBox(boxes=[Box(boxes=["title", "slug", Field(name="content")])]),
-                            GridBox(boxes=[GridItemBox(xs=12, boxes=["status", "priority"])]),
+                            GridBox(boxes=[Box(grid_item={"xs": 12}, boxes=["status", "priority"])]),
                         ]
                     )
                 ),
