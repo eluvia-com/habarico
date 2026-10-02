@@ -34,6 +34,196 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the whole grid to explicit spans, so an empty object would silently turn the computed ones off.
   `info.version` 3.5.0 -> 4.0.0. Implemented in the Python and Ruby backends and in the frontend;
   `contract/schema.drawio` drops the value too. (HAB-963)
+- **BREAKING:** The action slots no longer infer a resource's own actions, and
+  `ListBoxParameters.toolbar_actions` is gone. These are one change, not two. A list box used to
+  have two toolbars — one on the box root and one of its own — because a descriptor could only name
+  an action from the schema it was rendered in, and the two slots were rendered in different ones.
+  `ActionDescriptor.reference` removes that reason, so `BoxSchema.toolbar_actions` is now the only
+  toolbar a box has. But the resource's `create` and `export` used to arrive through the implicit
+  fallback above the table, so moving them into the header needed a way to say "this resource's
+  defaults" — a `default_actions` descriptor — and once the defaults are in the header the fallback has
+  to go, or the same buttons appear twice on screen.
+
+  So an absent or empty slot now renders nothing, everywhere: `row_actions` on `ListBoxParameters`
+  and `ListViewParameters`, `toolbar_actions` on `ListViewParameters` and `DetailViewParameters`,
+  and `bottom_actions` on `DetailViewParameters` stopped promising "all supported actions are
+  shown". Field inference is untouched — `ListViewParameters.boxes` still shows all fields when
+  absent.
+
+  Migration:
+
+      # before
+      ListBox(reference='order_item', target='order', toolbar_actions=['create'])
+
+      # after - the toolbar sits on the box, and the descriptor says which resource it means
+      toolbar_actions=[DefaultActions(reference='order_item', scope='list')]
+      # or by name
+      toolbar_actions=[Action(name='create', reference='order_item')]
+
+  **These frontend and backend versions have to be deployed together.** A new frontend against an
+  old backend gets slots with nothing in them and no fallback left to fill them; an old frontend
+  against a new backend discards a `default_actions` descriptor as an unknown kind. Both end in
+  boxes without actions, and both do it silently — no error, no warning, just missing buttons.
+  `info.version` 4.0.0, shared with the entries below.
+  (HAB-938)
+
+- **BREAKING:** `ResourceReference` carries `service` beside `resource`, and every `reference` in the
+  spec is now a `ResourceReference`. The two properties are the halves of what used to travel as one
+  `service_name/resource_name` string, so no client has to parse a name to learn which service it
+  belongs to: a backend that knows the answer says it, and one that does not omits `service`, which
+  still means the service of the view the schema was generated for. A backend genuinely cannot name
+  its own service — `grep service_name` over the Python package finds nothing — so a local address
+  omitting it is the normal case, not a degenerate one.
+
+  The relation references joined the addresses: `FieldSchema.reference`, `FilterSchema.reference` and
+  `AggregateFieldSchema.reference` are `ResourceReference` too. One word, one meaning, nine properties —
+  where the spec used to spell a resource three different ways under the same name. For a relation,
+  `record_pk`, `action_name` and `params` go unused, and each field says so.
+
+  Two of those three were bare `$ref`s with **no description at all** and now have one.
+  `AggregateFieldSchema.reference` also stopped wrapping its ref in `allOf`, the last place not
+  following the convention the earlier audit set when it moved `ActionDescriptor.view` to `oneOf` so
+  its description would apply.
+
+  What this buys is on the client: five places split a resource on `/`, and
+  `resolveReferenceResource` prefixes a bare name with the owning resource's service. The composed
+  `service/resource` key stays the frontend's own resource identity — the data provider and the
+  react-admin context are built on it — it is simply no longer recovered from the wire by parsing.
+
+  Impact: 8 frontend sites read a relation's `reference`, plus the five parsing sites; 6 lines of
+  Python and 11 of Ruby. `info.version` 4.0.0.
+  (HAB-938)
+
+- **BREAKING:** The last two resource names that travelled as bare strings are `ResourceReference`
+  objects, and `ReferenceType` is gone with them — nothing referenced it any more.
+  `UploadFilesActionParameters.reference` was the one property in the spec wired through no type at
+  all, and `WidgetConfig.resource` is now `WidgetConfig.reference`. Neither is only a destination:
+  the upload button loads that resource's local schema to read the upload configuration off the file
+  field (`useGetLocalResourceSchema({resource: reference})`), and a widget reads its rows from there.
+  Both address a collection, so `record_pk`, `action_name` and `params` go unused, as each field says.
+
+  With these, the `service_name/resource_name` string is gone from the spec entirely: no client needs
+  to split a name to learn which service it belongs to.
+
+  **`WidgetConfig` is the one `ResourceReference` that is stored rather than generated.** It lives in
+  `preferences.dashboard`, so unlike every other schema in this release — regenerated on each request,
+  where a version bump is the whole migration — dashboards saved by users still hold
+  `resource: "service/resource"`. A reader has to migrate them or accept both shapes; the field says
+  so. `WidgetConfig` also mirrors a JS type, which is why its own properties stay camelCase.
+
+  `info.version` 4.0.0.
+  (HAB-938)
+
+- **BREAKING:** The three endpoint parameter schemas address what they point at with a
+  `ResourceReference` instead of spelling the coordinates out themselves, and
+  `ViewActionEndpointParameters` is gone. Its three properties — `reference`, `action_name`,
+  `record_pk` — were exactly those coordinates and nothing else, so `ViewActionParameters.endpoint`
+  is a `ResourceReference` now. `ViewEndpointParameters` and `ResourceActionEndpointParameters` keep
+  their `path` and `method`, because how a thing is called is not part of where it is, and collapse
+  their own three into one `reference`.
+
+  What made this possible was `action_name` joining `ResourceReference`: a schema route carries that
+  segment too (`admin/{resource_name}/{action_name}/schema`), and once the type covered it, each
+  endpoint's field set was a subset. The spec used to say the same three things in four places with
+  four copies of the prose; it says them once.
+
+  `reference` stays optional on an endpoint and absent still means the resource the schema was
+  generated for, so nothing changes for a caller that omitted it. When it is present, `resource` is
+  required inside — an address is either left out or complete, never half-given.
+  `ViewEndpointParameters` gains a `record_pk` it does not use, the same harmless surplus `record_pk`
+  already is on a box.
+
+  Impact: 18 frontend sites read these flat (`endpoint.reference`, `endpoint.actionName`,
+  `endpoint.recordPk`) and move one level in; 38 backend sites name the three schemas.
+  `info.version` 4.0.0.
+  (HAB-938)
+
+- **BREAKING:** `ListBoxParameters.reference` and `GalleryBoxParameters.reference` are
+  `ResourceReference` objects instead of bare strings, and `schema_params` is gone from both — its
+  contents are `reference.params` now. The two fields were always one thing said in two places: a
+  resource to point at and the parameters its schema request carries. Naming that pair once means a
+  box and a descriptor point at a resource the same way, which is the whole point of having the
+  type.
+
+  `record_pk` goes unused here and the field says so: a box points at a collection, never at a
+  single record. `target` stays a field of its own, because the box needs it as a **column name**
+  for `buildFilter`, `ReferenceManyField`, `buildPreferenceKey` and `SchemaDatagrid` — digging it
+  back out of JSON in `params` would be worse than leaving it where it is. `SchemaImagesBox` rides
+  along, since it runs on `ListBoxParameters`.
+
+  Not breaking for the people who write admins: the DSL keeps its flat keyword arguments and
+  composes the nested object itself. Breaking on the wire, which is why it waited for a release that
+  is breaking anyway — on its own it would have cost a second lockstep deployment for a change that
+  adds no behaviour. Measured: 27 frontend sites, 12 lines of Python, 9 of Ruby.
+
+  The other `reference` properties stay strings on purpose, because they are not pointers to a
+  schema: on `FieldSchema`, `FilterSchema` and `AggregateFieldSchema` it discriminates the field's
+  type and a `record_pk` could not mean anything there; on the three `*EndpointParameters` it
+  describes a call; on `UploadFilesActionParameters` it is where files get created.
+  `info.version` 4.0.0.
+  (HAB-938)
+
+- **BREAKING:** `ActionDescriptor` gained a required `type` and `name` left `required`. The slots
+  hold two kinds of entry now — one naming a single action, one standing for a resource's defaults —
+  and `type` is which: `action` or `default_actions`. They are one schema rather than two, because
+  two schemas could not be told apart without an `oneOf` in all ten slots, and a reader of the model
+  then has to hold two near-identical boxes in their head to understand one list. `name` is required
+  for `action` and meaningless for `default_actions`, which the field says; that conditional is the
+  same shape the spec already uses elsewhere ("Value is required only if action is not standard").
+
+  A subtype was the obvious alternative and does not work: `allOf` demands that both branches hold,
+  so a child could not pin `type: default_actions` against a parent pinning `type: action`, nor shed
+  the parent's required `name`. Inheritance would have needed a third, nameless base schema — three
+  boxes in the model where the complaint was two.
+
+  The merge also repaired a `oneOf` that could not be satisfied as written.
+  `FieldDescriptor.action` accepts `ActionDescriptor` or `ActionSchema`, and `ActionSchema` declares
+  no `required` and allows additional properties — so the ordinary value `{name: 'edit'}` matched
+  **both** branches, where a `oneOf` admits exactly one. The required `type` separates them: `action`
+  is not one of `ActionType`'s values.
+
+  Migration: every descriptor has to carry `type` — both backends emit it, and the frontend type
+  gains it, `menu_items` included. The schema's own description was fixed too: it opened with "Field
+  descriptor is used for defining action…", copied from `FieldDescriptor`. `info.version`
+  4.0.0, shared with the entries below.
+  (HAB-938)
+- Every `ActionDescriptor` array slot stopped declaring `nullable: true`, and the slots that
+  describe their unset state stopped calling it `null`. The two keywords are orthogonal: `required`
+  on the owning object decides whether a key has to be present, `nullable` only whether its value
+  may be `null`. Not one of these slots appears in a `required` list, so their optionality was
+  already expressed correctly and the `nullable` was never doing that job — the conflation the
+  earlier audit named when it settled on "optionality is expressed by `required` alone", and which
+  it left standing here only because `nullable` next to a `type: array` is valid rather than inert.
+  Nothing is lost on the wire either: both backends strip nulls out of schema output (Python
+  `remove_empty`, Ruby `deep_compact(compactable: [nil, {}])`), so an unconfigured slot reaches the
+  client **absent** and never as `null`, while an empty array survives the stripping and keeps
+  meaning "explicitly none". Affected: `row_actions`, `toolbar_actions` and `list_actions` on
+  `ListBoxParameters` and `ListViewParameters`, `toolbar_actions` and `bottom_actions` on
+  `DetailViewParameters` and `BoxSchema`, and `ActionDescriptor.menu_items`. No wire change: no
+  backend ever sent the removed value. `info.version` 4.0.0, shared with the two entries
+  below.
+  (HAB-938)
+
+- **BREAKING:** `BoxSchema.boxes` no longer accepts a nested array of `FieldDescriptor` as one of
+  its items. The branch declared a "row of fields" that no implementation could produce or render:
+  Python types the slot `list[BaseBox | str | Field]` and its normalizer drops anything else
+  without raising, Ruby declares `has_many_attr :boxes, ['FieldDescriptor', 'BoxSchema']`, and the
+  frontend models it as `BoxItem = BoxSchema | FieldDescriptor` — where an array would fail the
+  `item.type !== 'field'` test and be mis-rendered as a typeless box rather than a row. A row is
+  what the client already derives on its own, by collapsing a run of consecutive field descriptors
+  into one `PropertyList`; the slot description now says so. Marked breaking because the schema
+  narrows, but unreachable in all three implementations, hence a minor bump rather than a major.
+  (HAB-938)
+
+- `BoxSchema.collapsible` stopped declaring `nullable: true` and stopped calling its unset state
+  `null`. Same conflation as the action slots above — it is not in `BoxSchema.required`, so its
+  optionality was already expressed — but here the stray `nullable` also contradicted the schema it
+  sat in: next to `enum: [open, closed]`, which does not list `null`, OpenAPI 3.0 does not widen the
+  enum, so the value the description documented would not have validated. And had it ever arrived,
+  the frontend would have read it as the opposite of the documented meaning: `collapsible` is
+  derived as `schema.collapsible !== undefined`, which `null` satisfies, so a box documented as "not
+  collapsible" would have rendered the collapse toggle. No wire change — both backends strip the
+  null. The same sentence was mirrored in a Ruby comment and was corrected with it. (HAB-938)
 
 - The `filter` query parameter is written down, on the list endpoint that has always taken it and
   on the new export endpoint: the `field=<JSON value>` terms it carries as one percent-encoded
@@ -107,6 +297,56 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   unsupported target. `info.version` 3.3.4 -> 3.4.0; additive, the paid implementation ships in
   `habarico-enterprise`.
   (HAB-1012)
+- `ResourceReference` — the address of another resource's schema — and `ActionDescriptor.reference`,
+  which uses it to say where the action a descriptor names is defined and what it is bound to. Its
+  four properties are the parts a schema route is built from: `resource` is the `{resource_name}`
+  segment, `record_pk` and `action_name` the two optional segments, `params` the query string. All
+  five schema endpoints are addressable this way, the action-scoped
+  `admin/{resource_name}/{action_name}/schema` included.
+
+  `action_name` says **which schema to load**, not which action to run. The action a descriptor
+  invokes is its own `name`, looked up inside whatever schema the address returns — the two never
+  compete. Until now a descriptor's `name` was looked up in exactly one set
+  of actions, the schema it was rendered in, so a descriptor inside a list box could not reach the
+  surrounding record's actions: hence the two separate toolbars the next entry removes.
+
+  Resolution order is documented, not just implemented: `action`, then `reference`, then the ambient
+  schema. `action` short-circuits the **lookup** only, never the **binding** — a descriptor carrying
+  both still acts against `reference`, so two descriptors that look alike cannot quietly act on
+  different records. Absent, a descriptor behaves exactly as before.
+
+  `resource` is typed `ReferenceType`, so it inherits the bare-name / `service_name/`-prefixed rule
+  the spec already states; it is resolved against the **view's** resource rather than the ambient
+  one, because a descriptor inside a list box is still authored in the page's schema. `record_pk` is
+  a `KeyType` and is omitted wherever there is no single record. No sentinel for "the current
+  schema" appears here: a backend resolves that before serializing, so the client always receives a
+  plain triple and never learns there was a parent — which is what keeps the mechanism usable for
+  foreign and cross-service references too. Additive. `info.version` 4.0.0.
+  (HAB-938)
+
+- `default_actions` as a value of `ActionDescriptor.type`, with `scope` and `ActionScopeType` beside
+  it. Such an entry stands for "whatever actions this resource offers": the client expands it into one
+  ordinary `action` entry per action, each bound to the resource `reference` names. It is what lets a
+  slot ask for a resource's defaults without listing them one by one and going stale when one is
+  added. `scope` (`list` / `detail` / `all`, absent meaning `all`) picks which of them; whether the
+  expansion targets a record or the collection is not configured but follows from `record_pk` being
+  present.
+
+  Expansion happens on the client: a backend cannot know a foreign service's actions, and splitting
+  the filtering rule across Python and Ruby would let the two drift. Accepted in all nine view action
+  slots — `row_actions` and `list_actions` on `ListBoxParameters`, all three on `ListViewParameters`,
+  `toolbar_actions` and `bottom_actions` on `DetailViewParameters` and `BoxSchema`. Not in
+  `ActionDescriptor.menu_items`: those are the sub-items of one button, not a slot asking for a
+  resource's defaults. `info.version` 4.0.0.
+  (HAB-938)
+- `ActionDescriptor.confirm_dialog` — the confirm dialog a descriptor puts in front of the action
+  it names, overriding the one the action's own schema declares. The frontend has always honoured
+  it: `generateActionSchema` merges exactly four descriptor overrides onto an action schema —
+  `label`, `icon`, `color` and `confirmDialog` — and the first three were the only ones the spec
+  described, so the fourth was a capability no schema author could reach. Additive; the backend
+  DSL for it is tracked separately. `info.version` 4.0.0.
+  (HAB-938)
+
 - Resource export endpoint `GET /{api_prefix}/{service_name}/admin/{resource_name}/export`
   returning the resource rows in a downloadable file (CSV/XLSX), signalled to the frontend through
   the `export` action in the list view `list_actions` slot. The endpoint is free but off by
