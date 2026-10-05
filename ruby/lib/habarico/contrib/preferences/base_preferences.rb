@@ -5,7 +5,6 @@ module Habarico
       BASE_PREFERENCES = {
         "theme" => Schemas::THEME,
         "locale" => Schemas::LOCALE,
-        "preferences.dashboard" => Schemas::DASHBOARD,
         "preferences.layout.app.pageWidth" => Schemas::APP_PAGE_WIDTH,
         "preferences.layout.app.contrastMode" => Schemas::CONTRAST_MODE,
         "preferences.layout.app.stripedRows" => Schemas::STRIPED_ROWS,

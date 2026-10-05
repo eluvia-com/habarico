@@ -3,8 +3,8 @@ module Habarico
     include ::ActiveModel::Model
     include Eluvia::ActiveModel::Attributes
 
-    # Reference to another resource
-    string_attr :reference
+    # Address of the resource the box lists, carrying the query its schema request is made with
+    has_one_attr :reference, 'Habarico::ResourceReference'
 
     # Name of the attribute in the references resource to use as the coupling value
     string_attr :target
@@ -16,23 +16,16 @@ module Habarico
     has_many_attr :filters, 'Habarico::FilterDescriptor'
 
     # In case we don't want to show the default set of resource actions, a custom set of action descriptors can be provided and displayed in each row
-    has_many_attr :row_actions, 'Habarico::ActionDescriptor'
+    has_many_attr :row_actions, ['Habarico::ActionDescriptor', 'Habarico::DefaultActionsDescriptor'], default: 'Habarico::ActionDescriptor'
 
-    # Actions rendered in the table's own toolbar (top of the resource list, e.g. create), separate from the
-    # box-level toolbar which belongs to the box root
-    has_many_attr :toolbar_actions, 'Habarico::ActionDescriptor'
-
-    # Utility actions of the table (export, print, ...) rendered next to the filter bar, separate from row and toolbar actions
-    has_many_attr :list_actions, 'Habarico::ActionDescriptor'
+    # Actions rendered above the table (create, export, ...), next to the filter bar
+    has_many_attr :list_actions, ['Habarico::ActionDescriptor', 'Habarico::DefaultActionsDescriptor'], default: 'Habarico::ActionDescriptor'
 
     # Default sorting for the list
     has_one_attr :default_sorting, 'Habarico::SortDescriptor'
 
     # Drag & drop sortable configuration
     has_one_attr :sortable, 'Habarico::SortableParameters'
-
-    # Additional parameters sent with the get schema request
-    has_many_attr :schema_params, 'String', underlying_type: :hash
 
     # Action to activate on a single row click (e.g. open a record preview in a side panel)
     has_one_attr :single_click_action, 'Habarico::ActionDescriptor'

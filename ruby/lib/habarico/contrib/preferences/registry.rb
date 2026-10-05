@@ -23,7 +23,7 @@ module Habarico
       # `max_bytes` needs no sentinel, unlike `default`: nil is not a usable size, so it simply
       # means "not given at registration" and defers to `max_value_bytes`. It is resolved once, at
       # registration, exactly like `defaults` - nothing reads the configuration per write.
-      Entry = Struct.new(:schema, :default, :validator, :max_bytes, keyword_init: true)
+      Entry = Struct.new(:schema, :default, :validator, :max_bytes, :migrate_value, keyword_init: true)
 
       class PreferenceRegistry
         def initialize
@@ -37,11 +37,14 @@ module Habarico
           @pattern_entries.clear
         end
 
-        def register(key, schema:, default: EMPTY, max_bytes: nil)
+        # `migrate_value` is called with a stored value that no longer validates, before it would be
+        # deleted; whatever it returns is validated and saved. It is how the package that owns a
+        # shape changes it without a data migration.
+        def register(key, schema:, default: EMPTY, max_bytes: nil, migrate_value: nil)
           raise InvalidPreferenceKey, key unless key.is_a?(String) && key.match?(KEY_PATTERN)
           raise PreferenceAlreadyRegistered, key if @entries.key?(key)
 
-          @entries[key] = build_entry(key, schema, default, max_bytes)
+          @entries[key] = build_entry(key, schema, default, max_bytes, migrate_value)
           nil
         end
 
@@ -147,20 +150,20 @@ module Habarico
           raise PreferenceValueTooLarge.new(key, limit, size) if size > limit
         end
 
-        # Configured limit for the key - or pattern - a preference is being registered under. An
-        # explicit `max_bytes:` wins; otherwise `max_value_bytes` decides, by the very string the
-        # preference is registered under, falling back to its "default" entry; a nil there means
-        # unlimited. A pattern may be configured as a Regexp or as its source string. Read once, at
-        # registration, exactly like `defaults`: changing the config afterwards does not move an
-        # already-registered limit.
+        # Configured limit for the key - or pattern - a preference is being registered under.
+        # `max_value_bytes` decides first, by the very string the preference is registered under: a
+        # deployment's word outranks a limit a gem registered, which is itself a default above the
+        # hash's "default" entry. A nil anywhere there means unlimited. A pattern may be configured as
+        # a Regexp or as its source string. Read once, at registration, exactly like `defaults`:
+        # changing the config afterwards does not move an already-registered limit.
         def resolve_max_bytes(registered_as, max_bytes)
-          return max_bytes unless max_bytes.nil?
-
           limits = Preferences.max_value_bytes || {}
           limits.each do |configured, bytes|
             name = configured.is_a?(Regexp) ? configured.source : configured.to_s
             return bytes if name == registered_as
           end
+          return max_bytes unless max_bytes.nil?
+
           limits["default"]
         end
 
@@ -191,16 +194,32 @@ module Habarico
           raise PreferenceNotRegistered, key
         end
 
-        def build_entry(key, schema, default, max_bytes = nil)
+        def build_entry(key, schema, default, max_bytes = nil, migrate_value = nil)
           validator = JSONSchemer.schema(schema)
           entry = Entry.new(schema: schema, default: default, validator: validator,
-                            max_bytes: resolve_max_bytes(key, max_bytes))
+                            max_bytes: resolve_max_bytes(key, max_bytes), migrate_value: migrate_value)
           return entry if default.equal?(EMPTY) || default.respond_to?(:call)
 
           errors = validator.validate(default).to_a
           raise PreferenceValidationError.new(key, errors.first&.dig("error").to_s) unless errors.empty?
 
           entry
+        end
+
+        # Gives the owner's schema a chance to bring a stored value up to date, in place.
+        #
+        # A migration that does not validate, or one that raises, leaves the record to be deleted:
+        # a schema's own bug must not make reading preferences fail.
+        def migrate_stored_value(entry, record)
+          return false if entry.migrate_value.nil?
+
+          migrated = entry.migrate_value.call(record.value)
+          return false unless entry.validator.valid?(migrated)
+
+          record.update!(value: migrated)
+          true
+        rescue StandardError
+          false
         end
 
         # Resolves a (possibly callable) default. A callable that returns EMPTY or an
@@ -221,7 +240,7 @@ module Habarico
         # returns nil (single-GET => 404, list => omit).
         def resolve(key, entry, record)
           if record
-            if entry.validator.valid?(record.value)
+            if entry.validator.valid?(record.value) || migrate_stored_value(entry, record)
               return ResolvedPreference.new(key: key, value: record.value, updated_at: record.updated_at)
             end
 
@@ -241,8 +260,8 @@ module Habarico
         @registry ||= PreferenceRegistry.new
       end
 
-      def self.register_preference(key, schema:, default: EMPTY, max_bytes: nil)
-        registry.register(key, schema: schema, default: default, max_bytes: max_bytes)
+      def self.register_preference(key, schema:, default: EMPTY, max_bytes: nil, migrate_value: nil)
+        registry.register(key, schema: schema, default: default, max_bytes: max_bytes, migrate_value: migrate_value)
       end
 
       def self.register_preference_pattern(pattern, schema:, max_bytes: nil)

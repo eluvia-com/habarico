@@ -47,7 +47,7 @@ class UploadFilesActionParametersGeneratorTest < Minitest::Test
       upload_files_file_field: 'file'
     )
     result = build_generator.generate(action, stub_context)
-    assert_equal 'attachments', result.reference
+    assert_equal 'attachments', result.reference.resource
     assert_equal 'order', result.target
     assert_equal ['.pdf', '.docx'], result.accept
     assert_equal 'file', result.file_field

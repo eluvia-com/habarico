@@ -41,6 +41,7 @@ Removing a generator removes the view: no schema, no route, no button pointing a
 | [Form schema generators](./form-schema-generators.md) | Create, edit and show layouts — boxes, tabs, wizards |
 | [Action view schema generator](./action-view-schema-generator.md) | Views for non-CRUD actions |
 | [Field descriptor reference](./field-descriptor-reference.md) | Every option a `Field` accepts, and where it lands in the schema |
+| [Action descriptor reference](./action-descriptor-reference.md) | Every option an `Action` accepts, and how a slot asks for a resource's defaults |
 | [Box reference](./box-reference.md) | Every box type and its parameters |
 
 ## Permissions come first

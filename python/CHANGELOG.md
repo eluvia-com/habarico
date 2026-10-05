@@ -22,6 +22,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   all, so a grid whose cells carry none still computes their widths itself. Overriding
   `_get_grid_item()` makes the placement context-dependent. (HAB-963)
 
+- `ResourceReference`, the address of a resource — `service`, `resource`, and the optional
+  `record_pk`, `action_name` and `params` — plus the `CURRENT` sentinel standing for the schema being
+  generated. A plain `'school/teacher'` written as a reference is split into its two halves on the
+  way in, and `service` can be given on its own; the address itself keeps them apart, the way the
+  wire carries them, and refuses a prefixed name. Every reference in the schema is one of these now, so a client never parses a name to
+  learn which service it belongs to: a bare resource name belongs to this service and omits `service`,
+  while `'school/teacher'` is split when the address is composed.
+
+  A sentinel stands **in place of** an address rather than inside one: the serializer swaps it for
+  the stamped address whole, so nothing is merged and `ResourceReference` stays a value object that
+  knows nothing about any context. The stamp is the whole address of the request being served — the
+  resource, the record of a detail route, the action segment of an action route, and the
+  `_target` / `_source` pair that ties the request to the record it was asked for — so a descriptor
+  pointing at `CURRENT` from inside an action view means that action, with the same parent link. An
+  author who needs a different record, action or query writes the address out instead.
+
+  The source the root generator stamps is deliberately taken from the view's own admin rather than
+  from `context.resource`: nested generators overwrite that, so a descriptor inside a list box would
+  resolve to the box instead of the page it was authored in. An address without a resource, or one
+  carrying a record key where only `reverse()`'s placeholder was available, is refused rather than
+  quietly serialized — both would leave an action running against the wrong object.
+  (HAB-938)
+
+- `DefaultActions(reference=..., scope=...)` — the alias of `DefaultActionsDescriptor`, an entry
+  standing for a resource's default actions that the client expands into one action descriptor each.
+  `ActionScopeType` (`list` / `detail` / `all`) narrows which of them. A schema of its own rather than
+  a subclass of `ActionDescriptor`: it names no action and takes none of a button's appearance, since
+  a label, an icon and a colour belong to each action it expands into. `reference` is optional:
+  omitted, the entry means the resource the schema is generated for, which is what every slot a view
+  fills for itself leaves out.
+  (HAB-938)
+
+- `LIST`, the sentinel for the resource the surrounding box lists. A box's header toolbar renders in
+  the parent's context, so a button for the listed resource has to name it — `LIST` says it without
+  repeating the name the box already carries, and keeps the two from drifting apart when the box is
+  later pointed somewhere else. `ListBox` and `GalleryBox` stamp their address for their own subtree:
+  the collection they list, with the query the box's own schema request carries — its `schema_params`
+  and the `_target` / `_source` link to the record the view renders. That link is what the header
+  cannot do without, since the button leaves the box's context; the box's own `list` slots need none
+  of it. Used outside such a box the sentinel is refused, which is louder than a button that never
+  renders.
+  (HAB-938)
+
+- `confirm_dialog_title` / `confirm_dialog_message` on an action descriptor, overriding the dialog the
+  action's own schema declares — the override the descriptor already offered for `label`, `icon` and
+  `color`. (HAB-938)
+
 ### Changed
 
 - **BREAKING:** The `upload-images` action is renamed to `upload-files`: it bulk-uploads documents
@@ -46,6 +93,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   It accepted them and silently ignored them before, so `GridFieldsBox("price", "vat_rate", md=4)`
   now lays the fields out as it always read like it would. (HAB-963)
 
+- **BREAKING:** `ActionDescriptor` carries a required `type`, always `action`, which is what tells it
+  apart from `DefaultActionsDescriptor` where they share a slot. Every descriptor the backend emits
+  gains the key, nested `menu_items` included.
+  (HAB-938)
+
+- **BREAKING:** A view or box slot the admin author leaves alone now publishes a `default_actions`
+  entry instead of nothing. What the client used to infer from an empty slot is in the schema, where
+  it can be read; an empty slot renders nothing. The two slots that never inferred anything — a list
+  view's `list_actions` and a detail view's `bottom_actions` — stay as they were.
+
+  Only a slot nothing was said about carries the default: `None` turns it off, and `[]` says the same
+  thing with an empty array on the wire. A view class declaring `row_actions = None` on itself opts
+  out the same way. That is why an unset slot is a sentinel of its own rather than `None` — otherwise
+  the one value an author would reach for to mean "no buttons" would be the one producing them.
+
+  No entry names a resource: an absent address is the resource the schema was generated for, and a
+  box's `list` slots are read in the schema of the resource the box points at, which it already names
+  once in `list.reference`. The parent link those slots would need stays the client's — it composes
+  the `_target` / `_source` pair from the box's `target` and the record it renders, and loads the
+  box's schema with it, which is the very schema those slots are read in. A descriptor in the box
+  *header* is the other case: it is rendered in the parent's context, so an address pointing out of it
+  carries the link itself — see `LIST` above.
+  (HAB-938)
+
+- **BREAKING:** `ListBox` no longer takes `list_toolbar_actions`, and `ListBoxParameters` no longer
+  takes `toolbar_actions`. A list box has one toolbar, the box's own; a descriptor placed there names
+  the resource it belongs to through its own `reference`, which is what made the second slot
+  unnecessary. Move those actions to the box-level `toolbar_actions`, naming the resource:
+  `toolbar_actions=[DefaultActions(reference='order_item', scope='list')]`, or
+  `[Action(name='create', reference='order_item')]`.
+  (HAB-938)
+
+- **BREAKING:** `schema_params` is gone from `ListBox` and `GalleryBox` output — the resource and the
+  parameters of its schema request are one address, so they travel as `reference.params`. The DSL
+  keeps its flat `schema_params` keyword and composes the object itself.
+  (HAB-938)
+
+- **BREAKING:** `ViewActionEndpointParameters` is gone and the two remaining endpoint parameter
+  schemas address what they point at with a `ResourceReference` instead of their own `reference`,
+  `action_name` and `record_pk`. `path` and `method` stay beside it: how a thing is called is not part
+  of where it is. A view's endpoint carries no address when it is this admin's own; one with an
+  `action_name` names the resource, because the action name lives inside the address and needs one to
+  belong to.
+  (HAB-938)
+
+- **BREAKING:** A relation's reference on `FieldSchema`, `FilterSchema` and
+  `UploadFilesActionParameters` is an address too. `get_reference_from_model` still returns a plain
+  name: the serializer field it feeds and the filter options both decide locality by looking for a
+  slash in it, so the address is composed at the schema boundary instead.
+  (HAB-938)
+
+- **BREAKING:** `preferences.dashboard` is no longer registered here, and the widget schemas it was
+  validated against are gone with it. The key, the table and the size limits stay core's; the shape
+  belongs to the package that defines a widget and draws one, which is `habarico-enterprise`. It was
+  the only key core declared that it could neither produce nor render.
+  (HAB-938)
+
+- A `MAX_VALUE_BYTES` entry naming a key outranks the `max_bytes` that key was registered with,
+  where the registered value used to win outright. A limit a package brings with its own key is a
+  default, and a deployment raises it — or removes it with `None` — by naming the key, which is how
+  the dashboard's 32 KB stays configurable now that `habarico-enterprise` registers it. The dict's
+  `"default"` entry still applies only to a key neither names.
+  (HAB-938)
+
+- Registration-time action validation follows a descriptor's `reference` to the admin that owns the
+  action, instead of reading this admin's `can_*` flags for an action that is not its own. A target
+  this registry cannot resolve — another service, or an admin that registers later — is left to
+  `AdminPermission` per request rather than refused at startup.
+  (HAB-938)
+
+- A preference schema may offer a `migrate_value` classmethod, which the registry calls for a stored value
+  that no longer validates — before the value would be deleted, which is what happened to every such
+  value until now. A migration that validates is saved, so it runs once; one that does not, or one that
+  raises, leaves the value to be deleted as before, because a schema's own bug must not make reading
+  preferences fail. It is what lets a package change the shape of its own preference without a data
+  migration.
+  (HAB-938)
+
 ### Removed
 
 - **BREAKING:** `GridItemBox`, the `BoxType.GRID_ITEM` value and the `GridItemBoxParameters` alias of
@@ -55,6 +180,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with `Box(grid_item={"md": 9}, boxes=[...])` where the cell really does group several boxes. An
   override of `_get_grid_item_kwargs()` becomes an override of `_get_grid_item()` returning a
   `GridItem`. (HAB-963)
+
+### Fixed
+
+- Serializing a schema binds the context to a copy of the object instead of to the object itself.
+  A schema object is declared once — on an admin class, at import — and serialized per request, so
+  two parallel requests overwrote each other's context and a getter could read the one that was not
+  its own, silently producing another request's value. `to_dict()` stays the entry point and
+  `_serialize()` is the hook a subclass overrides to serialize something other than its own stored
+  fields; `BaseSchema.context` is declared on the class, so it reads as `None` rather than raising
+  before anything is bound. Measured at ~1.4 µs per node, under 2% of building a schema.
+  (HAB-938)
+
+- A confirm dialog given only a title, or only a message, is refused instead of emitted half-built.
+  `ActionSchema`, `ResourceActionSchema` and an action descriptor all composed one from whichever half
+  they got, which the contract does not allow — `ConfirmDialogProperties` requires both — and which the
+  client renders as a dialog with an empty body, since it takes the override whole rather than merging
+  it with the action's own.
+  (HAB-938)
+
+- `LocalResourceSchemaGenerator` read `context._requested_fieldset` directly, which misses a value set
+  further up the context chain and reads as truthy when nothing set it at all. It never surfaced
+  because the generator happened not to create a child context; it does now.
+  (HAB-938)
+
+- `default_sorting` is no longer refused at registration when it names an annotation rather than a
+  model field. Where an annotation comes from is not knowable then - it may sit on the viewset's
+  queryset, be added in a custom `get_queryset()`, or be attached by the ordering filter itself
+  (`OrderingFilter` annotates `<field>__choice_label` inside `_order_queryset`, and any lookup
+  class may do the same from `update_queryset`) - so the check refused configurations that work.
+  It is gone, for the resource-level `default_sorting` and for a view generator's alike; a typo
+  surfaces on the first list request as a Django `FieldError` naming the keyword. `ordering_fields`
+  is still checked, now against the *lookup* of a `(key, lookup, label)` triple rather than the
+  client-facing key, and tolerating annotations declared on the viewset's queryset and anything in
+  its `extra_ordering_fields`.
+  ([HAB-915](https://sparktech.myjetbrains.com/youtrack/issue/HAB-915))
+
+- A list accepts the ordering its own schema asks the frontend for: the `default_sorting` a list
+  view publishes, and the primary key, which is what `serializeOrderBy` sends for a list with no
+  sorting of its own. An admin narrowing `ordering_fields` refused both with
+  `422 Unknown field name.` - on the first load of the list, before the user had touched anything.
+  `ordering_fields` still bounds what a client may choose.
+  ([HAB-915](https://sparktech.myjetbrains.com/youtrack/issue/HAB-915))
 
 ## [7.2.0] — 2026-10-19
 

@@ -1937,15 +1937,19 @@ components:
         row_actions:
           type: array
           items:
-            $ref: '#/components/schemas/ActionDescriptor'
+            oneOf:
+              - $ref: '#/components/schemas/ActionDescriptor'
+              - $ref: '#/components/schemas/DefaultActionsDescriptor'
           description: |
             Actions rendered as inline buttons on each table row (e.g. edit, delete).
             Absent or empty renders nothing: a resource's own actions are never inferred
-            here. Place a `default_actions` descriptor to get them.
+            here. Place a `DefaultActionsDescriptor` to get them.
         list_actions:
           type: array
           items:
-            $ref: '#/components/schemas/ActionDescriptor'
+            oneOf:
+              - $ref: '#/components/schemas/ActionDescriptor'
+              - $ref: '#/components/schemas/DefaultActionsDescriptor'
           description: |
             Utility actions rendered next to the filter bar, separate from row and toolbar actions
             (e.g. export, print). Absent when not configured.
@@ -2411,23 +2415,29 @@ components:
         row_actions:
           type: array
           items:
-            $ref: '#/components/schemas/ActionDescriptor'
+            oneOf:
+              - $ref: '#/components/schemas/ActionDescriptor'
+              - $ref: '#/components/schemas/DefaultActionsDescriptor'
           description: |
             Actions rendered as inline buttons on each table row (e.g. edit, delete).
             Absent or empty renders nothing: a resource's own actions are never inferred
-            here. Place a `default_actions` descriptor to get them.
+            here. Place a `DefaultActionsDescriptor` to get them.
         toolbar_actions:
           type: array
           items:
-            $ref: '#/components/schemas/ActionDescriptor'
+            oneOf:
+              - $ref: '#/components/schemas/ActionDescriptor'
+              - $ref: '#/components/schemas/DefaultActionsDescriptor'
           description: |
             Actions rendered in the toolbar above the table (e.g. create, bulk delete).
             Absent or empty renders nothing: a resource's own actions are never inferred
-            here. Place a `default_actions` descriptor to get them.
+            here. Place a `DefaultActionsDescriptor` to get them.
         list_actions:
           type: array
           items:
-            $ref: '#/components/schemas/ActionDescriptor'
+            oneOf:
+              - $ref: '#/components/schemas/ActionDescriptor'
+              - $ref: '#/components/schemas/DefaultActionsDescriptor'
           description: |
             Utility actions rendered next to the filter bar, separate from row and toolbar actions
             (e.g. export, print). Absent when not configured.
@@ -2475,19 +2485,23 @@ components:
         toolbar_actions:
           type: array
           items:
-            $ref: '#/components/schemas/ActionDescriptor'
+            oneOf:
+              - $ref: '#/components/schemas/ActionDescriptor'
+              - $ref: '#/components/schemas/DefaultActionsDescriptor'
           description: |
             Actions rendered in the toolbar at the top of the view (e.g. delete, custom actions).
             Absent or empty renders nothing: a resource's own actions are never inferred
-            here. Place a `default_actions` descriptor to get them.
+            here. Place a `DefaultActionsDescriptor` to get them.
         bottom_actions:
           type: array
           items:
-            $ref: '#/components/schemas/ActionDescriptor'
+            oneOf:
+              - $ref: '#/components/schemas/ActionDescriptor'
+              - $ref: '#/components/schemas/DefaultActionsDescriptor'
           description: |
             Actions rendered at the bottom of the view below the form fields (e.g. save, cancel).
             Absent or empty renders nothing: a resource's own actions are never inferred
-            here. Place a `default_actions` descriptor to get them.
+            here. Place a `DefaultActionsDescriptor` to get them.
       required:
         - box
     FieldWrapperProperties:
@@ -2565,29 +2579,20 @@ components:
     ActionDescriptor:
       type: object
       description: |
-        Action descriptor places an action in one of a view's action slots. `type` says which kind of
-        entry it is:
-
-        * `action` — names a single action, the ordinary case. `name` is required.
-        * `default_actions` — stands for a resource's default actions, which the client expands into
-          one `action` entry each, every one bound to `reference`. `reference` is required, `scope`
-          narrows which of them, and `name` has no meaning.
-
-        A slot holding no descriptor renders nothing: defaults are never inferred from the resource on
-        their own, `default_actions` is the only way to ask for them.
+        Action descriptor names one action the schema declares and places it in a view's action slot.
+        `DefaultActionsDescriptor` stands beside it in the same slots, standing for a resource's
+        defaults rather than one action, and the two are told apart by `type` — the way
+        `FieldDescriptor` and `BoxSchema` are where they share an array.
       properties:
         type:
           type: string
           enum:
             - action
-            - default_actions
-          description: |
-            Which kind of entry this is. `action` names one action; `default_actions` stands for a
-            resource's defaults and is expanded by the client.
+          description: Descriptor type. Always set to 'action'.
         name:
           type: string
           example: field_name
-          description: Action name. Required when `type` is `action`; ignored for `default_actions`.
+          description: Action name.
         label:
           type: string
           example: Action label
@@ -2621,14 +2626,6 @@ components:
             that look alike cannot end up acting on different records. Absent, the action is both
             looked up and bound in the ambient schema, which is what every descriptor did before
             this field existed.
-
-            Required when `type` is `default_actions`: that is the resource whose defaults expand here.
-        scope:
-          oneOf:
-            - $ref: '#/components/schemas/ActionScopeType'
-          description: |
-            Which of the resource's actions a `default_actions` entry expands. Absent means `all`.
-            Has no meaning when `type` is `action`.
         view:
           oneOf:
             - $ref: '#/components/schemas/ViewActionDescriptorParameters'
@@ -2638,6 +2635,43 @@ components:
           items:
             $ref: '#/components/schemas/ActionDescriptor'
           description: List of sub actions which will be shown in the action menu.
+      required:
+        - type
+        - name
+    DefaultActionsDescriptor:
+      type: object
+      description: |
+        Stands for a resource's default actions in a view's action slot. The client loads the schema of
+        the resource this addresses — `reference`, or the one the schema was generated for when it is
+        absent — and expands this into one ordinary `ActionDescriptor` per supported action, each bound
+        to that resource, which is how a slot asks for "whatever this resource offers" without naming
+        the actions one by one and going stale when one is added.
+
+        Expansion happens on the client, not the backend: a backend does not know a foreign service's
+        actions, and splitting the filtering rule across two backend languages would let the two drift
+        apart.
+
+        It carries nothing of its own appearance. A label, an icon and a colour belong to each action
+        it expands into, which already has them; this descriptor only says which actions those are. A
+        slot holding no descriptor renders nothing — defaults are never inferred from the resource.
+      properties:
+        type:
+          type: string
+          enum:
+            - default_actions
+          description: Descriptor type. Always set to 'default_actions'.
+        reference:
+          oneOf:
+            - $ref: '#/components/schemas/ResourceReference'
+          description: |
+            The resource whose default actions are expanded in place of this descriptor. Absent means
+            the resource the schema was generated for, the same as on `ActionDescriptor` — a slot of
+            that resource's own view does not have to name it.
+        scope:
+          oneOf:
+            - $ref: '#/components/schemas/ActionScopeType'
+          description: |
+            Which of the resource's actions to expand. Absent means `all`.
       required:
         - type
     SortDescriptor:
@@ -3013,7 +3047,9 @@ components:
         toolbar_actions:
           type: array
           items:
-            $ref: '#/components/schemas/ActionDescriptor'
+            oneOf:
+              - $ref: '#/components/schemas/ActionDescriptor'
+              - $ref: '#/components/schemas/DefaultActionsDescriptor'
           description: |
             Actions rendered in the box's toolbar (top of the box / card header area). On a plain box
             the toolbar is always visible; on a step container (tab/wizard) the actions appear on the
@@ -3025,7 +3061,9 @@ components:
         bottom_actions:
           type: array
           items:
-            $ref: '#/components/schemas/ActionDescriptor'
+            oneOf:
+              - $ref: '#/components/schemas/ActionDescriptor'
+              - $ref: '#/components/schemas/DefaultActionsDescriptor'
           description: |
             Actions rendered at the bottom of the box, below the fields — similar to form submit buttons
             at the view level. Absent when not configured.
@@ -3872,7 +3910,7 @@ components:
       type: object
       x-habarico-tier: enterprise
       description: |
-        **Premium** — the dashboard ships in the paid `habarico-enterprise` package. A free-only install stores this payload under `preferences.dashboard` but has no widgets to render it.
+        **Premium** — the dashboard ships in the paid `habarico-enterprise` package, which owns this shape and registers the `preferences.dashboard` key. The storage is core's; a free-only install has no schema for the key and nothing that defines or draws a widget.
 
         Chart-type-specific display options.
       properties:
@@ -3919,7 +3957,7 @@ components:
       type: object
       x-habarico-tier: enterprise
       description: |
-        **Premium** — the dashboard ships in the paid `habarico-enterprise` package. A free-only install stores this payload under `preferences.dashboard` but has no widgets to render it.
+        **Premium** — the dashboard ships in the paid `habarico-enterprise` package, which owns this shape and registers the `preferences.dashboard` key. The storage is core's; a free-only install has no schema for the key and nothing that defines or draws a widget.
 
         Grid placement of a widget on the dashboard. `x`/`y` are the top-left cell, `w`/`h`
         are width/height in grid cells.
@@ -3959,7 +3997,10 @@ components:
       type: object
       x-habarico-tier: enterprise
       description: |
-        **Premium** — the dashboard ships in the paid `habarico-enterprise` package. A free-only install stores this payload under `preferences.dashboard` but has no widgets to render it.
+        **Premium** — the dashboard ships in the paid `habarico-enterprise` package, which also
+        owns this shape: it registers the `preferences.dashboard` key, so a free-only install has no
+        schema for it and refuses the key. The storage itself is free — the table, the registry and
+        the size limits are core's — but nothing in a free install defines a widget or draws one.
 
         Single dashboard widget definition. Mirrors the `WidgetConfig` type in Habarico JS
         (`src/types.ts`).
@@ -3980,9 +4021,9 @@ components:
             `params` go unused here.
 
             Unlike every other `ResourceReference` in this spec, this one is **stored**, not
-            generated: it lives in `preferences.dashboard`. Dashboards saved before this
-            change hold the old `resource: "service/resource"` string, so a reader has to
-            migrate them or accept both shapes.
+            generated: it lives in `preferences.dashboard`. A dashboard saved under the earlier
+            `resource: "service/resource"` string is brought up to this shape when it is first
+            read, by the schema that owns it, and saved in the new shape from then on.
         type:
           $ref: '#/components/schemas/WidgetType'
         label:
@@ -4038,7 +4079,7 @@ components:
       type: object
       x-habarico-tier: enterprise
       description: |
-        **Premium** — the dashboard ships in the paid `habarico-enterprise` package. A free-only install stores this payload under `preferences.dashboard` but has no widgets to render it.
+        **Premium** — the dashboard ships in the paid `habarico-enterprise` package, which owns this shape and registers the `preferences.dashboard` key. The storage is core's; a free-only install has no schema for the key and nothing that defines or draws a widget.
 
         Dashboard layout stored under the `preferences.dashboard` preference key by the
         Habarico JS `useDashboardStore` hook (MR !370). Backend MUST reject configurations

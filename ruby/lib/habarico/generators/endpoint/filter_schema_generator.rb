@@ -14,7 +14,7 @@ module Habarico
         format: generate_format(model, filter_name, filter_param),
         label: generate_label(model, filter_name, filter_param),
         help_text: generate_help_text(model, filter_name, filter_param),
-        reference: generate_reference(model, filter_name, filter_param),
+        reference: Habarico::ResourceReference.build(generate_reference(model, filter_name, filter_param)),
         enum: generate_enum(model, filter_name, filter_param),
         items: generate_items(model, filter_name, filter_param),
         properties: generate_properties(model, filter_name, filter_param),

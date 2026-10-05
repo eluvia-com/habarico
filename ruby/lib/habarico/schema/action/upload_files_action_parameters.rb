@@ -5,7 +5,7 @@ module Habarico
 
     # Resource where a record is created for each uploaded file. When set, uploads to this
     # resource instead of the current resource context.
-    string_attr :reference
+    has_one_attr :reference, 'Habarico::ResourceReference'
 
     # Field name on the file model linking to the parent record.
     # When set together with reference, the current record's ID is used as the target value.

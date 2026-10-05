@@ -50,10 +50,10 @@ class ActionSchemaGeneratorUploadFilesTest < Minitest::Test
   end
 
   def test_generate_serializes_parameters_under_upload_files_key
-    json = build_generator.generate(build_action, stub_context).as_json
+    json = Habarico::Serializers.compact_json(build_generator.generate(build_action, stub_context).as_json)
     assert_equal 'upload-files', json['type']
     assert_equal(
-      { 'reference' => 'attachments', 'target' => 'order', 'accept' => ['.pdf'], 'file_field' => 'file',
+      { 'reference' => { 'resource' => 'attachments' }, 'target' => 'order', 'accept' => ['.pdf'], 'file_field' => 'file',
         'data' => { 'source' => 'catalogue' } },
       json['upload_files']
     )

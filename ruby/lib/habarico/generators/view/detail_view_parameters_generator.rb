@@ -33,13 +33,17 @@ module Habarico
       box_schema_generator.generate(view, view.box, 0, context)
     end
 
+    # Everything the resource supports, until the view says otherwise. Only a slot the author never
+    # mentioned carries the default: `nil` and `[]` are both decisions to render nothing.
     def generate_toolbar_actions(view, context)
-      unless view.toolbar_actions.nil?
-        return view.toolbar_actions.map do |action|
-          action_descriptor_generator.generate(action, context)
-        end.compact
+      unless view.assigned?(:toolbar_actions)
+        return [action_descriptor_generator.generate(Habarico::DefaultActionsReference.new, context)].compact
       end
-      nil
+      return nil if view.toolbar_actions.nil?
+
+      view.toolbar_actions.map do |action|
+        action_descriptor_generator.generate(action, context)
+      end.compact
     end
 
     def generate_bottom_actions(view, context)

@@ -69,7 +69,7 @@ class TriggerActionSchemaGeneratorTest < Minitest::Test
     endpoint = generate('edit_price', record_pk: CATEGORY_PK, reference: 'categories').view.endpoint
 
     assert_equal CATEGORY_PK, endpoint.record_pk
-    assert_equal 'categories', endpoint.reference
+    assert_equal 'categories', endpoint.resource
   end
 
   def test_retargeting_does_not_mutate_the_declared_action

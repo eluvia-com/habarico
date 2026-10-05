@@ -2,8 +2,14 @@ from __future__ import annotations
 
 from typing import Literal
 
-from habarico.schema.actions import ActionDescriptor, Actions, generate_action_descriptor, generate_actions_descriptor
-from habarico.schema.base import BaseSchema, schema_getter
+from habarico.schema.actions import (
+    ActionDescriptor,
+    Actions,
+    DefaultActions,
+    generate_action_descriptor,
+    generate_actions_descriptor,
+)
+from habarico.schema.base import BaseSchema, SchemaContext, schema_getter
 from habarico.schema.fields import (
     Field,
     Fieldset,
@@ -12,7 +18,93 @@ from habarico.schema.fields import (
     generate_filters_descriptor,
     generate_sorting_descriptor,
 )
-from habarico.schema.types import BoxType
+from habarico.schema.reference import ResourceReference, build_resource_reference
+from habarico.schema.types import ActionScopeType, BoxType
+from habarico.utils import dump_query_json
+from rest_framework.fields import empty
+
+
+def build_box_reference(
+    reference: ResourceReference | str,
+    schema_params: dict[str, str] | None,
+) -> ResourceReference:
+    """
+    Compose the address a list or gallery box points at.
+
+    The resource and the parameters of its schema request are one address, so the flat keyword
+    arguments the box DSL takes are folded into a single object here.
+
+    Args:
+        reference (ResourceReference | str): Resource the box points at.
+        schema_params (dict[str, str], optional): Query of its schema request.
+
+    Returns:
+        ResourceReference: The composed address.
+    """
+    if isinstance(reference, ResourceReference):
+        return reference
+    return build_resource_reference(reference, params=schema_params)
+
+
+def build_parent_link_params(target: str | None, context: SchemaContext) -> dict[str, str] | None:
+    """
+    The query that ties a box's resource to the record the surrounding view renders.
+
+    The two say the same id in two languages. ``_target`` is the child's: the foreign key column on
+    the listed resource that points back, which is what filters the list and what prefills a record
+    created from it. ``_source`` is the parent's: its resource identity, service-prefixed the way the
+    client composes one, which is why it can carry a slash where a column name never can.
+
+    Both are what the frontend already sends with the box's own schema request, which is why a box's
+    ``list`` slots need neither.
+
+    Args:
+        target (str, optional): Foreign key column the box filters by.
+        context (SchemaContext): The box's context, which holds the record and the parent's address.
+
+    Returns:
+        dict[str, str]: The link, or None when there is no record to link to — which is every
+        collection schema.
+    """
+    obj = context.obj if context else None
+    source = context.schema_source if context else None
+    if obj is None or source is None:
+        return None
+
+    params = {"_source": dump_query_json({source.qualified_name: obj.pk})}
+    if target:
+        params["_target"] = dump_query_json({target: obj.pk})
+    return params
+
+
+def build_list_source(
+    reference: ResourceReference | str,
+    schema_params: dict[str, str] | None,
+    target: str | None,
+    context: SchemaContext,
+) -> ResourceReference:
+    """
+    The address a ``LIST`` reference inside a box resolves to.
+
+    The collection the box lists — never one record, so a pk inherited from the page the box sits on
+    is dropped — carrying the query the box's own schema request carries: its ``schema_params`` and
+    the link to the record the view renders. A descriptor in the box header is rendered in the
+    parent's context, so an address leaving that context has to bring the link with it; inside the
+    box's own ``list`` parameters nothing needs it, because those slots are read in the schema the box
+    already requested with the same query.
+
+    Args:
+        reference (ResourceReference | str): Resource the box points at.
+        schema_params (dict[str, str], optional): Query of the box's schema request.
+        target (str, optional): Foreign key column the box filters by.
+        context (SchemaContext): The box's context, which holds the record the view renders.
+
+    Returns:
+        ResourceReference: The composed address.
+    """
+    address = build_box_reference(reference, None)
+    params = {**(schema_params or {}), **(build_parent_link_params(target, context) or {})}
+    return build_resource_reference(address.qualified_name, params=params or None)
 
 
 def generate_boxes_descriptor(boxes: list | None) -> list:
@@ -66,9 +158,8 @@ class ConditionalBoxWrapper(BaseSchema):
         """
         raise NotImplementedError("This method should be overridden in subclasses.")
 
-    def to_dict(self, **kwargs) -> dict:
-        self.setup(**kwargs)
-        return self._get_box().to_dict(**kwargs)
+    def _serialize(self) -> dict:
+        return self._get_box().to_dict(context=self.context)
 
 
 class GridItem(BaseSchema):
@@ -186,6 +277,18 @@ class BaseBox(BaseSchema):
                     "required_query": required_query,
                 }
             }
+
+    def _get_list_source(self) -> ResourceReference | None:
+        """The address a ``LIST`` reference resolves to inside this box. Only a box that lists one has it."""
+        return None
+
+    def setup(self, **kwargs) -> BaseSchema:
+        """Stamp the listed resource for this box's subtree, which is what ``LIST`` resolves against."""
+        super().setup(**kwargs)
+        source = self._get_list_source()
+        if source is not None:
+            self.context = self.context.update(list_source=source)
+        return self
 
     def get_name(self) -> str | None:
         if self._name:
@@ -388,10 +491,9 @@ class ListBoxParameters(BaseSchema):
         self,
         *,
         target: str,
-        reference: str,
-        row_actions: Actions | None = None,
-        toolbar_actions: Actions | None = None,
-        list_actions: Actions | None = None,
+        reference: ResourceReference | str,
+        row_actions: Actions | None = empty,
+        list_actions: Actions | None = empty,
         default_sorting: SortingOrStr | None = None,
         filters: Filters | None = None,
         extra_filters: dict[str, str | int | bool | None] | None = None,
@@ -409,11 +511,10 @@ class ListBoxParameters(BaseSchema):
             reference (str): Reference to the resource that will be displayed in the table.
             filters (Filters, optional): List of filters that will be applied to the items in the table.
                                           Defaults to None.
-            row_actions (list[ActionDescriptor], optional): List of row actions. Defaults to None.
-            toolbar_actions (Actions, optional): Actions rendered in the table's own toolbar (top of the
-                resource list, e.g. create), separate from the box-level toolbar. Defaults to None.
-            list_actions (Actions, optional): Utility actions of the table (export, print, ...) rendered
-                next to the filters, separate from row and toolbar actions. Defaults to None.
+            row_actions (list[ActionDescriptor], optional): Buttons on each row. Left out, the box
+                publishes the listed resource's own record actions; ``None`` or ``[]`` renders none.
+            list_actions (Actions, optional): Buttons above the table. Left out, the box publishes the
+                listed resource's own collection actions; ``None`` or ``[]`` renders none.
             default_sorting (sortingDescriptor, optional): Default sorting of the items in the table.
                                                            Defaults to None.
             extra_filters (dict[str, str | int | bool | None], optional): Additional filters that will be applied to
@@ -436,19 +537,35 @@ class ListBoxParameters(BaseSchema):
                                                  nothing).
         """
         self._target = target
-        self._reference = reference
+        self._reference = build_box_reference(reference, schema_params)
         self._filters = generate_filters_descriptor(filters)
-        self._row_actions = generate_actions_descriptor(row_actions)
-        self._toolbar_actions = generate_actions_descriptor(toolbar_actions)
-        self._list_actions = generate_actions_descriptor(list_actions)
+        self._row_actions = row_actions if row_actions is empty else generate_actions_descriptor(row_actions)
+        self._list_actions = list_actions if list_actions is empty else generate_actions_descriptor(list_actions)
         self._default_sorting = generate_sorting_descriptor(default_sorting)
 
         self._extra_filters = extra_filters
-        self._schema_params = schema_params
         if sortable_field_name:
             self._sortable = {"field_name": sortable_field_name, "sort_for_filters": sortable_sort_for_filters}
         self._double_click_action = generate_action_descriptor(double_click_action)
         self._single_click_action = generate_action_descriptor(single_click_action)
+
+    def get_row_actions(self) -> list[ActionDescriptor] | None:
+        """
+        Row buttons act on one record of the listed resource, whose id the row supplies — hence the
+        ``detail`` scope on an entry that names no resource: these slots are rendered in the schema of
+        the resource the box points at, which is what an absent address means.
+
+        Only a slot nothing was said about gets the default; ``None`` and ``[]`` both render nothing.
+        """
+        if self._row_actions is empty:
+            return [DefaultActions(scope=ActionScopeType.DETAIL)]
+        return self._row_actions
+
+    def get_list_actions(self) -> list[ActionDescriptor] | None:
+        """The collection's own buttons, above the table — same slot, the other scope."""
+        if self._list_actions is empty:
+            return [DefaultActions(scope=ActionScopeType.LIST)]
+        return self._list_actions
 
 
 class ListBox(BaseBox):
@@ -461,10 +578,9 @@ class ListBox(BaseBox):
         filters: Filters | None = None,
         target: str | None = None,
         reference: str,
-        row_actions: Actions | None = None,
+        row_actions: Actions | None = empty,
         toolbar_actions: Actions | None = None,
-        list_toolbar_actions: Actions | None = None,
-        list_actions: Actions | None = None,
+        list_actions: Actions | None = empty,
         default_sorting: SortingOrStr | None = None,
         extra_filters: dict[str, str | int | bool | None] | None = None,
         sortable_field_name: str | None = None,
@@ -484,13 +600,12 @@ class ListBox(BaseBox):
                                          Defaults to None.
             target (str): Target field that will be used to filter the resource items.
             reference (str): Reference to the resource that will be displayed in the table.
-            row_actions (list[ActionDescriptor], optional): List of row actions. Defaults to None.
+            row_actions (list[ActionDescriptor], optional): Buttons on each row. Left out, the box
+                publishes the listed resource's own record actions; ``None`` or ``[]`` renders none.
             toolbar_actions (Actions, optional): Actions rendered in the box's own toolbar (box header /
                 card header area), relative to the box root. Defaults to None.
-            list_toolbar_actions (Actions, optional): Actions rendered in the table's own toolbar (top of
-                the resource list, e.g. create), emitted inside the ``list`` params. Defaults to None.
-            list_actions (Actions, optional): Utility actions of the table (export, print, ...) rendered
-                next to the filters, separate from row and toolbar actions. Defaults to None.
+            list_actions (Actions, optional): Buttons above the table. Left out, the box publishes the
+                listed resource's own collection actions; ``None`` or ``[]`` renders none.
             default_sorting (OrderingDescriptor, optional): Default sorting of the items in the table. Defaults to None.
             extra_filters (dict[str, str | int | bool | None], optional): Additional filters that will be applied to
                                                                           the items in the table. Defaults to None.
@@ -518,7 +633,6 @@ class ListBox(BaseBox):
             target=target,
             reference=reference,
             row_actions=row_actions,
-            toolbar_actions=list_toolbar_actions,
             list_actions=list_actions,
             default_sorting=default_sorting,
             filters=filters,
@@ -534,6 +648,10 @@ class ListBox(BaseBox):
         """Constructor kwargs for the list params. Override to make them context-dependent."""
         return self.__list_kwargs
 
+    def _get_list_source(self) -> ResourceReference:
+        kwargs = self._get_list_kwargs()
+        return build_list_source(kwargs["reference"], kwargs.get("schema_params"), kwargs.get("target"), self.context)
+
     @schema_getter
     def get_list(self) -> ListBoxParameters:
         return ListBoxParameters(**self._get_list_kwargs())
@@ -544,7 +662,7 @@ class GalleryBoxParameters(BaseSchema):
     def __init__(
         self,
         *,
-        reference: str,
+        reference: ResourceReference | str,
         image_field: str,
         target: str | None = None,
         filters: Filters | None = None,
@@ -564,13 +682,12 @@ class GalleryBoxParameters(BaseSchema):
             extra_filters (dict, optional): Additional static filters. Defaults to None.
             schema_params (dict[str, str], optional): Additional parameters sent with get schema request.
         """
-        self._reference = reference
+        self._reference = build_box_reference(reference, schema_params)
         self._image_field = image_field
         self._target = target
         self._filters = generate_filters_descriptor(filters)
         self._default_sorting = generate_sorting_descriptor(default_sorting)
         self._extra_filters = extra_filters
-        self._schema_params = schema_params
 
 
 class GalleryBox(BaseBox):
@@ -615,6 +732,10 @@ class GalleryBox(BaseBox):
     def _get_gallery_kwargs(self) -> dict:
         """Constructor kwargs for the gallery params. Override to make them context-dependent."""
         return self.__gallery_kwargs
+
+    def _get_list_source(self) -> ResourceReference:
+        kwargs = self._get_gallery_kwargs()
+        return build_list_source(kwargs["reference"], kwargs.get("schema_params"), kwargs.get("target"), self.context)
 
     @schema_getter
     def get_gallery(self) -> GalleryBoxParameters:

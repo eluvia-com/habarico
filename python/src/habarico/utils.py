@@ -18,6 +18,7 @@ from rest_framework.exceptions import APIException
 from rest_framework.fields import Field, empty
 from rest_framework.request import Request, clone_request
 from rest_framework.reverse import reverse
+from rest_framework.utils.encoders import JSONEncoder
 
 from .config import NAMESPACE
 from .fast_resolve import fast_resolve
@@ -86,6 +87,24 @@ def resolve_fieldset_defaults(requested: RFS | None, default: RFS | None) -> RFS
 
 DEFAULT_OPERATOR_ORDER = ["icontains", "contains", "exact", None]
 CLONE_REQUEST_QUERY_PARAMS = ["_target", "_source"]
+
+
+def dump_query_json(value: Any) -> str:
+    """
+    One query-string value as JSON, written the way the frontend writes the same one.
+
+    ``JSON.stringify`` puts no space after the separators and leaves non-ASCII alone, so a parameter
+    the backend composes and one the client composes for the same fact are the same string — which is
+    what keeps the client from caching one request twice. Values the API serializes specially, a UUID
+    key above all, go through DRF's encoder rather than raising.
+
+    Args:
+        value (Any): The value to write.
+
+    Returns:
+        str: The JSON text of the value.
+    """
+    return json.dumps(value, cls=JSONEncoder, separators=(",", ":"), ensure_ascii=False)
 
 
 def reverse_action(namespace: str, reference: str, url_name: str, args: Any = None, kwargs: Any = None) -> str:

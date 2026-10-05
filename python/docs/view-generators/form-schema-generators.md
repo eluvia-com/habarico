@@ -146,6 +146,21 @@ wizards); `WizardBox` additionally accepts `validate_steps` (default `True`). In
 schema these are nested under a `tab` / `wizard` object, e.g.
 `{"type": "wizard", "wizard": {"show_toolbar_navigation": true, "validate_steps": true}}`.
 
+## View actions
+
+A create, edit or show view has two action slots of its own:
+
+| Parameter | Where rendered | Left alone |
+|---|---|---|
+| `toolbar_actions` | Toolbar in the view header | every action the resource supports |
+| `bottom_actions` | Below the form's fields | the view's own `save` |
+
+A `toolbar_actions` the generator was not given publishes a `DefaultActions` entry, which the
+frontend expands into the resource's own actions; `bottom_actions` names its buttons outright, since
+a save is a real action rather than a default. Pass `None` to turn a default off, or `[]` to empty a
+slot that was declared — which is what the Save example below does. See
+[Action descriptor reference](./action-descriptor-reference.md).
+
 ## Box actions
 
 Every box supports two action slots that position buttons relative to the box itself rather than the
@@ -156,7 +171,9 @@ whole view:
 | `toolbar_actions` | Toolbar in the box header / card header area. On a plain `Box` always visible; on `TabBox` / `WizardBox` appears on the **last** step. |
 | `bottom_actions` | Below the box fields, similar to form submit buttons at the view level. |
 
-Both accept a list of action descriptors or plain action name strings.
+Both accept a list of action descriptors or plain action name strings — see
+[Action descriptor reference](./action-descriptor-reference.md) for what a descriptor carries, and
+for the `DefaultActions` entry that asks for a resource's own actions instead of naming them.
 
 To move the Save button next to a specific block (e.g. the right column of a grid), add
 `SaveActionDescriptor()` to that box's `toolbar_actions` and drop the default view-level Save by passing
@@ -187,6 +204,7 @@ A table of another admin resource can be displayed with `ListBox`:
 
 ```python
 from habarico import ModelAdmin
+from habarico.schema import LIST, Action
 from habarico.schema.generators import EditViewSchemaGenerator
 from habarico.schema.boxes import TabBox, Box, ListBox
 
@@ -206,10 +224,11 @@ class CategoryAdmin(ModelAdmin):
                 ListBox(
                     label="Products",
                     boxes=["name", "status", "stock", "created_at"],  # Fields that will be rendered in the table
-                    toolbar_actions=["refresh"],  # Actions in the box's own toolbar (box header, box root)
-                    list_toolbar_actions=["create"],  # Actions in the table toolbar (top of the resource list)
+                    # The box has one toolbar, in its header. A descriptor naming another resource
+                    # acts on that one; "refresh" acts on the record the surrounding view renders.
+                    toolbar_actions=["refresh", Action(name="create", reference=LIST)],
                     row_actions=["edit", "show", "delete"],  # Actions on each table row
-                    list_actions=["export"],  # Utility actions next to the filter bar
+                    list_actions=["export"],  # Actions above the embedded table
                     default_sorting="-created_at",  # Default sorting field
                     reference="product",  # Reference to the related admin resource (name of the admin)
                     target="category",  # Name of the field that is used to filter the related items
@@ -324,7 +343,7 @@ the current record.
 | `label` | `str` | Button label. Defaults to `Upload files`. |
 | `icon` | `str` | Button icon. Defaults to `UploadFile`. |
 | `color` | `Color` | Button color. When not set, the button inherits its color from the toolbar context. |
-| `reference` | `str` | Resource where a record is created for each uploaded file. When set, the button uploads to this resource instead of the current resource context. |
+| `reference` | `str \| ResourceReference` | Resource where a record is created for each uploaded file. When set, the button uploads to this resource instead of the current resource context. A plain name is normalized into an address, which is what the schema carries. |
 | `target` | `str` | Field name on the file model linking to the parent record. When set together with `reference`, the current record's ID is used as the target value. |
 | `accept` | `list[str]` | List of accepted file types (e.g. `[".pdf", ".docx"]`). When not set, the frontend uses its own default (`.png,.jpg,.jpeg,.bmp,.gif`), which accepts images only — set it whenever the action uploads other files. |
 | `data` | `dict` | Additional data that will be added to each uploaded file record. |
@@ -357,7 +376,7 @@ class ProductAdmin(ModelAdmin):
 ```
 
 In the generated schema these are nested under an `upload_files` object on the action, e.g.
-`{"type": "upload-files", "upload_files": {"reference": "attachments", "target": "product", "accept": [".pdf", ".docx"], "data": {"public": true}, "file_field": "file"}}`.
+`{"type": "upload-files", "upload_files": {"reference": {"resource": "attachments"}, "target": "product", "accept": [".pdf", ".docx"], "data": {"public": true}, "file_field": "file"}}`.
 
 ## See also
 

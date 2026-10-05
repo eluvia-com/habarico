@@ -1,6 +1,6 @@
 ---
 title: Box reference
-sidebar_position: 6
+sidebar_position: 7
 ---
 
 Every box class, and the parameters each one adds on top of the common ones.
@@ -131,25 +131,31 @@ to a row on medium screens.
 | `reference` (required) | `str` | — | Resource to list |
 | `target` | `str` | `None` | Foreign key pointing back at the parent record |
 | `boxes` | `Fieldset` | `None` | Which columns the embedded table shows, and in what order |
-| `row_actions` | `Actions` | `None` | Buttons in the row action column |
-| `list_toolbar_actions` | `Actions` | `None` | Actions in the **table's** own toolbar, e.g. create |
-| `list_actions` | `Actions` | `None` | Utility actions next to the filter bar (export, print, …) |
+| `row_actions` | `Actions` | the referenced resource's record actions | Buttons in the row action column; `None` for none |
+| `list_actions` | `Actions` | the referenced resource's collection actions | Actions above the embedded table (create, export, …); `None` for none |
 | `filters` | `Filters` | `None` | Filters offered on the embedded list |
 | `default_sorting` | `SortingOrStr` | `None` | Initial sort — a `Sorting` object, or a Django-style string (`"placed_at"` ascending, `"-placed_at"` descending) |
 | `extra_filters` | `dict` | `None` | Static filters applied on top, invisible to the user |
 | `sortable_field_name` | `str` | `None` | Field storing the order; enables drag-and-drop sorting |
 | `sortable_sort_for_filters` | `dict` | `None` | Filters under which reordering is allowed |
-| `schema_params` | `dict[str, str]` | `None` | Extra params sent when fetching the reference's schema |
+| `schema_params` | `dict[str, str]` | `None` | Extra params sent when fetching the reference's schema; emitted as `reference.params` |
 | `single_click_action` | `ActionDescriptor \| str` | `None` | Action on a single row click; a plain name is normalized into a descriptor |
 | `double_click_action` | `ActionDescriptor \| str` | auto: show → edit → nothing | Action on a double click |
 
 :::caution
-`toolbar_actions` and `list_toolbar_actions` are two different slots. `toolbar_actions` is the
-common `BaseBox` parameter: bound to the **parent** record and rendered in the box header.
-`list_toolbar_actions` is bound to the **referenced** resource and is emitted inside the `list`
-parameters, where the frontend renders it in the table's own toolbar. Passing the actions to the
-wrong one puts them on the wrong record.
+A list box has one toolbar: the common `toolbar_actions` of `BaseBox`, rendered in the box header. A
+descriptor there is bound to the **parent** record unless it names another resource through its own
+`reference`, which is how the embedded resource's buttons reach the header:
+`toolbar_actions=[DefaultActions(reference=LIST, scope="list")]`, or
+`[Action(name="create", reference=LIST)]` — `LIST` being the resource the box lists, so the name is
+written once. See [Action descriptor reference](./action-descriptor-reference.md).
 :::
+
+`row_actions` and `list_actions` are bound to the **referenced** resource and emitted inside the
+`list` parameters, which are read in that resource's schema — so an entry there needs no address of
+its own. Left alone, each publishes a bare `default_actions` entry, the row's with `detail` scope and
+the table's with `list`, which the frontend expands. Pass `None` to turn one off, or `[]` for the
+same with an empty array on the wire.
 
 ## `GalleryBox`
 
@@ -161,7 +167,7 @@ wrong one puts them on the wrong record.
 | `filters` | `Filters` | `None` | Filters offered on the underlying list |
 | `default_sorting` | `SortingOrStr` | `None` | Initial sort |
 | `extra_filters` | `dict` | `None` | Static filters applied on top |
-| `schema_params` | `dict[str, str]` | `None` | Extra params sent when fetching the reference's schema |
+| `schema_params` | `dict[str, str]` | `None` | Extra params sent when fetching the reference's schema; emitted as `reference.params` |
 
 A gallery box is always read-only — it passes `read_only=True` up to `BaseBox` regardless of
 what you set. So does `ListBox`.
