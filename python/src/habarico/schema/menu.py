@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from habarico.config import MENU_GENERATOR_DEFAULT_PRIORITY
 from habarico.schema.base import BaseSchema
+from habarico.schema.reference import ResourceReference, build_endpoint_reference
 from habarico.schema.types import ColorType, DialogWidthType, LinkTargetType, MenuType, PkType, ViewModeType
 
 
@@ -52,28 +53,13 @@ class ActionViewChoice(BaseSchema):
         self._parameters = parameters
 
 
-class ViewActionEndpointParameters(BaseSchema):
-
-    def __init__(self, *, reference: str | None = None, action_name: str | None, record_pk: PkType | None = None):
-        """
-        Object represents schema of the endpoint parameters.
-
-        Args:
-            reference (str, optional): Reference of the endpoint. Defaults to None.
-            action_name (str, optional): Action name of the endpoint. Defaults to None.
-        """
-        self._reference = reference
-        self._action_name = action_name
-        self._record_pk = record_pk
-
-
 class ViewActionParameters(BaseSchema):
 
     def __init__(
         self,
         *,
         name: str,
-        endpoint: ViewActionEndpointParameters,
+        endpoint: ResourceReference | None = None,
         choices: list[ActionViewChoice] | None = None,
         mode: ViewModeType = ViewModeType.REDIRECT,
         parameters: dict[str, str] | None = None,
@@ -85,7 +71,8 @@ class ViewActionParameters(BaseSchema):
 
         Args:
             name (str): Name of the view.
-            endpoint (ViewActionEndpointParameters): Endpoint parameters of the view.
+            endpoint (ResourceReference, optional): What the view addresses. Defaults to None, which the
+                client reads as the resource the schema was generated for.
             choices (list[ActionViewChoice], optional): Choices of the view. Defaults to None.
             mode (ViewModeType): Mode of the view. Modal or redirect. Defaults to ViewModeType.REDIRECT.
             parameters (dict, optional): Additional parameters for the view. Defaults to None.
@@ -154,11 +141,7 @@ class MenuSchema(MenuGroupSchema):
         if type == MenuType.VIEW:
             self._view = ViewActionParameters(
                 name=view_name,
-                endpoint=ViewActionEndpointParameters(
-                    reference=view_reference,
-                    action_name=view_action_name,
-                    record_pk=record_pk,
-                ),
+                endpoint=build_endpoint_reference(view_reference, view_action_name, record_pk),
             )
         else:
             self._link = LinkActionParameters(url=link_url, target=link_target)

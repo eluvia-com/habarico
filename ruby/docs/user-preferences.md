@@ -74,7 +74,7 @@ Everything hangs off `Habarico::Contrib::Preferences`:
 
 | Method | Purpose |
 |---|---|
-| `register_preference(key, schema:, default:)` | Register an exact key |
+| `register_preference(key, schema:, default:, migrate_value:)` | Register an exact key |
 | `register_preference_pattern(pattern, schema:)` | Register a regex key; patterns never carry a default |
 | `registered?(key)` | Whether a key resolves |
 | `get_schema(key)` / `get_default(key)` | The JSON Schema and the resolved default |
@@ -98,6 +98,28 @@ row.
 A default may be a callable — it is resolved on every read, which is how a preference follows
 runtime state. Returning the `EMPTY` sentinel from it means "no default after all".
 
+### Repairing a stored value
+
+A stored value that no longer validates — the schema was tightened, or the shape it describes
+changed — is deleted on the next read and the default takes over. `migrate_value` is the chance to
+keep it instead: a callable given at registration, called with the stored value before anything is
+deleted, whose result is validated and saved. The repair therefore runs once per record, on the
+first read after the deploy, and no data migration is needed:
+
+```ruby
+Habarico::Contrib::Preferences.register_preference(
+  "preferences.eshop/order.columns",
+  schema: {"type" => "object", "required" => ["columns"]},
+  migrate_value: ->(value) { {"columns" => [value["column"]]} },
+)
+```
+
+A result that does not validate, and a callable that raises, both leave the record to be deleted as
+before — a schema's own bug must not make reading preferences fail. A value the schema still accepts
+never reaches the callable, so a shape change usually needs the schema to refuse the old one:
+`"not" => {"required" => ["old_name"]}` refuses exactly that key, where forbidding every unknown one
+would throw a value away over any stray field.
+
 Keys must match `\A[a-zA-Z][a-zA-Z0-9_./-]*\z` — a letter, then letters, digits, underscore, dot,
 slash or hyphen.
 
@@ -109,7 +131,6 @@ Registered on load, exactly as on the Python side:
 |---|---|
 | `theme` | `"light"` or `"dark"` |
 | `locale` | UI locale code |
-| `preferences.dashboard` | Dashboard widget layout |
 | `preferences.layout.app.pageWidth` | `"full"` or `"centered"` |
 | `preferences.layout.app.contrastMode` | High-contrast toggle |
 | `preferences.layout.app.stripedRows` | Datagrid striped rows |
@@ -118,9 +139,10 @@ Registered on load, exactly as on the Python side:
 | `<any key>.columns` | Visible columns — pattern key |
 | `<any key>.columnWidths` | Column widths — pattern key |
 
-The whole preference store is free, `preferences.dashboard` included — it only holds the layout.
-Rendering a dashboard needs the paid [aggregation](./basic-usage/aggregation.md) endpoint behind
-it.
+The preference store itself is free. The dashboard is stored in one too, under
+`preferences.dashboard`, but its key is registered by `habarico-enterprise`: a widget is defined and
+drawn there, so its shape is validated there as well. Without the paid gem the key is not registered
+and writing it is refused.
 
 ## Limits
 
@@ -137,12 +159,14 @@ under, falling back to its `"default"` entry:
 ```ruby
 Habarico::Contrib::Preferences.max_value_bytes = {
   "default" => 16 * 1024,
-  "preferences.dashboard" => 32 * 1024,
   %r{[a-zA-Z][a-zA-Z0-9_./-]*\.savedQueries} => 32 * 1024,
 }
 ```
 
 A pattern may be written as a `Regexp` or as its source string; both resolve to the same entry.
+
+An entry here outranks a `max_bytes:` given at registration: a limit a gem ships with its key is a
+default, and the deployment has the last word.
 
 :::caution
 `max_value_bytes` is read **when a preference is registered**, exactly like
@@ -163,9 +187,11 @@ has no such constraint — it belongs to no single preference and is read on eac
 :::
 
 The defaults sit an order of magnitude above what the frontend actually writes — 100 datagrid
-columns are ~2 KB of `columns` or `columnWidths`, a 30-widget dashboard ~19 KB and 20 saved
-queries ~11 KB at their fullest — so an application that stores unusually large preferences is the
-one that has to raise them.
+columns are ~2 KB of `columns` or `columnWidths` and 20 saved queries ~11 KB at their fullest — so
+an application that stores unusually large preferences is the one that has to raise them. A gem
+registering its own key brings its own limit with it: `habarico-enterprise` registers
+`preferences.dashboard` with 32 KB, which a 30-widget dashboard fills to about two thirds — an
+application that needs more raises it by naming the key in `max_value_bytes`.
 
 A key registered by the host app takes the `"default"` entry unless it declares its own:
 
@@ -179,7 +205,7 @@ Habarico::Contrib::Preferences.register_preference(
 
 Leaving `max_bytes:` out — or passing `nil` — means "not given", and the hash decides. There is no
 sentinel for it, unlike the `default:` of a preference: a size is never `nil`, so `nil` is free to
-mean "not given".
+mean "not given". Where the hash names the same key, the hash wins.
 
 `nil` means "no limit" where a limit is actually configured — as one entry of the hash, as the
 whole `max_value_bytes`, or as `max_keys_per_user`. A key that should be unlimited says so there:

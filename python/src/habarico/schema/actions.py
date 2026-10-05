@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 from django.utils.translation import gettext_lazy as _
+from rest_framework.fields import empty
 
 from .base import BaseSchema, schema_getter
-from .menu import ActionViewChoice, LinkActionParameters, ViewActionEndpointParameters, ViewActionParameters
+from .menu import ActionViewChoice, LinkActionParameters, ViewActionParameters
+from .reference import (
+    ContextResourceReference,
+    ResourceReference,
+    build_endpoint_reference,
+    generate_resource_reference,
+)
 from .types import (
+    ActionScopeType,
     ActionStateType,
     ActionType,
     AfterSaveType,
@@ -59,6 +67,27 @@ class ConfirmDialogProperties(BaseSchema):
         self._message = message
 
 
+def build_confirm_dialog(title: str | None, message: str | None) -> ConfirmDialogProperties | None:
+    """
+    The dialog a title and a message compose, or None when neither was given.
+
+    Args:
+        title (str, optional): Dialog title.
+        message (str, optional): Dialog message.
+
+    Returns:
+        ConfirmDialogProperties: The dialog, or None when there is none.
+
+    Raises:
+        AssertionError: When only one half was given. A dialog replaces the action's own whole — the
+            client never merges the halves — so one half alone would render an empty dialog.
+    """
+    if not title and not message:
+        return None
+    assert title and message, "A confirm dialog needs both a title and a message, or neither."
+    return ConfirmDialogProperties(title=title, message=message)
+
+
 class ResourceActionEndpointParameters(BaseSchema):
 
     def __init__(
@@ -66,9 +95,7 @@ class ResourceActionEndpointParameters(BaseSchema):
         *,
         method: str,
         path: str | None = None,
-        reference: str | None = None,
-        action_name: str | None = None,
-        record_pk: PkType | None = None,
+        reference: ResourceReference | None = None,
     ):
         """
         Object represents schema of the endpoint parameters.
@@ -76,15 +103,13 @@ class ResourceActionEndpointParameters(BaseSchema):
         Args:
             method (str): Method of the endpoint.
             path (str, optional): Path of the endpoint. Defaults to None.
-            reference (str, optional): Reference of the endpoint. Defaults to None.
-            action_name (str, optional): Action name of the endpoint. Defaults to None.
-            record_pk (PkType, optional): Primary key of the object. Defaults to None.
+            reference (ResourceReference, optional): What the endpoint addresses — the resource, and
+                where applicable the record and the action. Defaults to None, which the client reads
+                as the resource the schema was generated for.
         """
         self._path = path
         self._method = method
         self._reference = reference
-        self._action_name = action_name
-        self._record_pk = record_pk
 
 
 class ResourceActionParameters(BaseSchema):
@@ -138,7 +163,7 @@ class UploadImagesActionParameters(BaseSchema):
     def __init__(
         self,
         *,
-        reference: str | None = None,
+        reference: ResourceReference | str | ContextResourceReference | None = None,
         target: str | None = None,
         accept: list[str] | None = None,
         data: dict | None = None,
@@ -148,7 +173,9 @@ class UploadImagesActionParameters(BaseSchema):
         Object represents schema of the upload images action parameters.
 
         Args:
-            reference (str, optional): Resource where images will be created. Defaults to None.
+            reference (ResourceReference | str, optional): Resource the images are created in, and
+                whose schema the upload configuration is read from. A plain resource name is
+                normalized into an address. Defaults to None.
             target (str, optional): Field name on the image model linking to the parent record. Defaults to None.
             accept (list[str], optional): List of accepted file types (e.g. [".png", ".jpg"]).
                 When not set, the frontend uses its own default. Defaults to None.
@@ -158,7 +185,7 @@ class UploadImagesActionParameters(BaseSchema):
                 When not set, the frontend uses its own default. Defaults to None.
         """
         if reference:
-            self._reference = reference
+            self._reference = generate_resource_reference(reference)
         if target:
             self._target = target
         if accept:
@@ -264,20 +291,14 @@ class ResourceActionSchema(GlobalResourceActionSchema):
         self._color = color
         self._label = label
 
-        if confirm_dialog_title or confirm_dialog_message:
-            self._confirm_dialog = ConfirmDialogProperties(
-                title=confirm_dialog_title,
-                message=confirm_dialog_message,
-            )
+        confirm_dialog = build_confirm_dialog(confirm_dialog_title, confirm_dialog_message)
+        if confirm_dialog:
+            self._confirm_dialog = confirm_dialog
 
         if type == ActionType.VIEW:
             self._view = ViewActionParameters(
                 name=view_name,
-                endpoint=ViewActionEndpointParameters(
-                    reference=reference,
-                    action_name=action_name,
-                    record_pk=record_pk,
-                ),
+                endpoint=build_endpoint_reference(reference, action_name, record_pk),
                 choices=view_choices,
                 mode=view_mode,
                 parameters=view_parameters,
@@ -292,10 +313,8 @@ class ResourceActionSchema(GlobalResourceActionSchema):
             self._resource = ResourceActionParameters(
                 endpoint=ResourceActionEndpointParameters(
                     method=resource_method,
-                    action_name=action_name,
-                    reference=reference,
-                    record_pk=record_pk,
                     path=resource_path,
+                    reference=build_endpoint_reference(reference, action_name, record_pk),
                 ),
                 data=resource_data,
                 is_background=resource_is_background,
@@ -391,20 +410,14 @@ class ActionSchema(BaseSchema):
         self._color = color
         self._label = label
 
-        if confirm_dialog_title or confirm_dialog_message:
-            self._confirm_dialog = ConfirmDialogProperties(
-                title=confirm_dialog_title,
-                message=confirm_dialog_message,
-            )
+        confirm_dialog = build_confirm_dialog(confirm_dialog_title, confirm_dialog_message)
+        if confirm_dialog:
+            self._confirm_dialog = confirm_dialog
 
         if type == ActionType.VIEW:
             self._view = ViewActionParameters(
                 name=view_name,
-                endpoint=ViewActionEndpointParameters(
-                    reference=reference,
-                    record_pk=record_pk,
-                    action_name=view_action_name,
-                ),
+                endpoint=build_endpoint_reference(reference, view_action_name, record_pk),
                 choices=view_choices,
                 mode=view_mode,
                 parameters=view_parameters,
@@ -440,9 +453,8 @@ class ActionSchema(BaseSchema):
             self._resource = ResourceActionParameters(
                 endpoint=ResourceActionEndpointParameters(
                     method=resource_method,
-                    reference=reference,
-                    record_pk=record_pk,
                     path=resource_path,
+                    reference=build_endpoint_reference(reference, record_pk=record_pk),
                 ),
                 data=resource_data,
                 is_background=resource_is_background,
@@ -479,7 +491,12 @@ class ViewActionDescriptorParameters(BaseSchema):
         self._keep_linked_parent = keep_linked_parent
 
 
+DEFAULT_ACTIONS_TYPE = "default_actions"
+
+
 class ActionDescriptor(BaseSchema):
+
+    type = "action"
 
     def __init__(
         self,
@@ -489,6 +506,9 @@ class ActionDescriptor(BaseSchema):
         icon: str | None = None,
         color: ColorType | None = None,
         action: ActionSchema | None = None,
+        reference: ResourceReference | str | ContextResourceReference | None = None,
+        confirm_dialog_title: str | None = None,
+        confirm_dialog_message: str | None = None,
         menu_items: list[ActionDescriptor] | list[str] | None = None,
         view_mode: ViewModeType | None = None,
         view_dialog_width: DialogWidthType | str | None = None,
@@ -505,6 +525,13 @@ class ActionDescriptor(BaseSchema):
             icon (str, optional): Icon of the action. Defaults to None.
             color (ColorType, optional): Color of the action. Defaults to None.
             action (ActionSchema, optional): Action of the action. Defaults to None.
+            reference (ResourceReference | str | ContextResourceReference, optional): Where the action named by
+                ``name`` is defined and what it binds to. A resource name, ``CURRENT`` or ``LIST`` is
+                normalized into a ``ResourceReference``. Defaults to None, which resolves the name in
+                the schema the descriptor is rendered in.
+            confirm_dialog_title (str, optional): Title of a dialog shown before the action runs,
+                overriding the one the action's own schema declares. Defaults to None.
+            confirm_dialog_message (str, optional): Message of that dialog. Defaults to None.
             menu_items (list[ActionDescriptor] | list[str], optional): Menu items of the action. Defaults to None.
             view_mode (ViewModeType, optional): View mode. Defaults to None.
             view_dialog_width (DialogWidthType | str, optional): Width of the dialog, used only when
@@ -514,11 +541,16 @@ class ActionDescriptor(BaseSchema):
             view_keep_linked_parent (bool, optional): Keep linked parent in the URL when navigating to the linked
                 resource. Defaults to None.
         """
+        self._type = self.type
         self._name = name
         self._label = label
         self._icon = icon
         self._color = color
         self._action = action
+        self._reference = generate_resource_reference(reference)
+        confirm_dialog = build_confirm_dialog(confirm_dialog_title, confirm_dialog_message)
+        if confirm_dialog:
+            self._confirm_dialog = confirm_dialog
         self._menu_items = generate_actions_descriptor(menu_items)
         self.__view_kwargs = dict(
             mode=view_mode,
@@ -558,6 +590,37 @@ class ActionResult(BaseSchema):
 # Simplified name for easy usage
 Action = ActionDescriptor
 
+
+class DefaultActionsDescriptor(BaseSchema):
+
+    type = DEFAULT_ACTIONS_TYPE
+
+    def __init__(
+        self,
+        *,
+        reference: ResourceReference | str | ContextResourceReference | None = None,
+        scope: ActionScopeType | str | None = None,
+    ):
+        """
+        Object represents an action-slot entry standing for a resource's default actions.
+
+        Not an ``ActionDescriptor``: it names no action and carries none of a button's appearance.
+        A label, an icon and a colour belong to each action it expands into, which already has them.
+
+        Args:
+            reference (ResourceReference | str | ContextResourceReference, optional): Resource whose defaults
+                expand here. ``LIST`` is the resource the surrounding box lists. Defaults to None,
+                which is the resource whose schema the entry is read in.
+            scope (ActionScopeType | str, optional): Which of them. Defaults to None, read as ``all``.
+        """
+        self._type = self.type
+        self._reference = generate_resource_reference(reference)
+        self._scope = scope
+
+
+DefaultActions = DefaultActionsDescriptor
+
+
 Actions = list[ActionDescriptor | str]
 ActionsDescriptor = list[ActionDescriptor]
 
@@ -567,17 +630,19 @@ def generate_actions_descriptor(actions: Actions | None) -> ActionsDescriptor | 
     Generate actions descriptor from actions.
 
     Args:
-        actions (Actions): Actions. Can be list of strings or list of ActionDescriptor or combination of both.
+        actions (Actions): Entries of an actions slot. Action names, descriptors, or a mix. ``None``
+            and the ``empty`` sentinel of an unset slot both normalize to nothing — telling the two
+            apart is the business of whoever holds the slot.
 
     Returns:
         ActionsDescriptor: Actions descriptor.
     """
-    if actions is None:
+    if actions is None or actions is empty:
         return None
 
     actions_descriptor = []
     for action in actions:
-        if isinstance(action, Action):
+        if isinstance(action, (ActionDescriptor, DefaultActionsDescriptor)):
             actions_descriptor.append(action)
         else:
             actions_descriptor.append(Action(name=action))

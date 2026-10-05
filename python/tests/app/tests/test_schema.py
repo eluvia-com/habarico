@@ -779,9 +779,8 @@ class TestViewModeContract:
 
         assert resource["endpoint"] == {
             "method": "post",
-            "reference": "article",
-            "record_pk": 7,
             "path": "/admin/articles/7/approve/",
+            "reference": {"resource": "article", "record_pk": 7},
         }
         assert resource["data"] == {"note": "ok"}
         # The reference belongs to the endpoint only - it used to be carried twice.
@@ -857,7 +856,7 @@ class TestSingleClickPreview:
         params = ListViewParameters(single_click_action=Action(name="show", view_mode=ViewModeType.SIDEPANEL))
         data = params.to_dict()
 
-        assert data["single_click_action"] == {"name": "show", "view": {"mode": "sidepanel"}}
+        assert data["single_click_action"] == {"type": "action", "name": "show", "view": {"mode": "sidepanel"}}
 
     def test_list_params_normalize_string_single_click_action(self):
         """A plain string is normalized into an action descriptor (mode left to frontend precedence)."""
@@ -865,7 +864,7 @@ class TestSingleClickPreview:
 
         data = ListViewParameters(single_click_action="show").to_dict()
 
-        assert data["single_click_action"] == {"name": "show"}
+        assert data["single_click_action"] == {"type": "action", "name": "show"}
 
     def test_list_params_omit_single_click_when_unset(self):
         """When single-click is not configured the key is absent (backward compatible)."""
@@ -912,7 +911,11 @@ class TestSingleClickPreview:
 
         list_views = [v for v in response.data["views"] if v["type"] == "list"]
         assert len(list_views) == 1
-        assert list_views[0]["list"]["single_click_action"] == {"name": "show", "view": {"mode": "sidepanel"}}
+        assert list_views[0]["list"]["single_click_action"] == {
+            "type": "action",
+            "name": "show",
+            "view": {"mode": "sidepanel"},
+        }
 
     def test_list_box_passes_single_click_action(self):
         """An embedded ListBox forwards the single-click action (mirror of double_click_action)."""
@@ -926,7 +929,7 @@ class TestSingleClickPreview:
         )
         data = box.to_dict()
 
-        assert data["list"]["single_click_action"] == {"name": "show", "view": {"mode": "sidepanel"}}
+        assert data["list"]["single_click_action"] == {"type": "action", "name": "show", "view": {"mode": "sidepanel"}}
 
     def test_single_click_custom_action_kept(self, db, mock_request):
         """A custom (non-reserved) single-click target is emitted like any other."""
@@ -955,7 +958,7 @@ class TestDoubleClickAction:
         params = ListViewParameters(double_click_action=Action(name="edit", view_mode=ViewModeType.DIALOG))
         data = params.to_dict()
 
-        assert data["double_click_action"] == {"name": "edit", "view": {"mode": "dialog"}}
+        assert data["double_click_action"] == {"type": "action", "name": "edit", "view": {"mode": "dialog"}}
 
     def test_list_params_normalize_string_double_click_action(self):
         """A plain string is normalized into an action descriptor."""
@@ -963,7 +966,7 @@ class TestDoubleClickAction:
 
         data = ListViewParameters(double_click_action="edit").to_dict()
 
-        assert data["double_click_action"] == {"name": "edit"}
+        assert data["double_click_action"] == {"type": "action", "name": "edit"}
 
     def test_double_click_emitted_regardless_of_target_view(self, db, mock_request):
         """The double-click action is emitted as configured, even when the admin exposes no matching
@@ -991,7 +994,7 @@ class TestDoubleClickAction:
         box = ListBox(reference="article", double_click_action=Action(name="edit", view_mode=ViewModeType.DIALOG))
         data = box.to_dict()
 
-        assert data["list"]["double_click_action"] == {"name": "edit", "view": {"mode": "dialog"}}
+        assert data["list"]["double_click_action"] == {"type": "action", "name": "edit", "view": {"mode": "dialog"}}
 
 
 class TestReadonlyAdminSchema:
@@ -1367,7 +1370,7 @@ class TestUploadImagesActionParameters:
 
     def test_reference_in_dict(self):
         result = UploadImagesActionParameters(reference="photos").to_dict()
-        assert result == {"reference": "photos"}
+        assert result == {"reference": {"resource": "photos"}}
 
     def test_target_in_dict(self):
         result = UploadImagesActionParameters(target="article").to_dict()
@@ -1390,7 +1393,7 @@ class TestUploadImagesActionParameters:
             reference="photos", target="article", accept=[".png"], data={"public": True}, image_field="photo"
         ).to_dict()
         assert result == {
-            "reference": "photos",
+            "reference": {"resource": "photos"},
             "target": "article",
             "accept": [".png"],
             "data": {"public": True},
@@ -1421,6 +1424,18 @@ class TestUploadImagesActionDescriptor:
     def test_no_upload_images_params_when_empty(self):
         assert "upload_images" not in UploadImagesActionDescriptor().to_dict()["action"]
 
+    def test_the_upload_target_resource_is_an_address(self):
+        """Images are created in that resource, and its schema is where the upload config is read."""
+        params = UploadImagesActionDescriptor(reference="photo", target="article").to_dict()["action"]["upload_images"]
+
+        assert params["reference"] == {"resource": "photo"}
+        assert params["target"] == "article"
+
+    def test_an_upload_into_another_service_splits_the_address(self):
+        params = UploadImagesActionDescriptor(reference="photos/photo").to_dict()["action"]["upload_images"]
+
+        assert params["reference"] == {"service": "photos", "resource": "photo"}
+
     def test_accept_propagates_to_action(self):
         result = UploadImagesActionDescriptor(accept=[".png", ".gif"]).to_dict()
         assert result["action"]["upload_images"]["accept"] == [".png", ".gif"]
@@ -1428,7 +1443,7 @@ class TestUploadImagesActionDescriptor:
     def test_reference_and_target_propagate(self):
         result = UploadImagesActionDescriptor(reference="photos", target="article").to_dict()
         upload = result["action"]["upload_images"]
-        assert upload["reference"] == "photos"
+        assert upload["reference"] == {"resource": "photos"}
         assert upload["target"] == "article"
 
     def test_data_propagates_to_action(self):
@@ -1525,7 +1540,7 @@ class TestListActions:
         from habarico.schema.views import ListViewParameters
 
         data = ListViewParameters(list_actions=["export"]).to_dict()
-        assert data["list_actions"] == [{"name": "export"}]
+        assert data["list_actions"] == [{"type": "action", "name": "export"}]
 
     def test_list_params_omit_list_actions_when_unset(self):
         from habarico.schema.views import ListViewParameters
@@ -1680,8 +1695,9 @@ class TestBoxToolbarActions:
 
 
 class TestListBoxToolbarSlots:
-    """`ListBox` has two independent toolbar slots: the box-level ``toolbar_actions`` (box root /
-    header) and the table's own toolbar set via ``list_toolbar_actions`` and emitted inside ``list``.
+    """
+    A ``ListBox`` has one toolbar, the box-level ``toolbar_actions`` at the box root. The table's
+    own utility actions (``list_actions``) sit beside the filters and are a different slot.
     """
 
     def test_box_level_toolbar_actions_emitted_at_box_root(self):
@@ -1691,25 +1707,17 @@ class TestListBoxToolbarSlots:
         assert [action["name"] for action in result["toolbar_actions"]] == ["refresh"]
         assert "toolbar_actions" not in result["list"]
 
-    def test_list_toolbar_actions_emitted_inside_list_params(self):
-        from habarico.schema.boxes import ListBox
-
-        result = ListBox(reference="article", list_toolbar_actions=["create"]).to_dict()
-        assert [action["name"] for action in result["list"]["toolbar_actions"]] == ["create"]
-        assert "toolbar_actions" not in result
-
-    def test_both_toolbar_slots_are_independent(self):
+    def test_the_box_toolbar_and_the_table_actions_are_independent(self):
         from habarico.schema.boxes import ListBox
 
         result = ListBox(
             reference="article",
             toolbar_actions=["refresh"],
-            list_toolbar_actions=["create"],
             list_actions=["export"],
         ).to_dict()
         assert [action["name"] for action in result["toolbar_actions"]] == ["refresh"]
-        assert [action["name"] for action in result["list"]["toolbar_actions"]] == ["create"]
         assert [action["name"] for action in result["list"]["list_actions"]] == ["export"]
+        assert "toolbar_actions" not in result["list"]
 
     def test_list_toolbar_actions_absent_by_default(self):
         from habarico.schema.boxes import ListBox
@@ -1797,7 +1805,7 @@ class TestBoxParamsOverride:
 
         result = ListBox(reference="article", target="author_id", extra_filters={"a": 1}).to_dict()
         assert result["type"] == "list"
-        assert result["list"]["reference"] == "article"
+        assert result["list"]["reference"] == {"resource": "article"}
         assert result["list"]["target"] == "author_id"
         assert result["list"]["extra_filters"] == {"a": 1}
 

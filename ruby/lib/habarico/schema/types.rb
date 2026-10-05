@@ -37,6 +37,9 @@ module Habarico
     # ViewModeType - how a view is presented when opened by a trigger
     VIEW_MODE_TYPE = %i[redirect dialog sidepanel].freeze
 
+    # ActionScopeType - which of a resource's actions a `default_actions` entry expands
+    ACTION_SCOPE_TYPE = %i[list detail all].freeze
+
     # ActionType - kind of the action
     ACTION_TYPE = %i[view link resource save upload-images]  # rubocop:disable Style/MutableConstant
 

@@ -30,7 +30,7 @@ All available box types and their attributes:
 | `collapsible` | Make the box collapsible; `'open'` (expanded) or `'closed'` (collapsed) sets the default state. Omit for a non-collapsible box |
 | `show_query` | Condition expression to conditionally show the entire box |
 | `required_query` | Condition expression to conditionally require the box |
-| `toolbar_actions` | Actions rendered in the box's local toolbar (box header / card header area), relative to the box root. On a tab/wizard container they appear on the last step. On a `ListBox` this is the box-level toolbar; use `list_toolbar_actions` for the table's own toolbar |
+| `toolbar_actions` | Actions rendered in the box's local toolbar (box header / card header area), relative to the box root. On a tab/wizard container they appear on the last step. A list or gallery box has only this one toolbar: a descriptor meant for the resource the box points at names it with `reference: Habarico::ResourceReference::LIST` |
 | `bottom_actions` | Actions rendered at the bottom of the box, below the fields - similar to form submit buttons at the view level |
 
 **`GridItemBox`-specific**: `xs`, `sm`, `md`, `lg`, `xl` (MUI grid column widths, integer 1–12)
@@ -48,7 +48,6 @@ All available box types and their attributes:
 | `extra_filters` | Lambda `(c) -> Hash` for additional filters |
 | `row_actions` | Actions available per row |
 | `toolbar_actions` | Box-level actions rendered at the box root (box / card header), like on any other box |
-| `list_toolbar_actions` | Actions in the table's own toolbar (top of the resource list, e.g. create); emitted as `toolbar_actions` inside the `list` params |
 | `list_actions` | Utility actions (export, print, …) rendered next to the filter bar, separate from row and toolbar actions |
 | `filters` | Filter references for the embedded list |
 | `default_sorting` | Default sort expression |
@@ -56,9 +55,15 @@ All available box types and their attributes:
 | `sortable_sort_for_filters` | Filter applied when saving sorted order |
 | `single_click_action` | Action triggered by a single click on a row |
 | `double_click_action` | Action triggered by a double click on a row |
-| `schema_params` | Extra query params sent when the box fetches the referenced resource's schema |
+| `schema_params` | Extra query params sent when the box fetches the referenced resource's schema; emitted inside `reference.params` |
 
 **`GalleryBox`-specific**: `reference`, `target`, `image_field`, `extra_filters`, `schema_params` (use the common `toolbar_actions` attribute above to add manage/upload buttons)
+
+`row_actions` and `list_actions` of a list box, and `row_actions` / `toolbar_actions` of a view, are
+read in the schema of the resource they belong to, so a slot left alone publishes a `default_actions`
+entry — the resource's own actions, which the frontend expands. Pass `nil` to turn that off, or `[]`
+to say the same with an empty array on the wire; a slot nobody mentioned is the only one that carries
+a default.
 
 **`ArrayBox`-specific**: `target` (attribute name on the parent holding the array), `inline` (render items inline like table rows; defaults to `true` unless the box contains nested boxes)
 

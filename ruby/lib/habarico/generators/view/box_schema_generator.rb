@@ -124,18 +124,36 @@ module Habarico
 
     # Box-level toolbar (box header / card header area), relative to the box root. Emitted for all box types
     # including 'list' - for a list box the table's own toolbar is carried separately by 'list.toolbar_actions'.
+    # A descriptor here is rendered in the parent's context, so one meant for the resource a list or
+    # gallery box points at has to name it - `ResourceReference::LIST` is how an author says that
+    # without repeating the name the box already carries.
     def generate_toolbar_actions(_view, box, _index, context)
       return nil if box.toolbar_actions.nil?
+      list_source = listed_resource_address(box, context)
       box.toolbar_actions.map do |action|
-        action_descriptor_generator.generate(action, context)
+        action_descriptor_generator.generate(action, context, list_source: list_source)
       end.compact
     end
 
-    # Box-level bottom actions (rendered below the box fields), relative to the box root.
+    # What `ResourceReference::LIST` stands for inside this box: the collection it lists, with the
+    # query its own schema request carries. Only a list or gallery box has one.
+    LISTING_BOX_TYPES = %i[list gallery].freeze
+
+    def listed_resource_address(box, context)
+      return nil unless LISTING_BOX_TYPES.include?(box.type&.to_sym)
+      return nil if box.reference.blank?
+
+      link = Habarico::BoxHelper.parent_link_params(box, context, resource_name)
+      Habarico::ResourceReference.build(box.reference, params: (box.schema_params || {}).merge(link || {}).presence)
+    end
+
+    # Box-level bottom actions (rendered below the box fields), relative to the box root - the same
+    # parent context as the header, so a descriptor here resolves `ResourceReference::LIST` too.
     def generate_bottom_actions(_view, box, _index, context)
       return nil if box.bottom_actions.nil?
+      list_source = listed_resource_address(box, context)
       box.bottom_actions.map do |action|
-        action_descriptor_generator.generate(action, context)
+        action_descriptor_generator.generate(action, context, list_source: list_source)
       end.compact
     end
 

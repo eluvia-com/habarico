@@ -23,7 +23,7 @@ module Habarico
     string_attr :help_text
 
     # Reference to another resource
-    string_attr :reference
+    has_one_attr :reference, 'Habarico::ResourceReference'
 
     # Enumeration items for field with predefined choices, usually used with 'choices' format
     has_many_attr :enum, 'Habarico::EnumType'

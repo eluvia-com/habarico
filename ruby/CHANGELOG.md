@@ -29,6 +29,30 @@ version and date when a release is finalized.
 
 ### Added
 
+- `Habarico::ResourceReference` - the address of a resource, with `ResourceReference.build` splitting
+  a `service/resource` name into its two halves (the one place that happens) and `#qualified_name`
+  joining them back for the one query parameter that names a resource that way. Two sentinels an
+  author writes in place of a name: `ResourceReference::CURRENT`, the resource the schema is being
+  generated for, and `ResourceReference::LIST`, the resource the surrounding box lists. Both are
+  resolved by the generator that knows the address they stand for, so what reaches the client is
+  always a plain address (HAB-938).
+
+- `Habarico::DefaultActionsReference` - what an author writes in an action slot to mean "this
+  resource's default actions", with an optional `reference` and `scope`; it becomes a
+  `DefaultActionsDescriptor` in the schema (HAB-938).
+
+- `ActionReference#reference`, `#confirm_dialog_title` and `#confirm_dialog_message` - where the
+  named action is defined and what it binds to, and a confirmation overriding the one the action's
+  own schema declares. A dialog needs both halves or neither: the client takes the override whole
+  rather than merging it (HAB-938).
+
+- `register_preference(..., migrate_value:)` - a callable the registry calls with a stored value
+  that no longer validates, before the value would be deleted, which is what happened to every
+  such value until now. A result that validates is saved, so the repair runs once per record; one
+  that does not validate, or a callable that raises, leaves the value to be deleted as before,
+  because a schema's own bug must not make reading preferences fail. It is what lets a gem change
+  the shape of its own preference without a data migration (HAB-938).
+
 - `Habarico::FileValidations` - derives the `max_size` / `accept` field-schema options for any
   `file_attr` from the `content_type:` / `size:` validations a host declares on its underlying
   attachment with the optional `active_storage_validations` gem (not a dependency of this gem - a
@@ -42,6 +66,107 @@ version and date when a release is finalized.
   limits by hand, the same way `resize_width` / `icons_key` already do for their own options. A
   bare symbol field declaration has no such override; only a `FieldReference` does.
   (HAB-966)
+  ([HAB-966](https://sparktech.myjetbrains.com/youtrack/issue/HAB-966))
+
+### Changed
+
+- **BREAKING:** Every `reference` in the schema is a `Habarico::ResourceReference` - `service` and
+  `resource` as separate parts, plus the optional `record_pk`, `action_name` and `params` - instead of
+  a bare `service/resource` string, so no client has to parse a name to learn which service it
+  belongs to. It covers the relation references (`FieldSchema`, `FilterSchema`), the box references
+  (`ListBoxParameters`, `GalleryBoxParameters`), `UploadImagesActionParameters` and the endpoints. A
+  prefixed name written in the DSL is split at the boundary by `ResourceReference.build`, so nothing
+  changes for the person writing a definition (HAB-938).
+
+- **BREAKING:** A view action's endpoint takes its action segment from the **target view**, not from
+  the action's own name, and no longer carries the record of the request. A reserved view
+  (`list` / `create` / `edit` / `show`) is addressed by its type and declares no segment, so an
+  action opening one now carries no address at all - where it used to send
+  `{action_name: "show", record_pk: "7", …}`. The old values were inert, since the frontend routes a
+  reserved view by its `type` and takes the record from the surrounding context, but they contradicted
+  the contract (`ViewType`: a non-reserved view is the one addressed by `action_name`) and differed
+  from what the Python backend emits for the same admin (HAB-938).
+
+- **BREAKING:** `ViewActionEndpointParameters` is gone and the two remaining endpoint parameter
+  schemas address what they point at with one `reference` instead of their own `reference`,
+  `action_name` and `record_pk`; `ViewActionParameters#endpoint` is a `ResourceReference` itself.
+  `path` and `method` stay beside it: how a thing is called is not part of where it is. A view's
+  endpoint carries no address when it is this resource's own; one with an `action_name` names the
+  resource, because the action name lives inside the address and needs one to belong to.
+  `Definition#view_action_endpoint_parameters_generator` is gone with the class (HAB-938).
+
+- **BREAKING:** An action slot holds two kinds of entry, told apart by `type`: `ActionDescriptor`
+  (always `action`, with the new `reference` and `confirm_dialog`) and the new
+  `DefaultActionsDescriptor` (`default_actions`, with `reference` and `scope` -
+  `Types::ACTION_SCOPE_TYPE`). A slot the author never mentioned now publishes a `default_actions`
+  entry instead of nothing: what the client used to infer from an empty slot is in the schema, where
+  it can be read. `nil` and `[]` are both decisions to render nothing - only an unmentioned slot
+  carries the default, which `DefinitionModel#assigned?` is what tells apart. The two slots that
+  never inferred anything, a list view's `list_actions` and a detail view's `bottom_actions`, stay as
+  they were (HAB-938).
+
+- **BREAKING:** `ListBox#list_toolbar_actions` and `ListBoxParameters#toolbar_actions` are gone. A
+  list box has one toolbar, the box's own; a descriptor placed there names the resource it belongs to
+  through its own `reference`, which is what made the second slot unnecessary. Move those actions to
+  the box-level `toolbar_actions` with `reference: Habarico::ResourceReference::LIST`, the sentinel
+  for the resource the box lists - it resolves to that address, with the query the box's own schema
+  request carries, so the button cannot drift from the box it sits in (HAB-938).
+
+- **BREAKING:** `schema_params` is gone from `ListBoxParameters` and `GalleryBoxParameters` output -
+  the resource and the parameters of its schema request are one address, so they travel as
+  `reference.params`. The DSL keeps its flat `schema_params` keyword and composes the object itself
+  (HAB-938).
+
+- **BREAKING:** `preferences.dashboard` is no longer registered here, and the widget schemas it was
+  validated against are gone with it (`Schemas::WIDGET_LAYOUT`, `GROUP_BY_BUCKET`, `GROUP_BY_ITEM`,
+  `CHART_OPTIONS`, `WIDGET_CONFIG`, `DASHBOARD`), along with its entry in the default
+  `max_value_bytes`. The key, the table and the size limits stay this gem's; the shape belongs to
+  the gem that defines a widget and draws one, which is `habarico-enterprise`. It was the only key
+  this gem declared that it could neither produce nor render (HAB-938).
+
+- A `max_value_bytes` entry naming a key outranks the `max_bytes:` that key was registered with,
+  where the registered value used to win outright. A limit a gem brings with its own key is a
+  default, and an application raises it - or removes it with `nil` - by naming the key, which is how
+  the dashboard's 32 KB stays configurable now that `habarico-enterprise` registers it. The hash's
+  `"default"` entry still applies only to a key neither names (HAB-938).
+
+- The default save action (`SaveAction`, emitted as the `bottom_actions` of create, edit and
+  action views) now defaults to the `primary` colour with the `Check` icon instead of `success`
+  with `Save`, matching the frontend library's own default form-action button
+  ([HAB-956](https://sparktech.myjetbrains.com/youtrack/issue/HAB-956)).
+
+### Removed
+
+- **BREAKING:** The paid features moved out of this gem into `habarico-enterprise`
+  (HAB-812):
+  - change history — `habarico/contrib/paper_trail` no longer exists; install the paid gem and
+    `require "habarico_enterprise/paper_trail"` instead (the `Habarico::Contrib::PaperTrail::*`
+    constants are now `HabaricoEnterprise::PaperTrail::*`; translation keys keep their names);
+  - the cross-resource spotlight search — `GET /search`, `SearchService`, `SearchHighlighter`,
+    `SearchResourceSchema` and its generator, and the `global_fulltext_search_enabled` DSL option
+    and schema key. Per-resource search (`search_fields`) stays free and unchanged; a list response
+    simply carries no `meta.highlights` without the paid gem;
+  - aggregations and the dashboard — the `/{resource}/aggregate` endpoint and its schema route,
+    `AggregateService`, `AggregateSchema`/`AggregateFieldSchema` and their generator,
+    `AggregateFieldDefinition`, the `aggregate_enabled` / `aggregate_max_buckets` /
+    `aggregate_fields` / `aggregate_schema_generator` / `dashboard_enabled` DSL options,
+    `validate_aggregate_fields!` and the two schema keys. This matches the Python split, where
+    aggregations and the dashboard are paid;
+  - chunked/direct uploads — `habarico/contrib/uploads` no longer exists (it only ever shipped in
+    the 0.57.0 betas). Install the paid gem and `require "habarico_enterprise/uploads"` instead;
+    the `Habarico::Contrib::Uploads::*` constants are now `HabaricoEnterprise::Uploads::*`,
+    `Habarico::UploadOptions` is `HabaricoEnterprise::UploadOptions`, the S3 endpoints are drawn
+    by the routing service instead of being mounted by hand (drop the `post "uploads/…"` lines
+    from `config/routes.rb`), and the tusd helper scripts move to `scripts/` in the
+    `habarico-enterprise` repository. Base64 file/image uploads stay free and unchanged,
+    as does the `{filename:, content:, upload_key:}` permit spec on file fields — a free-only
+    install simply emits no `options.upload` block. This matches the Python split, where chunked
+    uploads are paid.
+
+  User preferences stay free in full, including the `preferences.dashboard` key and the
+  `*.savedQueries` pattern — same as Python, where both live in the free `contrib.preferences`.
+
+### Added
 
 - `default_page_limit` and `max_page_limit` in the resource DSL - the page size of a list endpoint
   and the largest one a request may ask for, per resource. The same two knobs configure every

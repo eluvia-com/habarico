@@ -9,9 +9,7 @@ module Habarico
       Habarico::ResourceActionEndpointParameters.new(
         path: generate_path(action, context),
         method: generate_method(action, context),
-        reference: generate_reference(action, context),
-        action_name: generate_action_name(action, context),
-        record_pk: generate_record_pk(action, context)
+        reference: generate_endpoint_reference(action, context),
       )
     end
 
@@ -53,6 +51,18 @@ module Habarico
 
     def generate_reference(action, _context)
       action.endpoint_reference
+    end
+
+    # What the endpoint addresses, as one address. `action_name` and `record_pk` live inside it, so
+    # they need a resource to belong to: an action without a declared reference is this admin's own.
+    def generate_endpoint_reference(action, context)
+      action_name = generate_action_name(action, context)
+      record_pk = generate_record_pk(action, context)
+      reference = generate_reference(action, context)
+      reference = resource_name if reference.blank? && (action_name.present? || record_pk.present?)
+      return nil if reference.blank?
+
+      Habarico::ResourceReference.build(reference, action_name: action_name, record_pk: record_pk)
     end
 
     def generate_action_name(action, _context)

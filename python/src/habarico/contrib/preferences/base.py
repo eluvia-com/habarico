@@ -1,6 +1,6 @@
 """Auto-registration of base user-preference keys.
 
-Exact keys (`theme`, `locale`, `preferences.dashboard`, `preferences.layout.app.*`)
+Exact keys (`theme`, `locale`, `preferences.layout.app.*`)
 are always registered. A default is applied only when present in
 `HABARICO_PREFERENCES["DEFAULTS"]`; without it the preference is registered
 with no default (single GET returns 404 when no value is stored, list endpoint
@@ -22,7 +22,6 @@ from habarico.contrib.preferences.schemas import (
     ColumnsPreference,
     ColumnWidthsPreference,
     ContrastModePreference,
-    DashboardPreference,
     LocalePreference,
     SavedQueriesPreference,
     StripedRowsPreference,
@@ -34,7 +33,6 @@ from pydantic import BaseModel
 BASE_PREFERENCES: Dict[str, Type[BaseModel]] = {
     "theme": ThemePreference,
     "locale": LocalePreference,
-    "preferences.dashboard": DashboardPreference,
     "preferences.layout.app.pageWidth": AppPageWidthPreference,
     "preferences.layout.app.contrastMode": ContrastModePreference,
     "preferences.layout.app.stripedRows": StripedRowsPreference,
