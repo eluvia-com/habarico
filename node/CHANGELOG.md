@@ -142,6 +142,17 @@
   render of `<AdminContext>` and loses a redirect issued after one. Inside the application's router
   it renders its children unchanged; when it provides the router, pass it the `basename` instead
   of `<AdminContext>`. (HAB-978)
+- An `ActionDescriptor` with a `reference` takes its action from the schema that address loads and
+  runs it against that resource and record, not the surrounding ones: `SchemaButtons`, menu items,
+  field actions and the datagrid row-click slots. The linked schemas are fetched once per distinct
+  reference, sharing the cache of `useGetLocalResourceSchema`; a linked button stays out of the
+  slot until its schema has loaded. `SchemaButton` and `SchemaActionTrigger` take the `actionContext` it
+  resolves to. (HAB-987)
+- `DefaultActionsDescriptor` (`{type: 'default_actions', reference?, scope?}`) in every action slot
+  (`AnyActionDescriptor`): the client expands it into one descriptor per action of the resource it
+  addresses, keeping the ones the surface shows and leaving out an action opening the very view.
+  With a `reference`, a `recordPk` makes it that record's detail and its absence the collection's
+  list. `SchemaDatagrid` and `SchemaImages` take the row slot as `rowActions`. (HAB-987)
 - `PanelHeader` gained an optional `status` prop — a soft tinted chip with a colored icon shown
   next to the label, with the status text revealed in a tooltip to save space. It sits in the header
   row after the help icon, uses a semantic palette color (`{label, color, icon}`) and mirrors the
@@ -379,6 +390,49 @@
   `SchemaRootContext` current from inside the React Admin context across sign-ins, sign-outs and
   impersonations. (HAB-971)
 
+### Changed
+
+- **BREAKING:** an action slot renders exactly what it lists — the resource's actions are no longer
+  added when a slot is absent. `SchemaButtons` without `descriptors`, the list and images box
+  toolbars without `listActions`, and `SchemaDatagrid` / `SchemaImages` without `rowActions` render
+  no buttons; list a `DefaultActionsDescriptor` instead, which the backend sends for every slot its
+  author left unset — deploy it together with this version. `SchemaButtons` loses `scope`. The row
+  column of `SchemaDatagrid` and the cancel / save of an edit view decide from the slot as it
+  renders, and custom `rowActionButtons` always get their column. (HAB-987)
+- **BREAKING:** a list or images box has one header toolbar, the box's `toolbarActions`.
+  `ListBoxParameters.toolbarActions` and `SchemaReferenceToolbarActions` are removed, and
+  `buildBoxHeaderActions` takes just that slot. An entry acting on the listed resource names it in
+  its `reference`; when the reference's `params._target` links back to the record shown, the button
+  puts that record on the parent stack — for that entry alone — so a record created through it gets
+  the foreign key, and opens views with that column as `target`. `ActionContext` carries the link as
+  `parent`. (HAB-987)
+- `ExportButton` no longer needs a surrounding list: outside the list of its resource — a box header,
+  a detail — it exports every record of its resource that belongs to the parent record it is linked
+  to, or every record when linked to none, instead of failing. Next to its table it still exports
+  the selection or the current filters and sort. (HAB-987)
+- An action on a detail surface no longer disappears when no view name is given — only the action
+  opening the view the slot belongs to is left out. (HAB-987)
+- **BREAKING:** every schema reference is a `ResourceReference` object
+  (`{service, resource, recordPk?, actionName?, params?}`) instead of a `"service/resource"` string:
+  `FieldSchema`, `FilterSchema`, `ItemFieldSchema` and `FieldDescriptor` relations,
+  `ListBoxParameters`, `GalleryBoxParameters`, `UploadImagesActionParameters`, the view endpoint
+  (`ViewEndpointParameters.reference`), the resource action endpoint
+  (`ResourceActionEndpointParameters.reference`) and `ViewActionParameters.endpoint`, which is the
+  reference itself. `ActionDescriptor` gained `reference`. `actionName` and `recordPk` moved from the
+  endpoints into their reference, `schemaParams` of list and gallery boxes into `reference.params`,
+  and `ViewActionEndpointParameters` is removed. `resourceKey(reference)` composes the
+  `"service/resource"` key React Admin and the data provider use. (HAB-987)
+- **BREAKING:** the client fills in the `service` a backend leaves out of a reference, from the
+  schema it arrived in: `useGetServiceSchemas` and `useGetLocalResourceSchema` for loaded schemas,
+  the data provider for the actions in a record's `meta` and an action result's `triggerAction`.
+  `service` is therefore always set, and `useResourceContext(resource)` no longer prefixes a bare
+  resource name with the service of the surrounding context — pass the full `"service/resource"`
+  key. A `schema` handed to `useGetLocalResourceSchema` is resolved against its `resource`; with no
+  resource to take the service from, a reference without one makes the hook report an error. The
+  `resolveReferences(value, service)` helper doing it is exported for a package that loads schemas
+  of its own. (HAB-987)
+- The schema provider keeps the keys of `reference.params` as the backend sent them instead of
+  converting them to camelCase — they are the query string of the addressed request. (HAB-987)
 - **BREAKING:** `SchemaRootContextProvider` no longer resolves the identity itself: its `value`
   takes `userIdentity` and `setUserIdentity`, which `SchemaAdmin` supplies from the identity it
   scopes the per-user store to. `SchemaAdmin` users are unaffected; a hand-assembled
@@ -1457,6 +1511,161 @@ Requires a backend on Python ≥ 6.0.0 or Ruby ≥ 1.0.0 (HAB-730, HAB-732).
   was indistinguishable and the location-based default (wrap outside a collection) always won.
   It now uses `multiline ?? !isInCollection`, so a `multiline` explicitly passed as `true` or
   `false` always wins, and only an unset one falls back to the per-location default. (HAB-941)
+
+### Security
+
+- Record ids and record-schema query params are now percent-encoded before being placed in a
+  request URL. `getOne`, `update`, `delete` and `callAction` interpolated the record id straight
+  into the path, and `getRecordSchema` joined its `params` into a query string by hand, so a value
+  containing `/`, `&`, `#` or similar could change the request's route or inject extra query
+  params. `getRecordSchema` now builds its query string with `query-string`, already used
+  elsewhere in this package.
+  ([HAB-919](https://sparktech.myjetbrains.com/youtrack/issue/HAB-919))
+- A link is opened only when its URL is `http:`, `https:` or relative, and always with
+  `noopener,noreferrer`. A link action templates record values into its URL (`%{data.website}`),
+  so a `javascript:` URL saved by anyone with write access to that field used to run in the
+  admin's session — through `LinkButton` on click, and through `LinkActionTrigger` with no click
+  at all, since it fires from an effect. The same check now guards `openByMode` (ctrl/shift-click
+  navigation) and the `url` field, which renders an unsafe value as plain text instead of a link.
+  Validation goes through the platform URL parser rather than a pattern match, so the
+  `javascript:` variants that hide an embedded tab or newline inside the scheme are caught too.
+  **Potentially breaking:** a schema shipping a `mailto:` or `tel:` link action stops opening it —
+  use a `string` field with format `email` or `phone` for a contact instead.
+  (HAB-908)
+- **BREAKING:** `createConditionFunction` (which evaluates the schema's `showQuery` /
+  `requiredQuery` conditions) no longer compiles the expression with `new Function` — the previous
+  character-class guard could be bypassed to run arbitrary JavaScript in the admin's session (e.g.
+  `a == Function("…")()`), finding 5 of the
+  HAB-894 security audit. Expressions
+  are now parsed with `jsep` (new dependency) and interpreted over the AST, so no schema text is
+  ever executed and `unsafe-eval` is no longer needed in the CSP. The supported grammar is
+  identifiers with dot paths, string / number / boolean / `null` / `undefined` literals,
+  `==` `!=` `===` `!==` `<` `<=` `>` `>=` comparisons, `&&` / `||` / `!` and parentheses; string
+  literals are no longer restricted to ASCII, and relational operators (previously rejected by the
+  guard) now work. Anything outside the grammar — function calls, arithmetic, indexing,
+  `__proto__` / `constructor` / `prototype` path segments — throws `Invalid expression.` at
+  creation, where such expressions previously either ran as JavaScript or silently evaluated to
+  `false`. The returned function now always returns a `boolean`.
+  (HAB-901)
+- A schema `regex` validation rule is no longer matched against values longer than 1000 characters;
+  those are left to the backend, which enforces the rule anyway. Regex matching backtracks
+  super-linearly on a long input for patterns as ordinary as `^a*a*$` (38 ms at 8 000 characters,
+  0.6 s at 32 000), and validation re-runs on every keystroke. An ambiguous pattern can still
+  occupy the tab on a short value — refusing such patterns was measured against three checkers and
+  dropped, because every one of them also refused ordinary patterns like `^\d+(\.\d+)?$` or
+  `^\w+( \w+)*$`, which would have silently disabled their client-side check. The documentation
+  now states what makes a pattern ambiguous. Found in the
+  HAB-894 security audit.
+  (HAB-920)
+- Fixed the `js-yaml`, `svgo`, `colord` and `decode-uri-component` transitive vulnerabilities
+  found in the HAB-894 security
+  audit (`npm audit fix` plus `overrides` for `decode-uri-component` ≥0.5.0, which was not
+  reachable through `audit fix` alone). Also corrected the `lodash` dependency, which was pinned
+  to the non-existent `^4.18.1` on npm; it now resolves to `^4.17.21`.
+  (HAB-896)
+- `'sms'` is now a recognized `MfaMethod` alongside `'email'`, so a backend can offer SMS as a
+  second-factor verification method and `AuthPage` renders it on the method-selection step.
+  (HAB-883)
+- `snakeCaseToCamelCase` no longer lets an API response replace the prototype of the object it
+  builds. A key that camel-cased to `__proto__` was stored with a plain assignment, which hits the
+  `Object.prototype.__proto__` accessor: instead of adding a key it swapped the result's prototype
+  for a server-supplied value, so the converted schema or record silently read back properties it
+  did not own — and `_.merge`, which copies inherited keys, turned them into real ones. The key is
+  now dropped (`____proto____` was one that reached it), and the conversion reads only the input's
+  own properties.
+  (HAB-921)
+
+### Changed
+
+- List box **default (auto-generated) actions are now scoped by `is_detail`**: when `list.list_actions`
+  is not set, the datagrid toolbar falls back only to the reference's **collection** actions
+  (`show_in_list && !is_detail`, e.g. create/export/bulk), and the per-row buttons fall back only to its
+  **record** actions (`show_in_list && is_detail`, e.g. detail/edit/delete). Previously both used the
+  same `show_in_list` set, so record actions leaked into the list toolbar. The **images box** now
+  scopes its per-image buttons the same way — they too fall back only to record actions, so a
+  collection action like create no longer leaks onto individual images. Explicitly listed actions are
+  unaffected. `is_detail` is the record-vs-collection discriminator (URL with/without a pk). The
+  `generateDescriptorsFromSchema` helper's third argument changed from `onlyDetail: boolean` to
+  `scope: 'detail' | 'list' | 'all'`, and `SchemaButtons`' `onlyDetail` prop is now `scope`.
+- The **images box list-actions toolbar** (`SchemaImagesBoxActions`) now renders its buttons as
+  `size="small"`, `variant="outlined"` (with the filter button matched to `small`), the same compact
+  look as the datagrid list box's list-actions toolbar — replacing the previous `medium`/`contained`
+  buttons. Button color still follows each action's schema `color` (defaulting to `inherit`).
+- The **images box per-image row actions** now render as dense `surface="iconButton"`, `size="small"`
+  buttons, matching the datagrid's per-row actions, instead of the previous default-size buttons.
+- The **images box list-actions toolbar is now hidden entirely when empty** — with no filters and no
+  list actions (e.g. `list.list_actions: []`), `SchemaImagesBoxActions` renders nothing instead of an
+  empty `TopToolbar` taking up space above the image grid.
+- An **empty `list.list_actions` (`[]`) now suppresses** the datagrid toolbar actions instead of
+  triggering the default fallback; only an absent/`undefined` value falls back (aligning it with
+  `row_actions`, where `[]` already meant "none").
+- Box **toolbar actions** (`box.toolbar_actions` and `list.toolbar_actions`) now render as
+  `size="small"`, `variant="contained"` buttons across every box type (simple, list, gallery/images,
+  wizard, array, grid, tab and object), for a consistent header-toolbar look. Footer
+  (`bottom_actions`), the datagrid list-actions toolbar and per-row actions are unchanged.
+- `snakeCaseToCamelCase` converts a key only when it is plain `snake_case` — words of letters and
+  digits joined by single underscores. Any other key is not a valid name of the schema contract and
+  now passes through exactly as it arrived, rather than being rewritten into one neither side
+  recognizes: a run of two or more underscores (the lookup `created_at__gte`), a leading or trailing
+  one (`_target`). The previous conversion collapsed such runs, because its regex counted an
+  underscore as a word character, silently turning `created_at__gte` into `createdAt_gte`. Of the
+  390 property names in `contract/openapi.yaml` only the aggregate bucket key `category__name`
+  converts differently, and it now survives intact.
+  (HAB-921)
+- `AuthPage` no longer switches between the login, forgotten-password and register screens with a
+  MUI `Slide`. All three screens were mounted at once and slid horizontally, so the card flickered
+  and jumped in height as two differently sized screens briefly co-existed. Only the active screen
+  is rendered now, wrapped in a keyed `Fade`, so it fades in cleanly without resizing mid-transition
+  (the horizontal-scroll wrapper that `Slide` needed is gone too).
+  (HAB-883)
+- The auth form layouts (`AuthPage`'s login / forgotten-password / MFA steps and
+  `ResetPasswordPage`) now share one spacing convention matching the design system's auth blueprint:
+  inputs render with `margin="none"` and explicit bottom spacing, right-aligned within a
+  full-width column, replacing the per-form mix of `gap`, default input margins and ad-hoc
+  margin hacks. (HAB-883)
+- **BREAKING:** the account dialog slots now take the **whole dialog**, not just its form, and
+  `BaseAdmin`'s slots are renamed to match `SchemaAdmin` (its source of truth): `updateIdentity` /
+  `changePassword` (`ReactNode | false`) become `UpdateIdentityComponent` / `ChangePasswordComponent`
+  (`FC | false`), the same names and shape `SchemaAdmin` already uses. Both entry points render the
+  component through the account menu with `open` / `onClose` injected; the default
+  `UpdateIdentityDialog` / `ChangePasswordDialog` now own their `CustomDialog`, header and footer
+  Save button and close themselves on a successful submit. Previously the slot was only the dialog's
+  content (a form receiving `onSuccess`) and the dialog chrome was supplied by the library. A custom
+  override must now render its own `CustomDialog` and call `onClose`.
+  (HAB-883)
+- `AvatarField`'s hover UI is reworked: instead of a single frosted "remove" band (whose
+  `backdrop-filter` also smeared the round border, notably inside the MUI `Dialog`), hovering a
+  filled avatar now blurs the image directly (a plain `filter`, clipped by the circle) under a scrim
+  with two explicit `IconButton`s — change and remove — so the two actions are finally distinct. Adds
+  a `ChangeIcon` prop; the default glyphs are `AddAPhoto` (empty / change) and `NoPhotography`
+  (remove). (HAB-883)
+- The update-identity and change-password dialogs now show a subtitle (new
+  `ra.auth.update_identity_subtitle` / `ra.auth.change_password_subtitle` keys, translated in every
+  bundled locale). (HAB-883)
+
+### Removed
+
+- **BREAKING:** `useResourceContextOrUndefined` is removed. Since references name their service,
+  it only fell back to the surrounding `ResourceContext`, which is what React Admin's own
+  `useResourceContext` does — call that one instead: `useResourceContext({resource})` for a
+  reference that may override the context, `useResourceContext()` for the context alone. Our
+  `useResourceContext` is unchanged and still throws when neither resolves. (HAB-987)
+- **BREAKING:** `createPerUserStore` no longer takes `getUserId`: pass the signed-in user as
+  `identity` instead — or use the new `usePerUserStore` hook, which resolves the user and creates a
+  new store when someone else signs in. Backend sync (`backendApi` + `whitelist`) starts only once
+  a user is signed in; an unscoped store stays local. A callback resolved on every access kept one store across a change of
+  user, so what was already on screen stayed with the previous user and could be written under the
+  next one's keys. (HAB-971)
+- **BREAKING:** `UpdateIdentityForm` and `ChangePasswordForm` are removed — they are merged into
+  `UpdateIdentityDialog` / `ChangePasswordDialog`, which are now the full, overridable account
+  dialogs (see the Changed entry above).
+  (HAB-883)
+- **BREAKING:** `DialogActionsPortal` is removed. It only existed so a form nested in an account
+  dialog could portal its Save button into the dialog footer; now that each account dialog owns its
+  own footer, the button sits there directly and the portal is no longer needed.
+  (HAB-883)
+
+### Fixed
 
 - Extended the `design/atoms/**` / `design/molecules/**` / `design/organisms/**` /
   `design/layouts/**` Storybook Controls/"Show code" fix pass to `design/pages/NewOwnerDialog` and

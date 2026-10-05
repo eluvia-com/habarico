@@ -355,7 +355,7 @@ paths:
         **Optional endpoint.** The backend switches the export on per resource
         (`export_enabled`); it is off by default. Resources that do
         not export return HTTP 404 for this path. The export button itself is signalled in
-        the list view schema through the `list_actions` slot with an action of type
+        the list view schema through its `list_actions` array with an action of type
         `export`.
 
         ## Formats
@@ -2579,9 +2579,10 @@ components:
     ActionDescriptor:
       type: object
       description: |
-        Action descriptor names one action the schema declares and places it in a view's action slot.
-        `DefaultActionsDescriptor` stands beside it in the same slots, standing for a resource's
-        defaults rather than one action, and the two are told apart by `type` — the way
+        Action descriptor names one action the schema declares and places it in one of a view's
+        action arrays — `toolbar_actions`, `bottom_actions`, `row_actions`, `list_actions` or
+        `menu_items`. `DefaultActionsDescriptor` stands beside it in those same arrays, standing for
+        a resource's defaults rather than one action, and the two are told apart by `type` — the way
         `FieldDescriptor` and `BoxSchema` are where they share an array.
       properties:
         type:
@@ -2641,19 +2642,19 @@ components:
     DefaultActionsDescriptor:
       type: object
       description: |
-        Stands for a resource's default actions in a view's action slot. The client loads the schema of
-        the resource this addresses — `reference`, or the one the schema was generated for when it is
-        absent — and expands this into one ordinary `ActionDescriptor` per supported action, each bound
-        to that resource, which is how a slot asks for "whatever this resource offers" without naming
-        the actions one by one and going stale when one is added.
+        Stands for a resource's default actions in one of a view's action arrays. The client loads the
+        schema of the resource this addresses — `reference`, or the one the schema was generated for
+        when it is absent — and expands this into one ordinary `ActionDescriptor` per supported action,
+        each bound to that resource, which is how a schema asks for "whatever this resource offers"
+        without naming the actions one by one and going stale when one is added.
 
         Expansion happens on the client, not the backend: a backend does not know a foreign service's
         actions, and splitting the filtering rule across two backend languages would let the two drift
         apart.
 
         It carries nothing of its own appearance. A label, an icon and a colour belong to each action
-        it expands into, which already has them; this descriptor only says which actions those are. A
-        slot holding no descriptor renders nothing — defaults are never inferred from the resource.
+        it expands into, which already has them; this descriptor only says which actions those are. An
+        absent or empty action array renders nothing — defaults are never inferred from the resource.
       properties:
         type:
           type: string
@@ -2665,8 +2666,8 @@ components:
             - $ref: '#/components/schemas/ResourceReference'
           description: |
             The resource whose default actions are expanded in place of this descriptor. Absent means
-            the resource the schema was generated for, the same as on `ActionDescriptor` — a slot of
-            that resource's own view does not have to name it.
+            the resource the schema was generated for, the same as on `ActionDescriptor` — a descriptor
+            in that resource's own view does not have to name it.
         scope:
           oneOf:
             - $ref: '#/components/schemas/ActionScopeType'

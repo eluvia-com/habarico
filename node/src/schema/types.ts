@@ -46,24 +46,29 @@ export type SidePanelView = {
 // Endpoint / parameter types
 // ----------------------------------------------------------------------------
 
+/**
+ * Address of a resource, optionally narrowed to one record and one of its actions. `service` is
+ * always set: the client fills it in from the schema it loaded when the backend leaves it out.
+ */
+export type ResourceReference = {
+  service: string;
+  resource: string;
+  recordPk?: Identifier;
+  actionName?: string;
+  params?: Record<string, string | number | boolean>;
+};
+
 export type ViewEndpointParameters = {
   path?: string;
   method: RequestMethodType;
-  reference?: string;
-  actionName?: string;
-};
-
-export type ViewActionEndpointParameters = {
-  reference?: string;
-  actionName?: string;
-  recordPk?: Identifier;
+  reference?: ResourceReference;
 };
 
 export type ViewActionParameters = {
   name: string;
   choices: ActionViewChoice[];
   mode: ViewModeType;
-  endpoint?: ViewActionEndpointParameters;
+  endpoint?: ResourceReference;
   parameters: Record<string, string>;
   dialogWidth?: string;
   // Keep the linked parent segments in the redirect path. Set per action; defaults to a button's
@@ -86,9 +91,7 @@ type LinkActionParameters = {
 export type ResourceActionEndpointParameters = {
   path?: string;
   method: RequestMethodType;
-  reference?: string;
-  actionName?: string;
-  recordPk?: Identifier;
+  reference?: ResourceReference;
 };
 
 type ResourceActionParameters = {
@@ -103,7 +106,7 @@ type SaveActionParameters = {
 };
 
 export type UploadFilesActionParameters = {
-  reference?: string;
+  reference?: ResourceReference;
   target?: string;
   accept?: string[];
   resizeWidth?: number;
@@ -252,7 +255,7 @@ export type ItemFieldSchema = {
   nullable?: boolean;
   required?: boolean;
   defaultValue?: string | boolean | number;
-  reference?: string;
+  reference?: ResourceReference;
   enum?: EnumType;
   options?: FieldOptions;
   properties?: FieldSchema[];
@@ -351,7 +354,7 @@ export type FieldSchema = {
   nullable?: boolean;
   required?: boolean;
   defaultValue?: string | boolean | number;
-  reference?: string;
+  reference?: ResourceReference;
   sortable?: boolean;
   sortBy?: string;
   enum?: EnumType;
@@ -372,7 +375,7 @@ export type FilterSchema = {
   label: string;
   helpText?: string;
   defaultValue?: string | boolean | number;
-  reference?: string;
+  reference?: ResourceReference;
   enum?: EnumType;
   options?: FieldOptions;
   properties?: FieldSchema[];
@@ -418,7 +421,7 @@ export type FieldDescriptor = {
   // `enum` maps a raw choices value to its label/color, `format`/`reference` drive
   // value formatting and relation display
   format?: FieldFormatType;
-  reference?: string;
+  reference?: ResourceReference;
   enum?: EnumType;
 };
 
@@ -456,15 +459,35 @@ export type ActionSchema = {
 };
 
 export type ActionDescriptor = {
+  // the wire always carries it; a descriptor written in code may leave it out
+  type?: 'action';
   name: string;
   label?: string;
   icon?: string;
   color?: ColorWithInherit;
   action?: ActionSchema;
+  reference?: ResourceReference;
   view?: ViewActionDescriptorParameters;
   confirmDialog?: ConfirmDialogProperties;
   menuItems?: ActionDescriptor[];
 };
+
+/**
+ * Which of a resource's actions a `DefaultActionsDescriptor` expands: `list` the ones over the
+ * collection (`isDetail` false), `detail` the ones over one record, `all` both.
+ */
+export type ActionScopeType = 'list' | 'detail' | 'all';
+
+/** Stands for a resource's default actions in a list of actions; the client expands it. */
+export type DefaultActionsDescriptor = {
+  type: 'default_actions';
+  // absent = the resource the list is rendered for
+  reference?: ResourceReference;
+  scope?: ActionScopeType;
+};
+
+/** One entry of a list of actions: a single action, or a resource's default actions. */
+export type AnyActionDescriptor = ActionDescriptor | DefaultActionsDescriptor;
 
 export type ConfirmDialogProperties = {
   title: string;
@@ -504,27 +527,24 @@ export type GridItemBoxParameters = {
 
 export type ListBoxParameters = {
   target?: string;
-  reference: string;
-  rowActions?: ActionDescriptor[];
-  toolbarActions?: ActionDescriptor[];
-  listActions?: ActionDescriptor[];
+  reference: ResourceReference;
+  rowActions?: AnyActionDescriptor[];
+  listActions?: AnyActionDescriptor[];
   filters?: FilterDescriptor[];
   defaultSorting?: SortDescriptor;
   extraFilters?: Filters;
   sortable?: SortableParameters;
-  schemaParams?: Record<string, string>;
   singleClickAction?: ActionDescriptor;
   doubleClickAction?: ActionDescriptor;
 };
 
 export type GalleryBoxParameters = {
-  reference: string;
+  reference: ResourceReference;
   target?: string;
   imageField: string;
   filters?: FilterDescriptor[];
   defaultSorting?: SortDescriptor;
   extraFilters?: Filters;
-  schemaParams?: Record<string, string>;
 };
 
 export type ObjectBoxParameters = {
@@ -552,8 +572,8 @@ export type BoxSchema = {
   boxes?: BoxItem[];
   type: BoxType;
   readOnly: boolean;
-  toolbarActions?: ActionDescriptor[];
-  bottomActions?: ActionDescriptor[];
+  toolbarActions?: AnyActionDescriptor[];
+  bottomActions?: AnyActionDescriptor[];
   tab?: TabBoxParameters;
   wizard?: WizardBoxParameters;
   gridItem?: GridItemBoxParameters;
@@ -573,9 +593,9 @@ export type BoxSchema = {
 export type ListViewParameters = {
   boxes?: FieldDescriptor[];
   filters?: FilterDescriptor[];
-  toolbarActions?: ActionDescriptor[];
-  rowActions?: ActionDescriptor[];
-  listActions?: ActionDescriptor[];
+  toolbarActions?: AnyActionDescriptor[];
+  rowActions?: AnyActionDescriptor[];
+  listActions?: AnyActionDescriptor[];
   extraFilters?: Record<string, string | number | boolean>;
   defaultSorting?: SortDescriptor;
   sortable?: SortableParameters;
@@ -585,8 +605,8 @@ export type ListViewParameters = {
 
 export type DetailViewParameters = {
   box: BoxSchema;
-  toolbarActions?: ActionDescriptor[];
-  bottomActions?: ActionDescriptor[];
+  toolbarActions?: AnyActionDescriptor[];
+  bottomActions?: AnyActionDescriptor[];
 };
 
 export type ViewSchema = {

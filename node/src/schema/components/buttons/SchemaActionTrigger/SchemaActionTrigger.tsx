@@ -5,10 +5,13 @@ import {ActionTriggerResult, BaseActionTriggerProps} from '@admin/components/but
 import {useResourceContext} from '@admin/contexts/ResourceContext';
 import {ConfirmDialog} from '@design/organisms/ConfirmDialog';
 import {NavMode} from '@foundation/utils/navigation';
+import {ActionResourceProvider} from '@schema/components/buttons/ActionResourceProvider';
 import {SchemaViewActionTrigger} from '@schema/components/buttons/SchemaViewActionTrigger';
 import {useCallAction} from '@schema/hooks/useCallAction';
 import {useGlobalResourceSchemaContext} from '@schema/hooks/useGlobalResourceSchemaContext';
 import {ActionSchema, ResourceActionEndpointParameters} from '@schema/types';
+import {ActionContext} from '@schema/utils/actionDescriptor';
+import {resourceKey} from '@schema/utils/resourceReference';
 
 // --- SchemaActionTrigger ---
 
@@ -21,15 +24,18 @@ export type SchemaActionTriggerProps = {
   target?: string;
   // Forwarded to a view action: a same-tab redirect replaces the current history entry.
   replace?: boolean;
+  // a linked action runs against this resource and record, not the surrounding ones
+  actionContext?: ActionContext;
 } & BaseActionTriggerProps;
 
-export const SchemaActionTrigger = ({
+const SchemaActionTriggerContent = ({
   schema,
   onDone,
   pathname,
   navMode,
   target,
   replace,
+  actionContext,
 }: SchemaActionTriggerProps) => {
   const [wasTriggeredAction, setWasTriggeredAction] = useState(false);
   const [wasConfirmedAction, setWasConfirmedAction] = useState(!schema.confirmDialog);
@@ -38,11 +44,13 @@ export const SchemaActionTrigger = ({
   const record = useRecordContext();
   const resource = useResourceContext();
   const reference = useResourceContext(
-    schema.view?.endpoint?.reference || schema.resource?.endpoint?.reference
+    resourceKey(schema.view?.endpoint ?? schema.resource?.endpoint?.reference)
   );
   const {getGlobalViewSchema} = useGlobalResourceSchemaContext(reference);
 
-  const recordPk = resource === reference && schema.isDetail ? record?.id : undefined;
+  // a linked action takes its record from the link, never from the surrounding record context
+  const boundRecordPk = actionContext ? actionContext.recordPk : record?.id;
+  const recordPk = resource === reference && schema.isDetail ? boundRecordPk : undefined;
 
   const viewSchema = getGlobalViewSchema(schema.view?.name);
 
@@ -112,6 +120,19 @@ export const SchemaActionTrigger = ({
   );
 };
 
+export const SchemaActionTrigger = ({actionContext, ...props}: SchemaActionTriggerProps) =>
+  actionContext ? (
+    <ActionResourceProvider actionContext={actionContext}>
+      <SchemaActionTriggerContent
+        {...props}
+        target={props.target ?? actionContext.parent?.target}
+        actionContext={actionContext}
+      />
+    </ActionResourceProvider>
+  ) : (
+    <SchemaActionTriggerContent {...props} />
+  );
+
 // --- SchemaResourceActionTrigger ---
 
 export type SchemaResourceActionTriggerProps = {
@@ -140,7 +161,7 @@ export const SchemaResourceActionTrigger = ({
     resource,
     path: endpoint.path,
     method: endpoint.method,
-    data: {id: endpoint.recordPk || recordPk, data: data},
+    data: {id: endpoint.reference?.recordPk || recordPk, data: data},
     onTriggerAction: ({schema, onDone: triggerOnDone}) => {
       setPendingTrigger({schema, onDone: triggerOnDone});
     },

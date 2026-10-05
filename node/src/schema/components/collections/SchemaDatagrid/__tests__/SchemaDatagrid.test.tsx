@@ -15,6 +15,12 @@ const h = vi.hoisted(() => ({
   hasSidePanel: true,
   presentation: 'page' as ViewPresentation,
   getGlobalViewSchema: vi.fn((_name: string) => ({type: 'show', mode: undefined}) as any),
+  resourceActions: [] as {
+    name: string;
+    showInList: boolean;
+    showInDetail: boolean;
+    isDetail: boolean;
+  }[],
 }));
 
 vi.mock('@admin/components/datagrid/AdminDatagrid', () => ({
@@ -44,9 +50,12 @@ vi.mock('@admin/contexts/ViewPresentationContext', () => ({
 }));
 vi.mock('@schema/hooks/useGlobalResourceSchemaContext', () => ({
   useGlobalResourceSchemaContext: () => ({
-    schema: {actions: []},
+    schema: {actions: h.resourceActions},
     getGlobalViewSchema: h.getGlobalViewSchema,
   }),
+}));
+vi.mock('@schema/hooks/useGetLocalResourceSchemas', () => ({
+  useGetLocalResourceSchemas: () => () => ({isLoading: false, isError: false}),
 }));
 vi.mock('@schema/hooks/useTriggerAction', () => ({
   useTriggerAction: () => ({triggerActionElement: null, triggerAction: h.trigger}),
@@ -77,7 +86,7 @@ const action = (name: string, view: Record<string, unknown> = {}) => ({
   isDetail: true,
   showInList: true,
   showInDetail: true,
-  view: {name, endpoint: {actionName: name}, ...view},
+  view: {name, endpoint: {service: 'svc', resource: 'res', actionName: name}, ...view},
 });
 const recordWith = (...actions: ReturnType<typeof action>[]) => ({
   id: 1,
@@ -90,6 +99,7 @@ const renderGrid = (props: any = {}) => {
 
 beforeEach(() => {
   h.datagridProps = undefined;
+  h.resourceActions = [];
   h.defaultRowAction = 'click';
   h.rowTooltip = undefined;
   h.hasSidePanel = true;
@@ -235,5 +245,37 @@ describe('SchemaDatagrid - row activation delegates to the post-action', () => {
     h.datagridProps.onRowSingleClick(recordWith(action('show')), 'same');
 
     expect(h.trigger).not.toHaveBeenCalled();
+  });
+});
+
+describe('SchemaDatagrid - row action column', () => {
+  const columnOf = (props: any) => {
+    render(<SchemaDatagrid {...props} />);
+    return h.datagridProps.rowActionButtons;
+  };
+  const recordAction = {name: 'approve', showInList: true, showInDetail: true, isDetail: true};
+
+  it('has no column for an absent or empty slot — row actions are never inferred', () => {
+    h.resourceActions = [recordAction];
+    expect(columnOf({})).toBe(false);
+    expect(columnOf({rowActions: []})).toBe(false);
+  });
+
+  it('shows the column when the slot names an action the resource has', () => {
+    expect(columnOf({rowActions: [{name: 'approve'}]})).toBe(false);
+    h.resourceActions = [recordAction];
+    expect(columnOf({rowActions: [{name: 'approve'}]})).toBeTruthy();
+  });
+
+  it("shows it for the resource's own defaults only when one of its record actions qualifies", () => {
+    const slot = [{type: 'default_actions', scope: 'detail'}];
+    expect(columnOf({rowActions: slot})).toBe(false);
+    h.resourceActions = [recordAction];
+    expect(columnOf({rowActions: slot})).toBeTruthy();
+  });
+
+  it('shows custom buttons as given and drops the column on false', () => {
+    expect(columnOf({rowActionButtons: <span />})).toBeTruthy();
+    expect(columnOf({rowActions: [{name: 'approve'}], rowActionButtons: false})).toBe(false);
   });
 });

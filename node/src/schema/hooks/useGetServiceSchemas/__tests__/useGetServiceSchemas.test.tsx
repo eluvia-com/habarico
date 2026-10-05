@@ -2,6 +2,7 @@ import React, {ReactNode} from 'react';
 import {UserIdentity} from 'react-admin';
 import {describe, expect, it, vi} from 'vitest';
 import {SchemaProvider} from '@schema/providers/types';
+import {ServiceSchema} from '@schema/types';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {renderHook, waitFor} from '@testing-library/react';
 import {useGetServiceSchemas} from '../useGetServiceSchemas';
@@ -94,5 +95,55 @@ describe('useGetServiceSchemas', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(schemaProvider.getServiceSchema).toHaveBeenCalledTimes(1);
+  });
+
+  it('fills each service into the references of its own schema', async () => {
+    const serviceSchema = (resource: string) =>
+      [
+        {
+          name: 'course',
+          pkFieldName: 'id',
+          label: 'Course',
+          url: '',
+          actions: [],
+          views: [
+            {
+              name: 'list',
+              type: 'list',
+              isDetail: false,
+              endpoint: {method: 'get', reference: {resource}},
+            },
+          ],
+        },
+      ] as unknown as ServiceSchema;
+    const schemaProvider = {
+      getServiceSchema: vi.fn((name: string) =>
+        Promise.resolve(serviceSchema(name === 'school' ? 'lesson' : 'book'))
+      ),
+    } as unknown as SchemaProvider;
+
+    const wrapper = ({children}: {children: ReactNode}) => (
+      <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
+    );
+    const {result} = renderHook(
+      () =>
+        useGetServiceSchemas(
+          {school: {url: 'https://api.test/school'}, library: {url: 'https://api.test/library'}},
+          schemaProvider,
+          'en',
+          {id: 1}
+        ),
+      {wrapper}
+    );
+
+    await waitFor(() => expect(result.current.isLoaded).toBe(true));
+    expect(result.current.servicesSchema.school[0].views[0].endpoint.reference).toEqual({
+      service: 'school',
+      resource: 'lesson',
+    });
+    expect(result.current.servicesSchema.library[0].views[0].endpoint.reference).toEqual({
+      service: 'library',
+      resource: 'book',
+    });
   });
 });

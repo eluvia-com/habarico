@@ -54,16 +54,28 @@ describe('generateDescriptorsFromSchema', () => {
       expect(names).toEqual(['edit']);
     });
 
+    it('keeps every action when the detail names no view of its own', () => {
+      const actions = [
+        action('approve', {type: 'resource'}),
+        action('edit', {view: {name: 'edit'} as ResourceActionSchema['view']}),
+      ];
+      const names = generateDescriptorsFromSchema(actions, false, 'all').map((d) => d.name);
+      expect(names).toEqual(['approve', 'edit']);
+    });
+
     it('drops the action whose view targets the current viewName', () => {
       const actions = [action('edit', {view: {name: 'edit'} as ResourceActionSchema['view']})];
       const names = generateDescriptorsFromSchema(actions, false, 'all', 'edit').map((d) => d.name);
       expect(names).toEqual([]);
     });
 
-    it('keeps the self-targeting action when its view has an endpoint reference', () => {
+    it('keeps the self-targeting action when its view addresses an endpoint', () => {
       const actions = [
         action('edit', {
-          view: {name: 'edit', endpoint: {reference: 'owners'}} as ResourceActionSchema['view'],
+          view: {
+            name: 'edit',
+            endpoint: {service: 'estates', resource: 'owners'},
+          } as ResourceActionSchema['view'],
         }),
       ];
       const names = generateDescriptorsFromSchema(actions, false, 'all', 'edit').map((d) => d.name);

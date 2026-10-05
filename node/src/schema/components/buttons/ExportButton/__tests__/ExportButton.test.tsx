@@ -1,5 +1,8 @@
 import React from 'react';
+import {ListContext, ResourceContextProvider} from 'react-admin';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import {ParentResourceDescriptorsProvider} from '@schema/contexts/ParentResourceDescriptorsContext';
+import {ResourceDescriptor} from '@schema/contexts/ParentResourceDescriptorsContext/types';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ExportButton} from '../ExportButton';
@@ -15,7 +18,6 @@ vi.mock('react-admin', async () => {
   const actual = await vi.importActual<typeof import('react-admin')>('react-admin');
   return {
     ...actual,
-    useListContext: () => h.listContext,
     useNotify: () => h.notifyMock,
     useTranslate: () => (key: string) => key,
   };
@@ -51,6 +53,23 @@ const buildListContext = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+// The button inside the list of `blog/articles`, or outside any list when `list` is false.
+const renderButton = (
+  element: React.ReactElement,
+  {list = true, parents = []}: {list?: boolean; parents?: ResourceDescriptor[]} = {}
+) =>
+  render(
+    <ResourceContextProvider value="blog/articles">
+      <ParentResourceDescriptorsProvider value={parents}>
+        {list ? (
+          <ListContext.Provider value={h.listContext as never}>{element}</ListContext.Provider>
+        ) : (
+          element
+        )}
+      </ParentResourceDescriptorsProvider>
+    </ResourceContextProvider>
+  );
+
 describe('ExportButton', () => {
   afterEach(() => {
     vi.clearAllMocks();
@@ -61,7 +80,7 @@ describe('ExportButton', () => {
     h.exporterMock.mockResolvedValue(undefined);
     h.listContext = buildListContext({selectedIds: [1, 2]});
 
-    render(<ExportButton format="csv" fields={['name', 'price']} />);
+    renderButton(<ExportButton format="csv" fields={['name', 'price']} />);
     await userEvent.click(screen.getByRole('button', {name: 'ra.action.export'}));
 
     expect(h.useExporterMock).toHaveBeenCalledWith('blog/articles');
@@ -83,7 +102,7 @@ describe('ExportButton', () => {
       sort: {field: 'title', order: 'DESC'},
     });
 
-    render(<ExportButton format="csv" />);
+    renderButton(<ExportButton format="csv" />);
     await userEvent.click(screen.getByRole('button', {name: 'ra.action.export'}));
 
     await waitFor(() =>
@@ -101,7 +120,7 @@ describe('ExportButton', () => {
     h.exporterMock.mockResolvedValue(undefined);
     h.listContext = buildListContext();
 
-    render(<ExportButton />);
+    renderButton(<ExportButton />);
     await userEvent.click(screen.getByRole('button', {name: 'ra.action.export'}));
 
     await waitFor(() =>
@@ -115,12 +134,54 @@ describe('ExportButton', () => {
     h.listContext = buildListContext();
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    render(<ExportButton />);
+    renderButton(<ExportButton />);
     await userEvent.click(screen.getByRole('button', {name: 'ra.action.export'}));
 
     await waitFor(() =>
       expect(h.notifyMock).toHaveBeenCalledWith('ra.notification.http_error', {type: 'error'})
     );
     consoleError.mockRestore();
+  });
+
+  describe('outside the list of its resource', () => {
+    const run = async (options: Parameters<typeof renderButton>[1]) => {
+      h.useExporterMock.mockReturnValue(h.exporterMock);
+      h.exporterMock.mockResolvedValue(undefined);
+      h.listContext = buildListContext({selectedIds: [1, 2], filterValues: {name: 'x'}});
+      renderButton(<ExportButton format="csv" />, options);
+      await userEvent.click(screen.getByRole('button', {name: 'ra.action.export'}));
+    };
+
+    it('exports every record of the parent it is linked to', async () => {
+      await run({list: false, parents: [{resource: 'blog/blogs', recordId: 7, target: 'blog'}]});
+
+      await waitFor(() =>
+        expect(h.exporterMock).toHaveBeenCalledWith({
+          format: 'csv',
+          fields: undefined,
+          filter: {blog: 7},
+        })
+      );
+    });
+
+    it('exports every record of its resource when linked to no parent', async () => {
+      await run({list: false});
+
+      await waitFor(() =>
+        expect(h.exporterMock).toHaveBeenCalledWith({format: 'csv', fields: undefined, filter: {}})
+      );
+    });
+
+    it('ignores the table state of a list of another resource around it', async () => {
+      h.listContext = buildListContext({resource: 'blog/comments', selectedIds: [1]});
+      h.useExporterMock.mockReturnValue(h.exporterMock);
+      h.exporterMock.mockResolvedValue(undefined);
+      renderButton(<ExportButton format="csv" />);
+      await userEvent.click(screen.getByRole('button', {name: 'ra.action.export'}));
+
+      await waitFor(() =>
+        expect(h.exporterMock).toHaveBeenCalledWith({format: 'csv', fields: undefined, filter: {}})
+      );
+    });
   });
 });
