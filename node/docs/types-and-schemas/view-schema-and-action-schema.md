@@ -12,11 +12,19 @@ layout containers inside a detail view; actions are the buttons the backend puts
 type ViewType = 'edit' | 'create' | 'list' | 'show' | 'action';
 type RequestMethodType = 'get' | 'post' | 'put' | 'patch' | 'delete';
 
+// Address of a resource, optionally narrowed to one record and one of its actions.
+type ResourceReference = {
+  service: string;            // always set — filled in from the loaded schema when the backend omits it
+  resource: string;           // bare resource name, e.g. "order-item"
+  recordPk?: Identifier;
+  actionName?: string;
+  params?: Record<string, string | number | boolean>;  // query string of the addressed request
+};
+
 type ViewEndpointParameters = {
   path?: string;
   method: RequestMethodType;
-  reference?: string;
-  actionName?: string;
+  reference?: ResourceReference;
 };
 
 type ViewSchema = {
@@ -33,9 +41,9 @@ type ViewSchema = {
 type ListViewParameters = {
   boxes?: FieldDescriptor[];      // the datagrid columns, in order
   filters?: FilterDescriptor[];
-  toolbarActions?: ActionDescriptor[];
-  rowActions?: ActionDescriptor[];
-  listActions?: ActionDescriptor[];
+  toolbarActions?: AnyActionDescriptor[];
+  rowActions?: AnyActionDescriptor[];
+  listActions?: AnyActionDescriptor[];
   extraFilters?: Record<string, string | number | boolean>;
   defaultSorting?: SortDescriptor;      // {fieldName; direction: 'asc' | 'desc'}
   sortable?: SortableParameters;        // {fieldName; sortForFilters}
@@ -45,8 +53,8 @@ type ListViewParameters = {
 
 type DetailViewParameters = {
   box: BoxSchema;                 // the single root box of the view
-  toolbarActions?: ActionDescriptor[];
-  bottomActions?: ActionDescriptor[];
+  toolbarActions?: AnyActionDescriptor[];
+  bottomActions?: AnyActionDescriptor[];
 };
 ```
 
@@ -73,8 +81,8 @@ type BoxSchema = {
   card?: boolean;
   collapsible?: 'open' | 'closed';
   readOnly: boolean;
-  toolbarActions?: ActionDescriptor[];  // rendered in the box's header (card header area)
-  bottomActions?: ActionDescriptor[];   // rendered below the box's fields
+  toolbarActions?: AnyActionDescriptor[];  // rendered in the box's header (card header area)
+  bottomActions?: AnyActionDescriptor[];   // rendered below the box's fields
   boxes?: BoxItem[];
   tab?: TabBoxParameters;
   wizard?: WizardBoxParameters;
@@ -100,16 +108,14 @@ type WizardBoxParameters = {
 type GridItemBoxParameters = {xs?: number; sm?: number; md?: number; lg?: number; xl?: number};
 
 type ListBoxParameters = {
-  reference: string;          // Related resource name, e.g. "eshop/order-item"
+  reference: ResourceReference;  // Related resource; its params go with the box's schema request
   target?: string;            // FK field linking to the parent record
-  rowActions?: ActionDescriptor[];
-  toolbarActions?: ActionDescriptor[];  // explicit referenced-resource actions in the box header (no default fallback)
-  listActions?: ActionDescriptor[];     // actions next to the filter bar; falls back to the resource's default list actions (e.g. create)
+  rowActions?: AnyActionDescriptor[];
+  listActions?: AnyActionDescriptor[];       // actions next to the filter bar
   filters?: FilterDescriptor[];
   extraFilters?: Record<string, string | number | boolean>;
   defaultSorting?: SortDescriptor;
   sortable?: SortableParameters;
-  schemaParams?: Record<string, string>;   // query params appended when the box fetches its schema
   singleClickAction?: ActionDescriptor;
   doubleClickAction?: ActionDescriptor;
 };
@@ -123,13 +129,12 @@ type ArrayBoxParameters = {
 type ObjectBoxParameters = {target: string};
 
 type GalleryBoxParameters = {
-  reference: string;
+  reference: ResourceReference;
   target?: string;
   imageField: string;
   filters?: FilterDescriptor[];
   extraFilters?: Record<string, string | number | boolean>;
   defaultSorting?: SortDescriptor;
-  schemaParams?: Record<string, string>;
 };
 ```
 
@@ -168,7 +173,7 @@ type ViewActionParameters = {
   name: string;
   choices: {label: string; parameters: Record<string, string>}[];
   mode: ViewModeType;
-  endpoint?: {reference?: string; actionName?: string; recordPk?: Identifier};
+  endpoint?: ResourceReference;  // absent = the resource the schema was generated for
   parameters: Record<string, string>;
   dialogWidth?: string;       // mode: 'dialog' only — MUI breakpoint ("md") or CSS width ("800px")
   keepLinkedParent?: boolean; // keep the linked-parent segments in the redirect path
@@ -180,9 +185,7 @@ type ResourceActionParameters = {
   endpoint: {
     path?: string;
     method: RequestMethodType;
-    reference?: string;
-    actionName?: string;
-    recordPk?: Identifier;
+    reference?: ResourceReference;
   };
   data: Record<string, string | number | boolean>;
   isBackground?: boolean;     // fire the request without leaving the current screen
@@ -198,6 +201,15 @@ type ExportActionParameters = {
   fields?: string[];
 };
 ```
+
+### What an export action exports
+
+Next to the table of its resource — a list view's or a list box's `listActions` — an `export` action
+exports the selected rows, or everything matching the current filters and sort. Anywhere else, such
+as a box header, there is no table state to read: it exports every record of its resource that
+belongs to the parent record its `reference` links back to (`params._target`), and every record of
+the resource when it links to none. Filters the user set or the box's `extraFilters` do not apply
+there.
 
 ### Presentation mode inside a dialog or side panel
 
@@ -250,11 +262,13 @@ resource's registered actions.
 
 ```typescript
 type ActionDescriptor = {
+  type?: 'action';                        // always on the wire; optional in code
   name: string;
   label?: string;
   icon?: string;
   color?: ColorWithInherit;
   action?: ActionSchema;                  // inline definition instead of a named resource action
+  reference?: ResourceReference;          // resource whose schema the action is looked up in
   view?: {
     choices?: {label: string; parameters: Record<string, string>}[];
     mode?: ViewModeType;
@@ -265,6 +279,52 @@ type ActionDescriptor = {
   menuItems?: ActionDescriptor[];         // collapses the descriptor into a dropdown
 };
 ```
+
+### Linking an action from another schema
+
+A descriptor finds its action in this order:
+
+1. `action` — the inline definition, used as it is;
+2. `reference` — the schema that address loads, where `name` is looked up;
+3. otherwise the schema the descriptor is rendered in: the record's actions, or the resource's.
+
+A `reference` also **binds** the action, even when `action` is inline: it runs against the
+referenced resource and against `reference.recordPk`, not the surrounding ones. Without a
+`recordPk` it keeps the surrounding record only when that record belongs to the referenced
+resource — a row action linking the row's own resource still gets the row.
+
+A linked button appears once its schema has loaded; until then, and when the schema has no action
+of that `name`, the slot leaves it out. The schema is fetched once per distinct reference and
+shared with every other reader of it, but it is a request after the page's own, so a linked button
+shows up later than the rest.
+
+Only the target record's key is known, not the record itself, so a linked action's `label` cannot
+be templated with that record's values.
+
+## DefaultActionsDescriptor
+
+An action slot holds `ActionDescriptor`s and `DefaultActionsDescriptor`s side by side, told apart by
+`type`. The latter stands for a resource's default actions and expands into one descriptor per
+action it covers.
+
+```typescript
+type ActionScopeType = 'list' | 'detail' | 'all';
+
+type DefaultActionsDescriptor = {
+  type: 'default_actions';
+  reference?: ResourceReference;  // absent = the resource the slot is rendered for
+  scope?: ActionScopeType;        // 'list' = collection actions, 'detail' = record actions; 'all' by default
+};
+
+type AnyActionDescriptor = ActionDescriptor | DefaultActionsDescriptor;
+```
+
+The expansion keeps the actions the surface shows — `showInList` ones on a list, `showInDetail` ones
+on a detail — and leaves out an action opening the very view the slot belongs to. With a
+`reference`, the address decides the surface: one with a `recordPk` is that record's detail, one
+without it the collection's list, and every expanded descriptor carries the reference.
+
+A slot renders exactly what it lists; absent or empty, it renders nothing.
 
 ## Action results
 

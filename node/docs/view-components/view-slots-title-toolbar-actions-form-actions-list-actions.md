@@ -74,11 +74,17 @@ screens), elsewhere three to five depending on the breakpoint; the rest collapse
 
 **Backend schema fields:**
 
-- `ListViewParameters.toolbarActions` — array of `ActionDescriptor` for list views.
-- `DetailViewParameters.toolbarActions` — array of `ActionDescriptor` for detail/edit/show views.
+- `ListViewParameters.toolbarActions` — the action slot of list views.
+- `DetailViewParameters.toolbarActions` — the action slot of detail/edit/show views.
 
 Each `ActionDescriptor` references an action by `name`. The library resolves the button type (create,
 edit, custom action, …) from the resource schema automatically.
+
+A slot renders exactly what it lists: absent or empty, it renders nothing — the frontend never adds
+the resource's actions on its own. A `DefaultActionsDescriptor` entry (`{type: 'default_actions'}`)
+stands for them instead, and expands into one button per action of its `scope` (`list`, `detail` or
+`all`); a backend sends it for every slot its author left unset. See
+[ActionDescriptor](../types-and-schemas/view-schema-and-action-schema.md#defaultactionsdescriptor).
 
 ## `formActions`
 

@@ -4,6 +4,7 @@ import {
   FIELD_ALL,
   FIELD_DEFAULT,
   actionDescriptorsToFieldSelection,
+  descriptorsNeedAllActions,
   fieldDescriptorsToActionSelection,
   fieldDescriptorsToFieldSelection,
   mergeFieldSelections,
@@ -296,6 +297,15 @@ describe('fieldDescriptorsToActionSelection', () => {
 // ----------------------------------------------------------------------------
 
 describe('actionDescriptorsToFieldSelection', () => {
+  it('leaves out DefaultActions entries, which name no action', () => {
+    expect(
+      actionDescriptorsToFieldSelection([
+        {name: 'show'},
+        {type: 'default_actions', scope: 'detail'},
+      ])
+    ).toEqual({show: FIELD_DEFAULT});
+  });
+
   it('returns empty object for empty array', () => {
     expect(actionDescriptorsToFieldSelection([])).toEqual({});
   });
@@ -308,5 +318,18 @@ describe('actionDescriptorsToFieldSelection', () => {
 
   it('handles single action', () => {
     expect(actionDescriptorsToFieldSelection([{name: 'show'}])).toEqual({show: FIELD_DEFAULT});
+  });
+});
+
+describe('descriptorsNeedAllActions', () => {
+  it("is true when the slot expands the record's own defaults", () => {
+    expect(descriptorsNeedAllActions([{name: 'show'}, {type: 'default_actions'}])).toBe(true);
+  });
+
+  it('is false for named actions and for defaults of another resource', () => {
+    const reference = {service: 'billing', resource: 'invoice'};
+    expect(descriptorsNeedAllActions([{name: 'show'}, {type: 'default_actions', reference}])).toBe(
+      false
+    );
   });
 });

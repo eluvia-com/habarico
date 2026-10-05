@@ -30,7 +30,7 @@ vi.mock('react-admin', async (orig) => {
   return {
     ...actual,
     useRecordContext: () => ({id: 1}),
-    useResourceContext: (resource?: string) => resource ?? 'svc/res',
+    useResourceContext: (props?: {resource?: string}) => props?.resource ?? 'svc/res',
   };
 });
 

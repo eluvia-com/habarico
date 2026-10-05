@@ -22,7 +22,7 @@ export const ActionSaveContextProvider = ({
 
   const {viewSchema} = useViewSchemaContext();
 
-  const path = viewSchema.endpoint?.path || viewSchema.endpoint.actionName + '/';
+  const path = viewSchema.endpoint?.path || viewSchema.endpoint.reference?.actionName + '/';
 
   const {triggerActionElement, triggerAction} = useTriggerAction();
   // Set when the save's trigger action navigated itself: it then stands in for `handleSuccess`'s
