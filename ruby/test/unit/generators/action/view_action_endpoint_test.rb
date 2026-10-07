@@ -26,7 +26,7 @@ class ViewActionEndpointTest < Minitest::Test
   end
 
   def endpoint(action)
-    build_generator.send(:view_action_endpoint_reference, action, context)
+    build_generator.send(:view_action_reference, action, context)
   end
 
   def test_an_action_opening_a_reserved_view_carries_no_address

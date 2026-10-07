@@ -317,7 +317,7 @@
   `FieldSchema`, `FilterSchema`, `ItemFieldSchema` and `FieldDescriptor` relations,
   `ListBoxParameters`, `GalleryBoxParameters`, `UploadImagesActionParameters`, the view endpoint
   (`ViewEndpointParameters.reference`), the resource action endpoint
-  (`ResourceActionEndpointParameters.reference`) and `ViewActionParameters.endpoint`, which is the
+  (`ResourceActionEndpointParameters.reference`) and `ViewActionParameters.reference`, which is the
   reference itself. `ActionDescriptor` gained `reference`. `actionName` and `recordPk` moved from the
   endpoints into their reference, `schemaParams` of list and gallery boxes into `reference.params`,
   and `ViewActionEndpointParameters` is removed. `resourceKey(reference)` composes the

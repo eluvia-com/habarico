@@ -59,7 +59,7 @@ const SchemaButtonContent = ({
   // Get resource and reference context
   const resource = useResourceContext();
   const reference = useResourceContext(
-    resourceKey(schema.view?.endpoint ?? schema.resource?.endpoint?.reference)
+    resourceKey(schema.view?.reference ?? schema.resource?.endpoint?.reference)
   );
   const {getGlobalViewSchema} = useGlobalResourceSchemaContext(reference);
   const viewSchema = getGlobalViewSchema(schema.view?.name);

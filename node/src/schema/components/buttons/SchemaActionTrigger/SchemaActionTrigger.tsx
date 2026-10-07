@@ -44,7 +44,7 @@ const SchemaActionTriggerContent = ({
   const record = useRecordContext();
   const resource = useResourceContext();
   const reference = useResourceContext(
-    resourceKey(schema.view?.endpoint ?? schema.resource?.endpoint?.reference)
+    resourceKey(schema.view?.reference ?? schema.resource?.endpoint?.reference)
   );
   const {getGlobalViewSchema} = useGlobalResourceSchemaContext(reference);
 
@@ -67,9 +67,9 @@ const SchemaActionTriggerContent = ({
         <SchemaViewActionTrigger
           viewType={viewSchema.type}
           viewName={schema.view.name}
-          actionName={schema.view.endpoint?.actionName}
+          actionName={schema.view.reference?.actionName}
           reference={reference}
-          recordPk={schema.view.endpoint?.recordPk || recordPk}
+          recordPk={schema.view.reference?.recordPk || recordPk}
           mode={schema.view.mode}
           navMode={navMode}
           target={target}

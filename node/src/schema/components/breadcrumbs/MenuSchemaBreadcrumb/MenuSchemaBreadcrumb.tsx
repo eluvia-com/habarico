@@ -16,7 +16,7 @@ export type MenuSchemaBreadcrumbProps = {
 export const MenuSchemaBreadcrumb = ({menuSchema}: MenuSchemaBreadcrumbProps) => {
   const getGlobalResourceSchemaContext = useGetGlobalResourceSchemaContext();
   const getLink = useGetLinkWithData();
-  const reference = useRaResourceContext({resource: resourceKey(menuSchema.view?.endpoint)});
+  const reference = useRaResourceContext({resource: resourceKey(menuSchema.view?.reference)});
 
   if (menuSchema.type === 'link') {
     return (
@@ -37,8 +37,8 @@ export const MenuSchemaBreadcrumb = ({menuSchema}: MenuSchemaBreadcrumbProps) =>
           path={getLink({
             type: viewSchema.type,
             resource: reference,
-            actionName: menuSchema.view?.endpoint?.actionName,
-            id: menuSchema.view?.endpoint?.recordPk,
+            actionName: menuSchema.view?.reference?.actionName,
+            id: menuSchema.view?.reference?.recordPk,
           })}
         >
           <EllipsisWithTitle maxWidth={MAX_BREADCRUMB_WIDTH}>

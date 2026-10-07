@@ -59,7 +59,7 @@ class ViewActionParameters(BaseSchema):
         self,
         *,
         name: str,
-        endpoint: ResourceReference | None = None,
+        reference: ResourceReference | None = None,
         choices: list[ActionViewChoice] | None = None,
         mode: ViewModeType = ViewModeType.REDIRECT,
         parameters: dict[str, str] | None = None,
@@ -71,7 +71,7 @@ class ViewActionParameters(BaseSchema):
 
         Args:
             name (str): Name of the view.
-            endpoint (ResourceReference, optional): What the view addresses. Defaults to None, which the
+            reference (ResourceReference, optional): What the view addresses. Defaults to None, which the
                 client reads as the resource the schema was generated for.
             choices (list[ActionViewChoice], optional): Choices of the view. Defaults to None.
             mode (ViewModeType): Mode of the view. Modal or redirect. Defaults to ViewModeType.REDIRECT.
@@ -83,7 +83,7 @@ class ViewActionParameters(BaseSchema):
                 resource. Defaults to None.
         """
         self._name = name
-        self._endpoint = endpoint
+        self._reference = reference
         self._choices = choices
         self._mode = mode
         self._parameters = parameters
@@ -141,7 +141,7 @@ class MenuSchema(MenuGroupSchema):
         if type == MenuType.VIEW:
             self._view = ViewActionParameters(
                 name=view_name,
-                endpoint=build_endpoint_reference(view_reference, view_action_name, record_pk),
+                reference=build_endpoint_reference(view_reference, view_action_name, record_pk),
             )
         else:
             self._link = LinkActionParameters(url=link_url, target=link_target)

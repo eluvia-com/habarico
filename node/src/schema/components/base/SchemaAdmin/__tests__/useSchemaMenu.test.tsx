@@ -65,7 +65,7 @@ const viewMenu = (viewName: string, recordPk?: number): MenuSchema => ({
     choices: [],
     mode: 'redirect',
     parameters: {},
-    ...(recordPk === undefined ? {} : {endpoint: {service: 'svc', resource: 'orders', recordPk}}),
+    ...(recordPk === undefined ? {} : {reference: {service: 'svc', resource: 'orders', recordPk}}),
   },
 });
 
