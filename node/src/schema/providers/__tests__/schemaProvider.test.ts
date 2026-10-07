@@ -49,7 +49,7 @@ describe('getSchemaProvider', () => {
       const mockSchema = [
         {
           name: 'articles',
-          menu: {view: {endpoint: {resource: 'articles', params: {author_id: '1', _target: 'x'}}}},
+          menu: {view: {reference: {resource: 'articles', params: {author_id: '1', _target: 'x'}}}},
         },
       ];
       vi.mocked(fetch).mockResolvedValue({
@@ -59,7 +59,7 @@ describe('getSchemaProvider', () => {
 
       const result = await provider.getServiceSchema('blog', 'http://api.example.com', {});
 
-      expect(result[0].menu?.view?.endpoint?.params).toEqual({author_id: '1', _target: 'x'});
+      expect(result[0].menu?.view?.reference?.params).toEqual({author_id: '1', _target: 'x'});
     });
 
     it('appends resource url from serviceUrl and name', async () => {

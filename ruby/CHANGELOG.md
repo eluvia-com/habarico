@@ -79,7 +79,7 @@ version and date when a release is finalized.
 
 - **BREAKING:** `ViewActionEndpointParameters` is gone and the two remaining endpoint parameter
   schemas address what they point at with one `reference` instead of their own `reference`,
-  `action_name` and `record_pk`; `ViewActionParameters#endpoint` is a `ResourceReference` itself.
+  `action_name` and `record_pk`; `ViewActionParameters#reference` is a `ResourceReference` itself.
   `path` and `method` stay beside it: how a thing is called is not part of where it is. A view's
   endpoint carries no address when it is this resource's own; one with an `action_name` names the
   resource, because the action name lives inside the address and needs one to belong to.

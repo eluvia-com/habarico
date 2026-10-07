@@ -70,7 +70,7 @@ live under `meta`, and `data` is merged beside it.
     "trigger_action": {
       "type": "view",
       "is_detail": true,
-      "view": {"name": "show", "mode": "dialog", "endpoint": {"record_pk": "…"}}
+      "view": {"name": "show", "mode": "dialog", "reference": {"record_pk": "…"}}
     }
   },
   "published_at": "2026-09-21T10:15:00Z"

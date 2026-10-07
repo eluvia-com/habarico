@@ -69,12 +69,12 @@ describe('generateDescriptorsFromSchema', () => {
       expect(names).toEqual([]);
     });
 
-    it('keeps the self-targeting action when its view addresses an endpoint', () => {
+    it('keeps the self-targeting action when its view addresses a reference', () => {
       const actions = [
         action('edit', {
           view: {
             name: 'edit',
-            endpoint: {service: 'estates', resource: 'owners'},
+            reference: {service: 'estates', resource: 'owners'},
           } as ResourceActionSchema['view'],
         }),
       ];

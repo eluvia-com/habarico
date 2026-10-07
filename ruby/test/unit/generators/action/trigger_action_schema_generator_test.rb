@@ -39,7 +39,7 @@ class TriggerActionSchemaGeneratorTest < Minitest::Test
     schema = generate('edit_price')
 
     assert_equal 'edit', schema.view.name
-    assert_equal PRODUCT_PK, schema.view.endpoint.record_pk
+    assert_equal PRODUCT_PK, schema.view.reference.record_pk
   end
 
   def test_a_standard_action_declared_as_a_symbol_is_found_by_name
@@ -66,10 +66,10 @@ class TriggerActionSchemaGeneratorTest < Minitest::Test
   end
 
   def test_record_pk_and_reference_retarget_the_action
-    endpoint = generate('edit_price', record_pk: CATEGORY_PK, reference: 'categories').view.endpoint
+    reference = generate('edit_price', record_pk: CATEGORY_PK, reference: 'categories').view.reference
 
-    assert_equal CATEGORY_PK, endpoint.record_pk
-    assert_equal 'categories', endpoint.resource
+    assert_equal CATEGORY_PK, reference.record_pk
+    assert_equal 'categories', reference.resource
   end
 
   def test_retargeting_does_not_mutate_the_declared_action

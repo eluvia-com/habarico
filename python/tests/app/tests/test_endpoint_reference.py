@@ -90,7 +90,7 @@ class TestActionSchemaEndpoint:
             record_pk=7,
         )
 
-        assert action.to_dict()["view"]["endpoint"] == {"resource": "article", "record_pk": 7}
+        assert action.to_dict()["view"]["reference"] == {"resource": "article", "record_pk": 7}
 
     def test_an_action_part_without_a_resource_is_refused(self):
         """

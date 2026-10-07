@@ -118,7 +118,7 @@ module Habarico
       trigger = result['meta']['trigger_action']
       assert_equal 'view', trigger['type']
       assert_equal 'edit', trigger['view']['name']
-      assert_equal PRODUCT_PK, trigger['view']['endpoint']['record_pk']
+      assert_equal PRODUCT_PK, trigger['view']['reference']['record_pk']
     end
 
     def test_trigger_action_by_name_accepts_a_symbol
@@ -157,14 +157,14 @@ module Habarico
         view: Habarico::ViewActionParameters.new(
           name: 'show',
           mode: :redirect,
-          endpoint: Habarico::ResourceReference.build('categories', record_pk: CATEGORY_PK)
+          reference: Habarico::ResourceReference.build('categories', record_pk: CATEGORY_PK)
         )
       )
       result = render(Habarico::Response.new(action: schema))
 
       trigger = result['meta']['trigger_action']
-      assert_equal 'categories', trigger['view']['endpoint']['resource']
-      assert_equal CATEGORY_PK, trigger['view']['endpoint']['record_pk']
+      assert_equal 'categories', trigger['view']['reference']['resource']
+      assert_equal CATEGORY_PK, trigger['view']['reference']['record_pk']
     end
 
     def test_trigger_action_of_an_unsupported_type_raises
@@ -184,11 +184,11 @@ module Habarico
                                         endpoint_reference: 'categories', endpoint_record_pk: CATEGORY_PK)
       result = render(Habarico::Response.new(action: action))
 
-      endpoint = result['meta']['trigger_action']['view']['endpoint']
-      assert_equal 'categories', endpoint['resource']
-      assert_equal CATEGORY_PK, endpoint['record_pk']
-      # A standard action name must not put the current resource's own action name on the endpoint.
-      assert_nil endpoint['action_name']
+      reference = result['meta']['trigger_action']['view']['reference']
+      assert_equal 'categories', reference['resource']
+      assert_equal CATEGORY_PK, reference['record_pk']
+      # A standard action name must not put the current resource's own action name on the reference.
+      assert_nil reference['action_name']
     end
 
     def test_trigger_action_calls_a_resource_endpoint_of_another_resource
@@ -208,14 +208,14 @@ module Habarico
       schema = @controller.send(:trigger_action_schema, action, record_pk: CATEGORY_PK)
       result = render(Habarico::Response.new(action: schema))
 
-      assert_equal CATEGORY_PK, result['meta']['trigger_action']['view']['endpoint']['record_pk']
+      assert_equal CATEGORY_PK, result['meta']['trigger_action']['view']['reference']['record_pk']
     end
 
     def test_trigger_action_schema_retargets_a_declared_action_given_by_name
       schema = @controller.send(:trigger_action_schema, 'edit_price', record_pk: CATEGORY_PK, reference: 'categories')
 
-      assert_equal CATEGORY_PK, schema.view.endpoint.record_pk
-      assert_equal 'categories', schema.view.endpoint.resource
+      assert_equal CATEGORY_PK, schema.view.reference.record_pk
+      assert_equal 'categories', schema.view.reference.resource
     end
 
     # ***********************************************************************
@@ -239,7 +239,7 @@ module Habarico
             'view' => {
               'name' => 'show',
               'mode' => 'redirect',
-              'endpoint' => {
+              'reference' => {
                 'resource' => 'categories',
                 'record_pk' => CATEGORY_PK
               }
@@ -284,9 +284,9 @@ module Habarico
 
       result = serialize_record(controller, record)
 
-      endpoint = result['meta']['trigger_action']['view']['endpoint']
-      assert_equal 'categories', endpoint['resource']
-      assert_equal CATEGORY_PK, endpoint['record_pk']
+      reference = result['meta']['trigger_action']['view']['reference']
+      assert_equal 'categories', reference['resource']
+      assert_equal CATEGORY_PK, reference['record_pk']
       assert_equal 'dialog', result['meta']['trigger_action']['view']['mode']
     end
 
@@ -305,7 +305,7 @@ module Habarico
       trigger = serialize_record(list_controller { |_record| 'edit_price' }, record)['meta']['trigger_action']
 
       assert_equal 'edit', trigger['view']['name']
-      assert_equal CATEGORY_PK, trigger['view']['endpoint']['record_pk']
+      assert_equal CATEGORY_PK, trigger['view']['reference']['record_pk']
     end
 
     def test_get_trigger_action_schema_may_answer_an_action
