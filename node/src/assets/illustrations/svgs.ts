@@ -1,0 +1,10 @@
+export {default as DashboardV1Svg} from './dashboard-v1.svg';
+export {default as DashboardV2Svg} from './dashboard-v2.svg';
+export {default as DashboardV3Svg} from './dashboard-v3.svg';
+export {default as ListV1Svg} from './list-v1.svg';
+export {default as ListV2Svg} from './list-v2.svg';
+export {default as ListV3Svg} from './list-v3.svg';
+export {default as ListV4Svg} from './list-v4.svg';
+export {default as NotFoundV1Svg} from './not-found-v1.svg';
+export {default as NotFoundV2Svg} from './not-found-v2.svg';
+export {default as NotFoundV3Svg} from './not-found-v3.svg';

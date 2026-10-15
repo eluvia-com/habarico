@@ -1,0 +1,86 @@
+---
+title: ImageField
+sidebar_position: 9
+storybook: admin-fields-imagefield--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Displays an image thumbnail that opens full size in a dialog when clicked. A broken image URL
+falls back to an icon — in both the thumbnail and the dialog — instead of the browser's default
+broken-image glyph.
+
+<StorybookPreview />
+
+Image fields arrive as an object (`{url, filename}`), so the dispatcher points the component at
+`<source>.url`. A non-image attachment renders as React Admin's `FileField` instead.
+
+## Example
+
+```tsx
+<ImageField source="photo.url" title="photo.filename" />
+```
+
+## Props
+
+The component takes the same props as React Admin's `ImageField` (it renders its own thumbnail —
+with a broken-image fallback — rather than delegating to it), for a single image URL value.
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Path to the image URL on the record, e.g. `"photo.url"` |
+| `title` | `string` | — | Path to the value used as the `alt`/`title` text |
+| `label` | `string \| ReactElement \| false` | label from the schema | `false` hides the label |
+| `emptyText` | `string` | — | Text shown instead of a thumbnail when the record has no value |
+| `sx` | `SxProps<Theme>` | 200×100, `objectFit: 'contain'` | Style applied to the thumbnail directly (not via an `'& img'` selector) — also sizes its broken-image fallback, so a dead URL keeps the same footprint the image would have had |
+
+The click-to-expand dialog only appears when the record actually carries a URL; an empty value
+renders `emptyText` (if given) or nothing at all, with no pointer cursor either way.
+
+## Schema mapping
+
+`type: "object"` with `format: "base64-image"`:
+
+```json
+{"name": "photo", "type": "object", "format": "base64-image",
+ "options": {"accept": [".jpg", ".png"], "image": {"resizeWidth": 1600}}}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+`AdminImageFileSerializer` emits the format and the upload options:
+
+```python
+from habarico.serializers import AdminImageFileSerializer, AdminModelSerializer
+
+
+class ProductSerializer(AdminModelSerializer):
+    photo = AdminImageFileSerializer(required=False)
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "photo"]
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+An image attachment on the model is detected automatically:
+
+```ruby
+class Product < ApplicationRecord
+  has_one_attached :photo
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [UploadInput](../input-components/upload-input) — the form counterpart, including chunked uploads
+- [FieldSchema](../types-and-schemas/field-schema.md#fieldoptions) — `options.image`, `accept`, `maxSize`
+- [File uploads](/concepts/guides/file-uploads) — the whole path, backend included

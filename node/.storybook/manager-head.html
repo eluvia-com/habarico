@@ -1,0 +1,57 @@
+<!--
+  The brand font of the manager UI (see manager.ts) — "DM Sans Variable", the same family the
+  library's own theme uses as its primary font (src/design/theme/core/typography.ts), so the
+  manager chrome around a story no longer clashes with the component being documented inside it.
+  Self-hosted, like the documentation site does it: the file comes from
+  @fontsource-variable/dm-sans, copied into the build by `staticDirs` in main.ts.
+
+  Every URL here is relative on purpose. The same build is served from the root of the bucket and
+  from a `<series>/` prefix (HAB-763), and a leading slash would send an archived series looking
+  for the current one's files.
+
+  Only the subsets the UI needs: story titles and addon labels are Latin, with `latin-ext` there
+  for a diacritic in a story name. Italics are not used by the manager at all.
+-->
+<style>
+  @font-face {
+    font-family: 'DM Sans Variable';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 1000;
+    src: url('./brand/fonts/dm-sans-latin-wght-normal.woff2') format('woff2-variations');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+      U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+      U+FEFF, U+FFFD;
+  }
+
+  @font-face {
+    font-family: 'DM Sans Variable';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 1000;
+    src: url('./brand/fonts/dm-sans-latin-ext-wght-normal.woff2') format('woff2-variations');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+      U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+      U+2113, U+2C60-2C7F, U+A720-A7FF;
+  }
+
+  /*
+    Lines the brand logo's left edge up with the search field and story tree below it, which sit
+    flush against the sidebar's own 8px inset while the logo doesn't: Storybook wraps the logo in
+    an <a> with its own 3px `padding-left` (a hit-target trick that has no purpose here — dropped),
+    and the header row (`.sidebar-header`) itself carries the 8px `padding-left` that the search
+    field/tree don't have — canceled with a negative margin on the <a>, rather than touching
+    `.sidebar-header` directly, since that padding also positions the settings-menu button on the
+    header's other side. The extra 1px beyond that 8px is the logo.svg canvas itself: its artwork
+    doesn't start flush at the viewBox's left edge, so the rendered <img>'s own bounding box
+    carries a sliver of margin no CSS rule can see or target — confirmed by eye, not computed.
+    "sidebar-header" is the only stable class name the header exposes
+    (storybook/src/manager/components/sidebar/Heading.tsx); the <a> itself has none, so
+    `.sidebar-header a` is the only available hook. Re-measure if a Storybook major bump changes
+    either padding, or if logo.svg's artwork is ever redrawn.
+  */
+  .sidebar-header a {
+    padding-left: 0;
+    margin-left: -9px;
+  }
+</style>

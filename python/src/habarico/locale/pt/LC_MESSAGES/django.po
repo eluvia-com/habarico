@@ -1,0 +1,113 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-29 16:23+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Portuguese <pt@li.org>\n"
+"Language: pt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "list"
+msgstr "lista"
+
+msgid "user"
+msgstr "utilizador"
+
+msgid "key"
+msgstr "chave"
+
+msgid "value"
+msgstr "valor"
+
+msgid "updated at"
+msgstr "atualizado em"
+
+msgid "user preference"
+msgstr "preferência do utilizador"
+
+msgid "user preferences"
+msgstr "preferências do utilizador"
+
+msgid "Invalid value for preference."
+msgstr "Valor inválido para a preferência."
+
+msgid "Preference value is too large."
+msgstr "O valor da preferência é demasiado grande."
+
+msgid "Too many preferences are stored for this user."
+msgstr "Estão armazenadas demasiadas preferências para este utilizador."
+
+msgid "Yes"
+msgstr "Sim"
+
+msgid "No"
+msgstr "Não"
+
+msgid "Search"
+msgstr "Pesquisar"
+
+msgid "Invalid value of the filter {name}."
+msgstr "Valor inválido do filtro {name}."
+
+msgid "Value must be a dict with 'lower' or 'upper' keys."
+msgstr "O valor deve ser um dicionário com as chaves 'lower' ou 'upper'."
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "Upload images"
+msgstr "Carregar imagens"
+
+msgid "Delete"
+msgstr "Eliminar"
+
+msgid "Delete item"
+msgstr "Eliminar elemento"
+
+msgid "Do you want to delete the item?"
+msgstr "Deseja eliminar o elemento?"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Detail"
+msgstr "Detalhe"
+
+msgid "Create"
+msgstr "Criar"
+
+msgid "This field may not be null."
+msgstr "Este campo não pode ser nulo."
+
+msgid "Export"
+msgstr "Exportar"
+
+msgctxt "spreadsheet sheet title"
+msgid "Export"
+msgstr "Exportação"
+
+#, python-format
+msgid ""
+"The export has %(count)d rows, which is over the limit of %(limit)d. Narrow "
+"the filter down."
+msgstr ""
+"A exportação tem %(count)d linhas, acima do limite de %(limit)d. Restrinja o "
+"filtro."
+
+#, python-format
+msgid "Fields not available for export: %(fields)s."
+msgstr "Estes campos não podem ser exportados: %(fields)s."
+
+msgid "Invalid record identifiers."
+msgstr "Identificadores inválidos."

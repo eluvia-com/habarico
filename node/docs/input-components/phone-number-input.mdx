@@ -1,0 +1,89 @@
+---
+title: PhoneNumberInput
+sidebar_position: 11
+storybook: admin-inputs-phonenumberinput--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Collects a phone number: a country selector next to the national digits.
+
+<StorybookPreview />
+
+The stored value is always the full international number (`+420123456789`); the split into country
+code and national part exists only in the UI.
+
+## Example
+
+```tsx
+<PhoneNumberInput
+  source="phone"
+  defaultRegion="CZ"
+  allowedRegions={['CZ', 'SK']}
+/>
+```
+
+## Props
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field in the form record |
+| `label` | `string \| ReactElement \| false` | label from the schema | `false` hides the label |
+| `helperText` | `string \| ReactElement \| false` | `helpText` from the schema | Text under the input |
+| `validate` | `Validator \| Validator[]` | from the schema | React Admin validators |
+| `fullWidth` | `boolean` | `true` | Stretches the input to its container |
+| `placeholder` | `string` | — | Placeholder for the national part |
+| `defaultRegion` | `string` | first allowed region | Country preselected for an empty value |
+| `allowedRegions` | `string[]` | all known regions | Restricts the country selector |
+
+The schema layer maps `options.phone.defaultRegion` and `options.phone.allowedRegions` onto the
+two props above before rendering this component directly.
+
+Digits are grouped as you type according to the selected country, and the caret keeps its place
+among the digits rather than jumping over the separators. Clearing the national part stores `null`.
+
+## Schema mapping
+
+`type: "string"` with `format: "phone"`:
+
+```json
+{"name": "phone", "type": "string", "format": "phone",
+ "options": {"phone": {"defaultRegion": "CZ", "allowedRegions": ["CZ", "SK"]}}}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+from django.db import models
+from habarico.models import PhoneNumberField
+
+
+class Customer(models.Model):
+    name = models.CharField(max_length=255)
+    phone = PhoneNumberField(region="CZ", allowed_regions=["CZ", "SK"], blank=True)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+fields [
+  :name,
+  Habarico::FieldReference.new(
+    name: :phone,
+    format: 'phone',
+    phone: {default_region: 'CZ', allowed_regions: %w[CZ SK]},
+  ),
+]
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [PhoneNumberField](../field-components/phone-number-field.mdx) — the display counterpart
+- [Czech local flavor inputs](./czech-local-flavor-inputs.mdx) — the other locale-specific inputs

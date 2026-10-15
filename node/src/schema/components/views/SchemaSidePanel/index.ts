@@ -1,0 +1,1 @@
+export {SchemaSidePanel} from './SchemaSidePanel';

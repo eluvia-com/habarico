@@ -1,0 +1,32 @@
+source "https://rubygems.org"
+
+# Specify your gem's dependencies in habarico.gemspec.
+gemspec
+
+gem "puma"
+
+gem "sprockets-rails"
+
+# Start debugger with binding.b [https://github.com/ruby/debug]
+# gem "debug", ">= 1.0.0"
+
+# Optional dependencies for the habarico/contrib/paper_trail module. These are NOT runtime
+# dependencies of the gem (see gemspec) - they are only needed to exercise the contrib here.
+group :development, :test do
+  gem "paper_trail"
+  gem "diff_match_patch"
+  # In-memory database backing the search integration tests (test/integration).
+  gem "sqlite3"
+  # Optional dependency for habarico/contrib/preferences (JSON Schema Draft 2020-12
+  # validation). NOT a gemspec runtime dependency - hosts add it to their own Gemfile.
+  gem "json_schemer"
+  # The `Habarico::FileValidations` module reads the `content_type:`/`size:` validations a host
+  # declares on a `file_attr`'s underlying attachment with this gem, but never declares any
+  # itself (HAB-966) - so it stays outside the gemspec and the suite brings it in the way a host
+  # app would.
+  gem "active_storage_validations"
+end
+
+source 'https://geminabox.eluvia.dev' do
+  gem 'eluvia-base'
+end

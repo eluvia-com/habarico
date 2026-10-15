@@ -1,0 +1,84 @@
+---
+title: SchemaObjectInput
+sidebar_position: 12
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Collects the properties of a nested object inside an object box.
+
+<StorybookPreview />
+
+The component builds a `BoxSchema` of type `object` from the field's `properties` and hands the
+rendering to `SchemaObjectBox`; each property is a nested [SchemaInput](./schema-input.md).
+
+## Example
+
+```tsx
+<SchemaObjectInput source="shipping_address" fields={addressSchema.properties} />
+```
+
+## Props
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Path to the object in the form record; the last segment becomes the box target |
+| `fields` (required) | `FieldSchema[]` | — | Schemas of the properties to render |
+| `label` | `string \| ReactElement \| false` | label from the schema | Heading of the object box |
+
+The nested values are submitted as one object under `source`, so the backend receives
+`{"shipping_address": {"street": "…", "city": "…"}}`.
+
+## Schema mapping
+
+`type: "object"` with `properties` and no more specific `format`:
+
+```json
+{"name": "shipping_address", "type": "object",
+ "properties": [
+   {"name": "street", "type": "string", "required": true},
+   {"name": "city", "type": "string", "required": true},
+   {"name": "zip", "type": "string", "required": true}
+ ]}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+A writable nested serializer — `AdminModelSerializer` handles creating and updating the related
+row, see [Nested serializers](/python/basic-usage/nested-serializers):
+
+```python
+class AddressSerializer(AdminModelSerializer):
+    class Meta:
+        model = Address
+        fields = ["street", "city", "zip"]
+
+
+class OrderSerializer(AdminModelSerializer):
+    shipping_address = AddressSerializer()
+
+    class Meta:
+        model = Order
+        fields = ["id", "number", "shipping_address"]
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+class Order < ApplicationRecord
+  has_one :shipping_address
+  accepts_nested_attributes_for :shipping_address
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [SchemaObjectField](../field-components/object-field.mdx) — the display counterpart
+- [SchemaObjectArrayInput](./object-array-input.mdx) — a repeatable list of the same shape

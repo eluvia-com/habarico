@@ -1,0 +1,12 @@
+.idea
+node_modules
+lib
+*.tgz
+.DS_Store
+pnpm-workspace.yaml
+pnpm-lock.yaml
+.env
+*storybook.log
+storybook-static
+__screenshots__
+.vitest-attachments

@@ -1,0 +1,104 @@
+---
+title: NumberInput
+sidebar_position: 4
+storybook: admin-inputs-numberinput--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Collects a number, parsing and formatting it in the active locale.
+
+<StorybookPreview />
+
+While the input has focus it shows the raw number so it stays comfortable to type in; on blur it
+formats the value with separators and the currency or unit symbol.
+
+## Example
+
+```tsx
+<NumberInput
+  source="price"
+  numberFormat={{style: 'currency', currency: 'CZK', maximumFractionDigits: 2}}
+/>
+```
+
+## Props
+
+On top of these the component accepts the shared [input props](./index.md#common-props).
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field in the form record |
+| `locales` | `string` | `navigator.language` | Locale used to parse and format the value |
+| `numberFormat` | `Intl.NumberFormatOptions` | `{minimumFractionDigits: 0, maximumFractionDigits: 0}` | `style` (`'currency'` / `'unit'`), `currency`, `unit`, `minimumFractionDigits`, `maximumFractionDigits` |
+| `prefix` | `string` | currency symbol when it leads | Adornment before the value |
+| `postfix` | `string` | currency/unit symbol when it trails | Adornment after the value |
+| `disabled` | `boolean` | `false` | Disables the input |
+| `readOnly` | `boolean` | `false` | Renders the value without allowing edits |
+
+An empty input stores `null`, not `0`.
+
+## Schema options
+
+The schema layer maps the field's `options` onto the props above and supplies the fraction-digit
+defaults before rendering this component directly.
+
+| Schema key | Prop | Default |
+|---|---|---|
+| `options.number` | `numberFormat` | `{minimumFractionDigits: 2, maximumFractionDigits: 5}`, or `0`/`0` for `type: "integer"` |
+| `options.prefix` | `prefix` | — |
+| `options.postfix` | `postfix` | — |
+
+:::caution
+`maximumFractionDigits` is a typing constraint, not only a display one — extra decimals are
+truncated as they are entered. The schema wrapper sets it to `0` for `integer` fields and `5` for
+`number` and `decimal`; a schema that needs more precision must say so in `options.number`.
+:::
+
+:::caution
+The schema key is `options.number`, not `options.numberFormat` — `numberFormat` is the prop name
+on the component. Used standalone (without the wrapper) `NumberInput` defaults to **no** fraction
+digits at all.
+:::
+
+## Schema mapping
+
+`type: "integer"`, `type: "number"`, and `type: "string"` with `format: "decimal"`:
+
+```json
+{"name": "price", "type": "string", "format": "decimal",
+ "options": {"number": {"style": "currency", "currency": "CZK"}}}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+from django.db import models
+from habarico.models import MoneyField
+
+
+class Product(models.Model):
+    price = MoneyField(currency="CZK")
+    stock = models.PositiveIntegerField(default=0)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+create_table :products do |t|
+  t.decimal :price, precision: 10, scale: 2
+  t.integer :stock, default: 0, null: false
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [NumberField](../field-components/number-field.mdx) — the display counterpart
+- [SchemaRangeInput](./range-input.mdx) — a lower/upper pair of numbers

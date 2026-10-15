@@ -1,0 +1,18 @@
+/.bundle/
+# This is a library: its Gemfile.lock is dev-only and ignored by consumers (they
+# resolve from the gemspec). Not committed, so CI/contributors always resolve
+# fresh against the newest allowed dependency versions.
+/Gemfile.lock
+/doc/
+/log/*.log
+/pkg/
+/tmp/
+/test/dummy/db/*.sqlite3
+/test/dummy/db/*.sqlite3-*
+/test/dummy/log/*.log
+/test/dummy/storage/
+/test/dummy/tmp/
+.idea
+*.gem
+.DS_Store
+Gemfile.lock

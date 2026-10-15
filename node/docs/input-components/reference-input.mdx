@@ -1,0 +1,117 @@
+---
+title: SchemaReferenceInput
+sidebar_position: 15
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Selects one related record through an autocomplete backed by the referenced resource.
+
+<StorybookPreview />
+
+Choices are fetched only once the input is focused, so a form with many reference inputs does not
+fire a request per field on mount.
+
+## Example
+
+```tsx
+<SchemaReferenceInput source="category" reference="eshop/category" />
+```
+
+## Props
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field in the form record |
+| `reference` | `string` | resource from context | Target resource, e.g. `"eshop/category"` |
+| `label` | `string \| ReactElement \| false` | label from the schema | `false` hides the label |
+| `validate` | `Validator \| Validator[]` | from the schema | React Admin validators |
+| `defaultValue` | `unknown` | from the schema | Initial value in a create form |
+| `options.relation` | `RelationFieldOptions` | from the schema | See the table below |
+
+### `options.relation`
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `filters` | `{name, value}[]` | — | Restricts the autocomplete results, e.g. only active categories |
+| `sort` | `SortPayload` | resource default | Orders the autocomplete results |
+| `showCreateButton` | `boolean` | `false` | Adds a button that creates a related record in a dialog |
+| `showEditButton` | `boolean` | `false` | Adds a button that edits the selected record in a dialog |
+
+:::caution
+When the `reference` cannot be resolved — neither the schema nor the resource context supplies
+one — the component degrades to a plain text input on the raw key instead of failing.
+That silence is easy to miss in review; check that the reference resolves.
+:::
+
+## Picking from a hierarchy: TreeArrayInput
+
+An **array** reference whose items use `format: "tree-relation"` renders as `TreeArrayInput` — a
+checkbox tree instead of an autocomplete. Use it when the choices form a hierarchy the user needs to
+see while picking: a category tree, an organisational unit.
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `parent` | `string` | `'parent'` | Field of the referenced record holding its parent's id |
+| `label` | `string \| ReactElement \| false` | label from the schema | `false` hides the label |
+
+`useTreeChoices` loads the referenced records through
+[useGetAll](../hooks/use-get-all.md) — in batches of 50, walking every page — and maps each one to
+`{id, name, parentId}`; `TreeSelect` materialises the hierarchy from that and expands every node
+(`expand="all"` on the input; the read-only `TreeArrayField` expands only the branches that hold a
+selected value).
+
+:::caution
+The whole referenced resource is fetched before the tree renders, one request per 50 records.
+That is fine for a category tree and wrong for a large table — reach for a plain `relation`
+autocomplete there, which pages as the user types.
+:::
+
+## Schema mapping
+
+`format: "relation"` or `"tree-relation"` with a `reference`:
+
+```json
+{"name": "category", "type": "integer", "format": "relation",
+ "reference": "eshop/category",
+ "options": {"relation": {"showCreateButton": true,
+                          "filters": [{"name": "is_active", "value": true}]}}}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+from habarico import ModelAdmin
+from habarico.schema import Field
+from habarico.schema.fields import RelationOptions
+
+
+class ProductAdmin(ModelAdmin):
+    model = Product
+    fields = [
+        "id",
+        "name",
+        Field(name="category", relation=RelationOptions(show_create_button=True)),
+    ]
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+fields [
+  :name,
+  Habarico::FieldReference.new(name: :category, relation: {show_create_button: true}),
+]
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [SchemaReferenceField](../field-components/reference-field.mdx) — the display counterpart
+- [SchemaArrayInput](./array-input.mdx) — selecting several related records

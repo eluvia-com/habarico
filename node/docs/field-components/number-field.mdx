@@ -1,0 +1,109 @@
+---
+title: NumberField
+sidebar_position: 4
+storybook: admin-fields-numberfield--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Formats a number for the active locale, with optional currency, unit and prefix/postfix.
+
+<StorybookPreview />
+
+Use it for anything numeric. A value that is semantically a code (order number, SKU) belongs in
+[TextField](./text-field.mdx) — it should not get thousands separators.
+
+## Example
+
+```tsx
+<NumberField source="price" numberFormat={{style: 'currency', currency: 'CZK'}} />
+
+<NumberField source="stock" postfix="pcs" />
+```
+
+## Props
+
+On top of these the component accepts the shared [field props](./index.md#common-props).
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field on the record |
+| `locales` | `string` | admin locale | Locale used for `toLocaleString` |
+| `numberFormat` | `Intl.NumberFormatOptions` | see below | `style` (`'currency'` / `'unit'`), `currency`, `unit`, `minimumFractionDigits`, `maximumFractionDigits` |
+| `prefix` | `string` | currency symbol when it leads | Muted text before the value |
+| `postfix` | `string` | currency/unit symbol when it trails | Muted text after the value |
+| `transform` | `(value: unknown) => any` | numeric strings → numbers | Maps the raw value before formatting |
+| `emptyText` | `string` | — | Text shown when the value is empty |
+
+The currency or unit symbol is placed on the side the locale puts it on; an explicit
+`prefix`/`postfix` replaces it.
+
+## Schema options
+
+The schema layer maps the field's `options` onto the props above and supplies the fraction-digit
+defaults before rendering this component directly.
+
+| Schema key | Prop | Default |
+|---|---|---|
+| `options.number` | `numberFormat` | `{minimumFractionDigits: 2, maximumFractionDigits: 5}`, or `0`/`0` for `type: "integer"` |
+| `options.prefix` | `prefix` | — |
+| `options.postfix` | `postfix` | — |
+
+:::caution
+The schema key is `options.number`, not `options.numberFormat` — `numberFormat` is the prop name
+on the component. A flat `options.numberFormat` in a backend schema is silently ignored.
+:::
+
+:::tip
+In a list, `integer` and `decimal` fields are right-aligned by default. Set `options.textAlign` to
+override it. A plain `number` field is not realigned — set `options.textAlign: "right"` explicitly
+if you want it to match.
+:::
+
+## Schema mapping
+
+`type: "integer"`, `type: "number"`, and `type: "string"` with `format: "decimal"`:
+
+```json
+{"name": "price", "type": "string", "format": "decimal",
+ "options": {"number": {"style": "currency", "currency": "CZK"}}}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+The admin serializer fields fill `options.number` from the model field, so a `DecimalField` needs
+no extra configuration — `AdminDecimalField` copies its `decimal_places` into both fraction-digit
+bounds. `habarico.models.MoneyField` additionally carries the currency into the schema:
+
+```python
+from django.db import models
+from habarico.models import MoneyField
+
+
+class Product(models.Model):
+    price = MoneyField(currency="CZK")
+    stock = models.PositiveIntegerField()
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+`t.decimal` and `t.float` map to `number`, `t.integer` to `integer`:
+
+```ruby
+fields [
+  Habarico::FieldReference.new(name: :price, text_align: 'right'),
+  :stock,
+]
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [NumberInput](../input-components/number-input) — the form counterpart
+- [SchemaRangeField](./range-field.mdx) — for lower/upper numeric pairs

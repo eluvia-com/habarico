@@ -1,0 +1,83 @@
+---
+title: PhoneNumberField
+sidebar_position: 10
+storybook: admin-fields-phonenumberfield--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Displays a phone number in international format next to the flag of its country.
+
+<StorybookPreview />
+
+The country is derived from the stored number, not from a separate field — store phone numbers in
+E.164 (`+420123456789`) and the flag follows.
+
+## Example
+
+```tsx
+<PhoneNumberField source="phone" />
+```
+
+## Props
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field on the record |
+| `sx` | `SxProps<Theme>` | — | MUI style override |
+
+An empty value renders `--`. The number never wraps. When the record came from a fulltext search,
+the matched digits are highlighted inside the formatted number.
+
+:::caution
+The component ignores `options` — `options.phone.defaultRegion` and `allowedRegions` steer
+[PhoneNumberInput](../input-components/phone-number-input) while the value is being entered, not
+how a stored number is displayed.
+:::
+
+## Schema mapping
+
+`type: "string"` with `format: "phone"`:
+
+```json
+{"name": "phone", "type": "string", "format": "phone",
+ "options": {"phone": {"defaultRegion": "CZ"}}}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+`habarico.models.PhoneNumberField` on the model emits `format: "phone"` and carries the region
+options into the schema (it needs the `phonenumber_field` package):
+
+```python
+from django.db import models
+from habarico.models import PhoneNumberField
+
+
+class Customer(models.Model):
+    name = models.CharField(max_length=255)
+    phone = PhoneNumberField(region="CZ", allowed_regions=["CZ", "SK"], blank=True)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+A plain string column needs the format spelled out:
+
+```ruby
+fields [
+  :name,
+  Habarico::FieldReference.new(name: :phone, format: 'phone'),
+]
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [PhoneNumberInput](../input-components/phone-number-input) — the form counterpart
+- [Czech local flavor fields](../input-components/czech-local-flavor-inputs) — the other locale-specific formats

@@ -1,0 +1,79 @@
+---
+title: SchemaRangeInput
+sidebar_position: 16
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Collects a lower and an upper bound side by side inside one fieldset.
+
+<StorybookPreview />
+
+Each bound is a nested [SchemaInput](./schema-input.md), so a numeric range gets number inputs and
+a datetime range gets pickers. When both bounds are plain dates the dispatcher prefers
+[DateRangeInput](./date-range-input.mdx), which is friendlier for filtering.
+
+## Example
+
+```tsx
+<SchemaRangeInput source="price_range" fields={priceRangeSchema.properties} />
+```
+
+## Props
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Path to the range object in the form record |
+| `fields` (required) | `FieldSchema[]` | — | Must contain exactly the entries named `lower` and `upper` |
+| `label` | `string \| ReactElement \| false` | label from the schema | Legend of the fieldset |
+| `helperText` | `string \| ReactElement \| false` | `helpText` from the schema | Text under the fieldset; a validation error replaces it |
+
+Either bound may be left empty, so an open-ended range submits without the user touching the
+other side.
+
+:::caution
+The component throws when `fields` lacks a `lower` or an `upper` entry — a range field's schema
+must expose both as `properties`.
+:::
+
+## Schema mapping
+
+`type: "object"` with `format: "range"` and two `properties`:
+
+```json
+{"name": "price_range", "type": "object", "format": "range",
+ "properties": [
+   {"name": "lower", "type": "number"},
+   {"name": "upper", "type": "number"}
+ ]}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+from django.contrib.postgres.fields import DecimalRangeField
+
+
+class Product(models.Model):
+    price_range = DecimalRangeField(null=True, blank=True)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+create_table :products do |t|
+  t.numrange :price_range
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [SchemaRangeField](../field-components/range-field.mdx) — the display counterpart
+- [DateRangeInput](./date-range-input.mdx) — the calendar variant for date ranges

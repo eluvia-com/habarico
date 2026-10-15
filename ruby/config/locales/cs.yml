@@ -1,0 +1,39 @@
+cs:
+  # Default labels for Habarico's standard actions. Host apps override any key in
+  # their own config/locales (per-resource via `actions.<resource_path>.<action>`).
+  actions:
+    common:
+      show: "Detail"
+      create: "Vytvořit"
+      edit: "Upravit"
+      delete: "Smazat"
+      save: "Uložit"
+
+  # Default confirmation dialog for the standard delete action (delete_action.rb).
+  confirmations:
+    common:
+      delete:
+        title: "Opravdu chcete smazat záznam?"
+        message: "Tato akce způsobí ztrátu dat, které již nebude možné obnovit."
+
+  # Default label for the generic full-text search filter (search_filter_schema_generator.rb).
+  # Override per model via `activerecord.attributes.<model>.search`.
+  filters:
+    common:
+      search: "Hledat"
+
+  # Human-readable boolean labels used by the search highlighter (search_highlighter.rb) when a
+  # matched search field is a boolean column.
+  search:
+    "yes": "Ano"
+    "no": "Ne"
+
+  # Validation error messages for the order_by and filter query params (controller.rb). The
+  # `order_by` notation itself is validated by eluvia-base, which ships its own translations
+  # under `eluvia.errors.ordering` (HAB-915).
+  habarico:
+    errors:
+      order_by:
+        unknown_field: "Neznámý název pole."
+      filter:
+        unknown_term: "Neznámý filtrovací termín."

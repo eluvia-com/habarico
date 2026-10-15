@@ -1,0 +1,90 @@
+---
+title: ChoicesField
+sidebar_position: 8
+storybook: admin-fields-choicesfield--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Displays an enum value as a colored chip.
+
+<StorybookPreview />
+
+Use it for a field with a fixed set of values. For a link to another record reach for
+[SchemaReferenceField](./reference-field.mdx) instead.
+
+## Example
+
+```tsx
+const statusChoices = [
+  {value: 'draft', label: 'Draft', color: 'default'},
+  {value: 'published', label: 'Published', color: 'success'},
+  {value: 'archived', label: 'Archived', color: 'error'},
+];
+
+<ChoicesField source="status" choices={statusChoices} />
+```
+
+## Props
+
+On top of its own `choices`, the component accepts the shared
+[field props](./index.md#common-props).
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field on the record |
+| `choices` (required) | `Choices` | — | Enum values: `{value, label, color?, icon?}` |
+| `label` | `string \| ReactElement \| false` | label from the schema | `false` hides the label |
+| `emptyText` | `string` | — | Text shown when the value is empty |
+| `record` | `RaRecord` | record from context | Renders a record other than the one in context |
+| `iconsKey` | `string` | — | Key into the `iconsMap` on [SchemaAdmin](../base-components/schema-admin.md), used to give the chip an icon |
+
+`SchemaChoicesField` is the wrapper the schema mounts: `choices` comes from the field's `enum` and
+`iconsKey` from `options.choices.iconsKey`.
+
+Chip color comes from `color` on the enum entry; `inherit` behaves as `default`. When the
+displayed value's entry carries an `icon`, the component renders an icon chip instead of a plain
+one.
+
+In a list the chip is truncated to the column width, so a long label does not push the column
+open.
+
+## Schema mapping
+
+The component is picked for a field with `format: "choices"`:
+
+```json
+{"name": "status", "type": "string", "format": "choices",
+ "enum": [{"value": "draft", "label": "Draft", "color": "default"}]}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+The enum is derived from `choices` on the model field:
+
+```python
+class Product(models.Model):
+    status = models.CharField(max_length=16, choices=ProductStatus.choices)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+The enum is derived from an enum attribute:
+
+```ruby
+class Product < ApplicationRecord
+  enum :status, {draft: 0, published: 1, archived: 2}
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [ChoicesInput](../input-components/choices-input) — the form counterpart
+- [FieldSchema](../types-and-schemas/field-schema.md) — the full shape of a field schema

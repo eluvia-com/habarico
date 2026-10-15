@@ -1,0 +1,8 @@
+ja:
+  habarico:
+    contrib:
+      preferences:
+        not_found: "設定が見つかりません。"
+        invalid_value: "設定の値が無効です。"
+        value_too_large: "設定の値が大きすぎます。"
+        too_many_preferences: "このユーザーに保存されている設定が多すぎます。"

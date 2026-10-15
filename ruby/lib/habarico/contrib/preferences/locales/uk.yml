@@ -1,0 +1,8 @@
+uk:
+  habarico:
+    contrib:
+      preferences:
+        not_found: "Налаштування не знайдено."
+        invalid_value: "Недійсне значення налаштування."
+        value_too_large: "Значення налаштування завелике."
+        too_many_preferences: "Для цього користувача збережено забагато налаштувань."

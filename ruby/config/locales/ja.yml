@@ -1,0 +1,39 @@
+ja:
+  # Default labels for Habarico's standard actions. Host apps override any key in
+  # their own config/locales (per-resource via `actions.<resource_path>.<action>`).
+  actions:
+    common:
+      show: "詳細"
+      create: "作成"
+      edit: "編集"
+      delete: "削除"
+      save: "保存"
+
+  # Default confirmation dialog for the standard delete action (delete_action.rb).
+  confirmations:
+    common:
+      delete:
+        title: "このレコードを削除してもよろしいですか?"
+        message: "この操作を行うと、元に戻せないデータ損失が発生します。"
+
+  # Default label for the generic full-text search filter (search_filter_schema_generator.rb).
+  # Override per model via `activerecord.attributes.<model>.search`.
+  filters:
+    common:
+      search: "検索"
+
+  # Human-readable boolean labels used by the search highlighter (search_highlighter.rb) when a
+  # matched search field is a boolean column.
+  search:
+    "yes": "はい"
+    "no": "いいえ"
+
+  # Validation error messages for the order_by and filter query params (controller.rb). The
+  # `order_by` notation itself is validated by eluvia-base, which ships its own translations
+  # under `eluvia.errors.ordering` (HAB-915).
+  habarico:
+    errors:
+      order_by:
+        unknown_field: "不明なフィールド名です。"
+      filter:
+        unknown_term: "不明なフィルター項目です。"

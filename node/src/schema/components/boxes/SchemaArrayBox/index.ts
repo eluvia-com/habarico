@@ -1,0 +1,1 @@
+export {SchemaArrayBox} from './SchemaArrayBox';

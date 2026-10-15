@@ -1,0 +1,13 @@
+# developers-chamber (pydev) configuration
+
+version:
+  files:
+    - pyproject.toml
+
+aliases:
+  reformat:
+    command:
+      - 'sh "isort src"'
+      - 'sh "autoflake -i --remove-all-unused-imports --recursive src"'
+      - 'sh "black src"'
+    description: Reformat code

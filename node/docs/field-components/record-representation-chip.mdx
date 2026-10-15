@@ -1,0 +1,113 @@
+---
+title: RecordRepresentationChip
+sidebar_position: 17
+---
+
+Renders the record in context as a chip carrying its representation, optionally linking to that
+record's show or edit view.
+
+It is the chip the reference fields put on screen, and it is exported so a hand-built screen can
+use the same one. There are two of them, one per layer: `RecordRepresentationChip` takes an
+already-resolved link, and [SchemaRecordRepresentationChip](#schemarecordrepresentationchip)
+derives that link from the resource's schema.
+
+## Example
+
+```tsx
+{
+  /* Inside a Customer show view: the customer's home Category, linked into a dialog */
+}
+<ReferenceField reference="eshop/category" source="favourite_category_id">
+  <RecordRepresentationChip
+    viewType="show"
+    linkMode="dialog"
+    renderContent={renderCategory}
+  />
+</ReferenceField>;
+```
+
+The chip reads the record and the resource from context, so it renders whatever record it is
+mounted under — inside a [SchemaReferenceField](./reference-field.mdx) that is the _referenced_
+record, not the one being shown.
+
+## Props
+
+| Name       | Type                                                                                   | Default                | Description                                 |
+| ---------- | -------------------------------------------------------------------------------------- | ---------------------- | ------------------------------------------- |
+| `size`     | `'small' \| 'medium'`                                                                  | `'small'`              | MUI chip size                               |
+| `variant`  | `'filled' \| 'outlined' \| 'soft'`                                                     | `'soft'`               | MUI chip variant                            |
+| `color`    | `'default' \| 'primary' \| 'secondary' \| 'error' \| 'info' \| 'success' \| 'warning'` | `'primary'`            | MUI chip colour                             |
+| `maxWidth` | `number \| string`                                                                     | —                      | Ellipsizes the representation at this width |
+| `icon`     | `ReactElement \| false`                                                                | an "open in new" glyph | `false` renders no icon                     |
+
+It also takes every prop of [useRecordLink](../hooks/use-record-link.md), which it calls itself:
+`viewType`, `keepLinkedParent`, `linkMode`, `dialogWidth`, `changeView`, `openSidePanel` and
+`renderContent`. Without a `viewType` the chip is inert — no click, no tooltip.
+
+`viewType` is already resolved to `'show'` or `'edit'`: deciding whether a resource _has_ such a
+view needs a schema, which this layer does not read. The tooltip names the view that opens, so a
+chip pointing at an edit view says "Edit object" and not "Show object".
+
+:::caution
+`linkMode: 'dialog'` and `linkMode: 'panel'` need a `renderContent` to fill the overlay. Without
+one `useRecordLink` throws rather than opening an empty dialog — pass one, or leave `linkMode`
+unset and let the link navigate.
+:::
+
+## SchemaRecordRepresentationChip
+
+The same chip with its link described the way the schema describes it. It accepts every
+presentational prop above, plus:
+
+| Name               | Type                            | Default  | Description                                                                        |
+| ------------------ | ------------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `link`             | `boolean \| 'show' \| 'edit'`   | `false`  | Whether to link, and to which view; `true` prefers `show` and falls back to `edit` |
+| `keepLinkedParent` | `boolean`                       | `false`  | Keeps the linked parent segments in the redirect path                              |
+| `linkMode`         | `'page' \| 'dialog' \| 'panel'` | `'page'` | Surface the target opens on                                                        |
+| `dialogWidth`      | `string`                        | `"md"`   | Width for `linkMode: 'dialog'`                                                     |
+
+It resolves `link` against the resource's schema — `link={true}` links to nothing when the resource
+exposes neither a show nor an edit view — and supplies the schema's view router as the overlay
+renderer, so `linkMode` needs nothing extra from the caller.
+
+```tsx
+<SchemaReferenceField source="category_id" reference="eshop/category" />;
+{
+  /* renders, inside the reference: */
+}
+<SchemaRecordRepresentationChip link linkMode="dialog" />;
+```
+
+:::caution
+It must be mounted **inside** the reference, not above it. The resource and record it reads come
+from context, and inside a reference field those are the referenced ones — resolving the link a
+level higher would resolve it against the wrong resource.
+:::
+
+## SchemaRecordLink
+
+Wraps arbitrary children in the same record link, for when a chip is not what you want to make
+clickable:
+
+```tsx
+<SchemaRecordLink link="edit" linkMode="dialog">
+  <strong>{order.number}</strong>
+</SchemaRecordLink>
+```
+
+| Name               | Type                            | Default  | Description                                           |
+| ------------------ | ------------------------------- | -------- | ----------------------------------------------------- |
+| `link`             | `boolean \| 'show' \| 'edit'`   | `true`   | Whether to link, and to which view                    |
+| `keepLinkedParent` | `boolean`                       | `false`  | Keeps the linked parent segments in the redirect path |
+| `linkMode`         | `'page' \| 'dialog' \| 'panel'` | `'page'` | Surface the target opens on                           |
+| `dialogWidth`      | `string`                        | `"md"`   | Width for `linkMode: 'dialog'`                        |
+| `children`         | `ReactNode`                     | —        | Rendered as-is when there is no view to link to       |
+
+When the schema offers no matching view the children are returned unwrapped, so a record the user
+may not open still renders — just without a link.
+
+## See also
+
+- [useRecordLink](../hooks/use-record-link.md) — the hook behind all three, for a link of your own
+- [SchemaReferenceField](./reference-field.mdx) — a foreign key rendered as one of these chips
+- [SchemaReferenceArrayField](./reference-array-field.mdx) — an array of them

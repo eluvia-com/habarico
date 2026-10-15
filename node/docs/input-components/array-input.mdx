@@ -1,0 +1,95 @@
+---
+title: SchemaArrayInput
+sidebar_position: 14
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Collects an array of scalars, enum values or references — the shape depends on `items`.
+
+<StorybookPreview />
+
+It is a dispatcher, not a widget of its own: an array of references becomes an autocomplete
+multi-select, an array of enum values a chip multi-select, and anything else a comma-separated
+text input. For an array of *objects* the schema dispatcher picks
+[SchemaObjectArrayInput](./object-array-input.mdx) instead.
+
+## Example
+
+```tsx
+{/* References — autocomplete multi-select */}
+<SchemaArrayInput source="categories" items={{type: 'integer', reference: 'eshop/category'}} />
+
+{/* Enum values — chip multi-select */}
+<SchemaArrayInput source="tags" items={{type: 'string', format: 'choices', enum: tagChoices}} />
+```
+
+## Props
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field in the form record |
+| `items` (required) | `ItemFieldSchema \| FieldSchema` | — | Schema of one item; decides which variant is rendered |
+| `label` | `string \| ReactElement \| false` | label from the schema | `false` hides the label |
+| `validate` | `Validator \| Validator[]` | from the schema | React Admin validators |
+| `defaultValue` | `unknown` | from the schema | Initial value in a create form |
+
+### What `items` selects
+
+| `items` | Rendered as |
+|---|---|
+| has a `reference` | Autocomplete multi-select over the referenced resource; a tree picker when `format` is `tree-relation` |
+| `format: "choices"` with an `enum` | Multi-select showing the selected values as colored chips |
+| anything else | Text input parsed by splitting on commas |
+
+### Reference arrays
+
+An array of references reads the same `options.relation` keys as
+[SchemaReferenceInput](./reference-input.mdx): `filters` and `sort` shape the
+autocomplete results, `showCreateButton` adds an inline create button, and `parent` builds the
+tree for `tree-relation`. They live on `items.options.relation`, not on the array field itself.
+
+:::caution
+`preserveOrder` defaults to `true` only while no `sort` is set. Declaring a sort on the relation
+means the stored order is no longer what the user sees.
+:::
+
+## Schema mapping
+
+`type: "array"` whose `items` are not objects:
+
+```json
+{"name": "categories", "type": "array",
+ "items": {"type": "integer", "format": "relation", "reference": "eshop/category",
+           "options": {"relation": {"showCreateButton": true}}}}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+A many-to-many relation:
+
+```python
+class Product(models.Model):
+    categories = models.ManyToManyField(Category, related_name="products")
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+class Product < ApplicationRecord
+  has_and_belongs_to_many :categories
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [SchemaReferenceInput](./reference-input.mdx) — a single reference
+- [SchemaObjectArrayInput](./object-array-input.mdx) — an array of nested objects
+- [ChoicesInput](./choices-input.mdx) — a single enum value

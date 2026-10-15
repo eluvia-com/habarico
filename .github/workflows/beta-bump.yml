@@ -1,0 +1,114 @@
+# Turns a merge to `next` into one bump commit for every library whose directory moved since its
+# last bump commit - continuing an open prerelease cycle or starting a new one. Publishing itself
+# happens in publish.yml, triggered by the push this job makes; the run triggered by the merge that
+# ended up here does nothing else. See .github/RELEASE-DESIGN.md.
+#
+# Port of release-next-auto's beta half from ci-toolbox/monorepo-library@2.
+name: Beta bump
+
+on:
+  push:
+    branches:
+      - next
+
+# Never race two bump commits onto the trunk at once; queue rather than cancel. A residual window
+# remains between one run's checkout and its push - see the Race note in RELEASE-DESIGN.md.
+concurrency:
+  group: beta-bump-next
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  beta-bump:
+    name: beta-bump
+    runs-on: ubuntu-latest
+    # Carries pydev; see publish.yml/release.yml for the note on the image.
+    container: ${{ vars.TOOLBOX_IMAGE || 'ghcr.io/druids/developers-chamber:1' }}
+    # Skip its own commits (infinite loop) and release.yml's finalize/advance commits - neither
+    # starts a new beta cycle. publish.yml reads the finalize's version straight off the tag.
+    if: "!startsWith(github.event.head_commit.message, 'Bump version to')"
+    env:
+      # The level a new prerelease cycle starts at when none is open yet. Same variable
+      # release.yml and publish.yml already read - if this disagreed, a beta would be numbered
+      # off a target that never ships.
+      RELEASE_LEVEL: ${{ vars.RELEASE_LEVEL || 'minor' }}
+    steps:
+      # A GitHub App token, not GITHUB_TOKEN: this push has to itself trigger publish.yml, and
+      # pushes made with GITHUB_TOKEN deliberately do not start further workflow runs. Same App as
+      # release.yml; needs no separate permissions beyond what it already has.
+      - id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v5
+        with:
+          # Finding "the last commit that bumped this library" walks the whole log.
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Prepare git
+        run: |
+          set -eu
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+
+      - name: Bump every library that moved since its last bump commit
+        run: |
+          set -eu
+
+          # A library is a top-level directory that is a versioned unit, which is what having its
+          # own pydev config means - same convention publish.yml and release.yml use.
+          LIBS=""
+          for dir in */; do
+            dir="${dir%/}"
+            if [ -f "$dir/.pydev/base.yml" ] || [ -f "$dir/.pydev/base.conf" ]; then
+              LIBS="$LIBS $dir"
+            fi
+          done
+          [ -n "$LIBS" ] || { echo "ERROR: no libraries found (no <dir>/.pydev config)"; exit 1; }
+
+          : > /tmp/bumped
+          for lib in $LIBS; do
+            # The last commit - of any kind, beta or finalize - that touched this library's
+            # version. None found means no cycle has ever run for it; treat that as "start one".
+            BASE=$(git log -1 --format=%H --grep '^Bump version to' -- "$lib/" || true)
+
+            if [ -n "$BASE" ] && git --no-optional-locks diff --quiet "$BASE" HEAD -- "$lib/"; then
+              echo "  $lib: unchanged since ${BASE}, skipping"
+              continue
+            fi
+
+            # A prerelease marker already on the version file means a cycle is open - advance its
+            # counter alone. No marker means the last bump was a finalize (or there was none):
+            # start a fresh cycle at RELEASE_LEVEL.
+            CURRENT=$(cd "$lib" && pydev version print)
+            case "$CURRENT" in
+              *-alpha.*|*-beta.*|*-rc.*)
+                VERSION=$(cd "$lib" && pydev version bump-to-next -p beta) ;;
+              *)
+                VERSION=$(cd "$lib" && pydev version bump-to-next -r "$RELEASE_LEVEL" -p beta) ;;
+            esac
+
+            echo "  $lib: ${CURRENT} -> ${VERSION}"
+            git add "$lib"
+            echo "$lib $VERSION" >> /tmp/bumped
+          done
+
+      - name: Commit and push
+        run: |
+          set -eu
+          if [ ! -s /tmp/bumped ]; then
+            echo "nothing to bump"
+            exit 0
+          fi
+
+          SUMMARY=$(awk '{printf "%s%s@%s", (NR>1?", ":""), $1, $2}' /tmp/bumped)
+          # Same prefix publish.yml's detect job and this job's own guard above key off.
+          git commit -m "Bump version to ${SUMMARY}"
+          git push origin HEAD:next
+          echo "bumped:${SUMMARY}"

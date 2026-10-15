@@ -1,0 +1,113 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-29 16:23+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Dutch <nl@li.org>\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "list"
+msgstr "lijst"
+
+msgid "user"
+msgstr "gebruiker"
+
+msgid "key"
+msgstr "sleutel"
+
+msgid "value"
+msgstr "waarde"
+
+msgid "updated at"
+msgstr "bijgewerkt op"
+
+msgid "user preference"
+msgstr "gebruikersvoorkeur"
+
+msgid "user preferences"
+msgstr "gebruikersvoorkeuren"
+
+msgid "Invalid value for preference."
+msgstr "Ongeldige waarde voor voorkeur."
+
+msgid "Preference value is too large."
+msgstr "De waarde van de voorkeur is te groot."
+
+msgid "Too many preferences are stored for this user."
+msgstr "Er zijn te veel voorkeuren opgeslagen voor deze gebruiker."
+
+msgid "Yes"
+msgstr "Ja"
+
+msgid "No"
+msgstr "Nee"
+
+msgid "Search"
+msgstr "Zoeken"
+
+msgid "Invalid value of the filter {name}."
+msgstr "Ongeldige waarde van het filter {name}."
+
+msgid "Value must be a dict with 'lower' or 'upper' keys."
+msgstr "Waarde moet een dictionary zijn met 'lower' of 'upper' sleutels."
+
+msgid "Save"
+msgstr "Opslaan"
+
+msgid "Upload images"
+msgstr "Afbeeldingen uploaden"
+
+msgid "Delete"
+msgstr "Verwijderen"
+
+msgid "Delete item"
+msgstr "Item verwijderen"
+
+msgid "Do you want to delete the item?"
+msgstr "Wilt u het item verwijderen?"
+
+msgid "Edit"
+msgstr "Bewerken"
+
+msgid "Detail"
+msgstr "Detail"
+
+msgid "Create"
+msgstr "Aanmaken"
+
+msgid "This field may not be null."
+msgstr "Dit veld mag niet leeg zijn."
+
+msgid "Export"
+msgstr "Exporteren"
+
+msgctxt "spreadsheet sheet title"
+msgid "Export"
+msgstr "Export"
+
+#, python-format
+msgid ""
+"The export has %(count)d rows, which is over the limit of %(limit)d. Narrow "
+"the filter down."
+msgstr ""
+"De export bevat %(count)d rijen en overschrijdt daarmee de limiet van "
+"%(limit)d. Verfijn het filter."
+
+#, python-format
+msgid "Fields not available for export: %(fields)s."
+msgstr "Deze velden kunnen niet worden geëxporteerd: %(fields)s."
+
+msgid "Invalid record identifiers."
+msgstr "Ongeldige record-identificaties."

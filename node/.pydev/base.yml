@@ -1,0 +1,14 @@
+# developers-chamber (pydev) configuration
+
+version:
+  files:
+    - package.json
+  file_type: npm
+
+aliases:
+  link:
+    command: 'sh "export PROJECT_PATH=$1 ;envsubst < pnpm-workspace.yaml.tmp > pnpm-workspace.yaml && pnpm install"'
+    description: Link library with the project
+  unlink:
+    command: 'sh "rm -f pnpm-workspace.yaml;pnpm install"'
+    description: Unlink library from the project

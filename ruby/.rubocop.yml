@@ -1,0 +1,288 @@
+AllCops:
+  TargetRubyVersion: 3.0
+  NewCops: enable
+  UseCache: false
+  Exclude:
+    - 'bin/**/*'
+    - 'pkg/**/*'
+    - 'tmp/**/*'
+
+# ─── Metrics: relax without disabling entirely (test files excluded entirely) ─
+
+# Generator dispatch methods handle exhaustive type variants in one place by design.
+Metrics/MethodLength:
+  Max: 90
+  CountAsOne: [array, hash, heredoc]
+  Exclude:
+    - 'test/**/*'
+
+Metrics/ClassLength:
+  Max: 320
+  Exclude:
+    - 'test/**/*'
+
+Metrics/BlockLength:
+  Max: 85
+  Exclude:
+    - 'test/**/*'
+
+# Type-variant if/elsif chains in generators are intentional.
+Metrics/CyclomaticComplexity:
+  Max: 30
+  Exclude:
+    - 'test/**/*'
+
+Metrics/PerceivedComplexity:
+  Max: 30
+  Exclude:
+    - 'test/**/*'
+
+Metrics/AbcSize:
+  Max: 75
+  Exclude:
+    - 'test/**/*'
+
+# Test doubles with many optional toggles (e.g. permission flags) are clearer as keyword args than a config object.
+Metrics/ParameterLists:
+  Max: 10
+  Exclude:
+    - 'test/**/*'
+# Type-variant if/elsif chains in generators are intentional.
+Metrics/CyclomaticComplexity:
+  Max: 30
+
+Metrics/PerceivedComplexity:
+  Max: 30
+
+Metrics/AbcSize:
+  Max: 80
+
+# ─── Layout ───────────────────────────────────────────────────────────────────
+
+# I18n.t(...) key paths, AR method chains, and error messages regularly hit 130-165.
+Layout/LineLength:
+  Max: 190
+  AllowURI: true
+  AllowedPatterns:
+    - '^\s*#'
+    - 'raise .*\.new\('
+    - 'I18n\.t\('
+
+# ─── Style ────────────────────────────────────────────────────────────────────
+
+# Mixed legitimately — single for plain strings, double for interpolation.
+Style/StringLiterals:
+  Enabled: false
+
+# No docstrings — code is organised with section-header comments instead.
+Style/Documentation:
+  Enabled: false
+
+Style/TrailingCommaInHashLiteral:
+  Enabled: false
+
+Style/TrailingCommaInArrayLiteral:
+  Enabled: false
+
+# Pure cosmetic — codebase consistently uses a blank line after class opening for readability.
+Layout/EmptyLinesAroundClassBody:
+  Enabled: false
+
+# Micro-optimisation hint, not a quality issue.
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+# All raises already use the base library's error classes; the one NotImplementedError pattern is valid.
+Style/RaiseArgs:
+  Enabled: false
+
+# JSON.parse(...) rescue {} is intentional — parse or default to empty hash on bad input.
+Style/RescueModifier:
+  Enabled: false
+
+Style/TrailingCommaInArguments:
+  Enabled: false
+
+Layout/EmptyLinesAroundBlockBody:
+  Enabled: false
+
+Layout/EmptyLineAfterGuardClause:
+  Enabled: false
+
+# @@resources etc. in config are intentional module-level inherited shared state.
+Style/ClassVars:
+  Enabled: false
+
+# Explicit self. kept for clarity inside ActiveModel::Model includes.
+Style/RedundantSelf:
+  Enabled: false
+
+# !! is the correct idiom for coercing to strict boolean — alternatives like !x.nil? are less correct.
+Style/DoubleNegation:
+  Enabled: false
+
+# habarico.rb is a require manifest, not logic — line count is meaningless here.
+Metrics/ModuleLength:
+  Enabled: false
+
+# Both modifier and non-modifier forms are used appropriately depending on line length and readability.
+Style/IfUnlessModifier:
+  Enabled: false
+
+# _2 suffix matches versioned method names in the host app API (filter_2!, order_2, etc.).
+Naming/VariableNumber:
+  Enabled: false
+
+# Safe navigation already used throughout; remaining if x && x.method cases are intentional.
+Style/SafeNavigation:
+  Enabled: false
+
+# Formatting alignment — disable until a formatter is in place to enforce these automatically.
+Layout/FirstHashElementIndentation:
+  Enabled: false
+
+Layout/ArgumentAlignment:
+  Enabled: false
+
+# next already used throughout; remaining cases are inside branches where it would hurt clarity.
+Style/Next:
+  Enabled: false
+
+# if/else branches often have comments or non-trivial logic where assignment form hurts readability.
+Style/ConditionalAssignment:
+  Enabled: false
+
+# Single-line {} blocks are correct; the one multi-line case (each_with_object) will be fixed manually.
+Style/BlockDelimiters:
+  Enabled: false
+
+# Explicit super(params) is intentional — subclass constructors may have different signatures.
+Style/SuperArguments:
+  Enabled: false
+
+# Separate attr_accessor groups in box.rb are intentional — each group is annotated by box type.
+Style/AccessorGrouping:
+  Enabled: false
+
+# !x.blank? pattern is idiomatic Rails; suggested rewrites reduce clarity.
+Style/NegatedIfElseCondition:
+  Enabled: false
+
+# Guard clause suggestions produce double-negation conditions that are harder to read.
+Style/GuardClause:
+  Enabled: false
+
+# Same return value from different branches is intentional — different semantic reasons (belongs_to vs has_one).
+Lint/DuplicateBranch:
+  Enabled: false
+
+# No actual any?{is_a?} pattern in codebase; fires on dependencies or false positives.
+Style/PredicateWithKind:
+  Enabled: false
+
+# generate_is_detail, has_one_reference etc. follow generator naming conventions, not predicate semantics.
+Naming/PredicateMethod:
+  Enabled: false
+
+# fetch(:options, nil)&.fetch(:class_name, nil) is intentionally safer than dig — different nil semantics.
+Style/HashFetchChain:
+  Enabled: false
+
+# Merging nested conditions produces long lines that violate LineLength.
+Style/SoleNestedConditional:
+  Enabled: false
+
+# Internal gem — not published to rubygems.org, MFA requirement is irrelevant.
+Gemspec/RequireMFA:
+  Enabled: false
+
+# Nice to have eventually but not a quality issue right now.
+Gemspec/RequiredRubyVersion:
+  Enabled: false
+
+# Cosmetic ordering — not worth enforcing.
+Gemspec/OrderedDependencies:
+  Enabled: false
+
+Bundler/OrderedGems:
+  Enabled: false
+
+# rubocop is intentionally in gemspec as a dev dependency, not Gemfile.
+Gemspec/DevelopmentDependencies:
+  Enabled: false
+
+# :"upload-images" must use double quotes because of the hyphen — cop is wrong here.
+Style/QuotedSymbols:
+  Enabled: false
+
+# Same rationale as EmptyLinesAroundClassBody — blank lines used intentionally for readability.
+Layout/EmptyLinesAroundModuleBody:
+  Enabled: false
+
+Layout/EmptyLinesAroundMethodBody:
+  Enabled: false
+
+# def _draw_routes inside routes.draw block is a standard Rails routing pattern, not a true nested method.
+Lint/NestedMethodDefinition:
+  Enabled: false
+
+# get_ prefix on service query methods (get_definition, get_local_schema) is a valid convention, not accessor misuse.
+Naming/AccessorMethodName:
+  Enabled: false
+
+# if/elsif chains checking action[:method] are clear as-is; case-when adds no readability here.
+Style/CaseLikeIf:
+  Enabled: false
+
+# Safe navigation is used correctly throughout; flagged cases are ones rubocop can't fully analyse.
+Lint/RedundantSafeNavigation:
+  Enabled: false
+
+# Single TODO comment is cosmetic.
+Style/CommentAnnotation:
+  Enabled: false
+
+# Short block params (f, h, k, m) are idiomatic Ruby.
+Naming/MethodParameterName:
+  Enabled: false
+
+# Formatting — disable until a formatter is in place.
+Layout/ExtraSpacing:
+  Enabled: false
+
+Layout/HashAlignment:
+  Enabled: false
+
+# *definition.includes is unambiguous in context; parenthesising it would hurt readability.
+Lint/AmbiguousOperator:
+  Enabled: false
+
+# Routing block nesting is structural, not avoidable.
+Metrics/BlockNesting:
+  Enabled: false
+
+# Multi-line block chains in this codebase are clear and intentional.
+Style/MultilineBlockChain:
+  Enabled: false
+
+Style/HashLikeCase:
+  Enabled: false
+
+Style/OneClassPerFile:
+  Exclude: 
+    - 'test/**/*'
+
+# ─── Naming ───────────────────────────────────────────────────────────────────
+
+# is_create_possible? / is_update_possible? etc. are public API hook methods —
+# renaming would be a breaking change for host apps.
+Naming/PredicatePrefix:
+  Enabled: false
+
+# ─── Lint: keep the ones that catch real bugs ─────────────────────────────────
+
+Lint/UnusedMethodArgument:
+  IgnoreEmptyMethods: true
+
+Lint/UselessAssignment:
+  Enabled: true

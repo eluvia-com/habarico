@@ -1,0 +1,77 @@
+---
+title: BooleanInput
+sidebar_position: 8
+storybook: admin-inputs-booleaninput--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Collects a boolean as a switch.
+
+<StorybookPreview />
+
+In a filter the dispatcher swaps it for `TriStateBooleanInput`, a three-way toggle — a checkbox
+cannot express “I don't care”, which is what an unset filter means.
+
+## Example
+
+```tsx
+<BooleanInput source="is_available" />
+```
+
+## Props
+
+The component wraps React Admin's `BooleanInput` and forwards its props; it only fixes the
+margins so the control lines up with the text inputs around it.
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field in the form record |
+| `label` | `string \| ReactElement \| false` | label from the schema | `false` hides the label |
+| `helperText` | `string \| ReactElement \| false` | `helpText` from the schema | Text under the input |
+| `defaultValue` | `boolean` | `defaultValue` from the schema | Initial value in a create form |
+| `disabled` | `boolean` | `false` | Disables the switch |
+
+### TriStateBooleanInput
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the filter |
+| `label` | `string \| ReactElement \| false` | label from the schema | `false` hides the label next to the toggle |
+
+The three positions store `true`, `false` and `''`. The empty string is what clears the filter —
+`undefined` would leave the previous value in place.
+
+## Schema mapping
+
+Any field with `type: "boolean"`:
+
+```json
+{"name": "is_available", "type": "boolean", "defaultValue": true}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+class Product(models.Model):
+    is_available = models.BooleanField(default=True)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+create_table :products do |t|
+  t.boolean :is_available, default: true, null: false
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [BooleanField](../field-components/boolean-field.mdx) — the display counterpart

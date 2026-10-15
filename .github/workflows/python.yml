@@ -1,0 +1,71 @@
+# Mirror of python/.gitlab-ci.yml (ci-toolbox/python-library@2).
+# This workflow only runs checks; publishing lives in publish.yml - see .github/README.md.
+name: Python
+
+on:
+  pull_request:
+    paths:
+      - "python/**"
+      - ".github/workflows/python.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: python-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: python
+
+env:
+  # PYTHON_VERSION from ci-toolbox/python-library@2; pyproject.toml requires >=3.10.
+  PYTHON_VERSION: "3.10"
+
+jobs:
+  code-quality:
+    name: code-quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # flake8-pyproject is what lets flake8 read [tool.flake8] out of pyproject.toml; django is
+      # pulled in because the linted modules import it at module level.
+      - name: Install linters
+        run: pip install black flake8 flake8-pyproject 'django==4.2'
+
+      - run: flake8
+
+      - run: black src tests --check
+
+  unit-tests:
+    name: unit-tests
+    runs-on: ubuntu-latest
+    env:
+      # python/Pipfile resolves eluvia-base and eluvia-base-django from the GitLab PyPI registry
+      # and interpolates these two into the source URLs. Both are required until the Pipfile is
+      # switched over to the public indexes.
+      PYPI_REGISTRY_USERNAME: ${{ secrets.PYPI_REGISTRY_USERNAME }}
+      PYPI_REGISTRY_TOKEN: ${{ secrets.PYPI_REGISTRY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pipenv
+          cache-dependency-path: python/Pipfile.lock
+
+      - run: pip install pipenv
+
+      - run: pipenv install --dev
+
+      # The Pipfile installs habarico as an editable path dependency; this makes the built
+      # package itself importable the way a consumer would get it.
+      - run: pipenv run pip install .
+
+      # DJANGO_SETTINGS_MODULE and pythonpath come from python/pytest.ini.
+      - run: pipenv run pytest

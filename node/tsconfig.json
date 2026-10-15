@@ -1,0 +1,46 @@
+{
+  "compilerOptions": {
+    "target": "es2018",
+    "lib": ["dom", "dom.iterable", "esnext", "es6"],
+    "declaration": true,
+    "declarationDir": "lib/dts",
+    "declarationMap": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "outDir": "lib",
+    "baseUrl": ".",
+    "paths": {
+      "@admin": ["src/admin"],
+      "@admin/*": ["src/admin/*"],
+      "@assets/*": ["src/assets/*"],
+      "@design": ["src/design"],
+      "@design/*": ["src/design/*"],
+      "@foundation": ["src/foundation"],
+      "@foundation/*": ["src/foundation/*"],
+      "@schema": ["src/schema"],
+      "@schema/*": ["src/schema/*"],
+      "@typing": ["src/types"]
+    }
+  },
+  "watchOptions": {
+    "watchFile": "useFsEvents",
+    "watchDirectory": "useFsEvents",
+    "fallbackPolling": "dynamicPriority",
+    "synchronousWatchDirectory": true,
+    "excludeDirectories": ["**/node_modules", "lib"]
+  },
+  "include": ["src", ".storybook/**/*", "vitest.shims.d.ts"],
+  "exclude": ["node_modules", "lib"]
+}

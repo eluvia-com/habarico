@@ -1,0 +1,8 @@
+de:
+  habarico:
+    contrib:
+      preferences:
+        not_found: "Einstellung nicht gefunden."
+        invalid_value: "Ungültiger Wert für die Einstellung."
+        value_too_large: "Der Wert der Einstellung ist zu groß."
+        too_many_preferences: "Für diesen Benutzer sind zu viele Einstellungen gespeichert."

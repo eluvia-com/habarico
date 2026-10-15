@@ -1,0 +1,97 @@
+---
+title: SchemaReferenceArrayField
+sidebar_position: 16
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+Displays an array of foreign keys as a row of chips, each linking to the record it points at.
+
+It is the array counterpart of [SchemaReferenceField](./reference-field.mdx). When the items are
+scalars rather than references the dispatcher picks [ChipArrayField](./chip-array-field.mdx)
+instead, and when they are objects it picks
+[SchemaObjectArrayField](./object-array-field.mdx).
+
+## Example
+
+```tsx
+<SchemaReferenceArrayField source="category_ids" items={itemSchema} />
+```
+
+`items` is the schema of one element, not of the array — you rarely pass it by hand, because
+[SchemaField](./schema-field.md) takes it from the array field's own schema.
+
+## Props
+
+On top of these it accepts the shared [field props](./index.md#common-props).
+
+| Name                | Type                             | Default | Description                                                                  |
+| ------------------- | -------------------------------- | ------- | ---------------------------------------------------------------------------- |
+| `source` (required) | `string`                         | —       | Field on the record holding the array of foreign keys                        |
+| `items` (required)  | `ItemFieldSchema \| FieldSchema` | —       | Schema of a single element: its `reference`, `format` and `options.relation` |
+
+Everything that shapes the chips is read from `items`, not from props of its own:
+
+| Read from `items`                | Effect                                                                                        |
+| -------------------------------- | --------------------------------------------------------------------------------------------- |
+| `reference`                      | Target resource; without it the field falls back to plain text                                |
+| `options.relation.showLink`      | Whether the chips are clickable — defaults to `true`, the opposite of a single chip's default |
+| `options.relation.linkMode`      | `'dialog'` opens the record in a dialog, `'sidepanel'` docks it                               |
+| `options.relation.dialogWidth`   | Width for `linkMode: 'dialog'`                                                                |
+| `options.relation.sort`          | Order the data provider is asked for                                                          |
+| `options.relation.preserveOrder` | Keeps the order stored on the record; defaults to `true` unless `sort` is set                 |
+
+In a list the chips are truncated to the column width, so a long representation cannot widen the
+column.
+
+## The tree branch
+
+`format: "tree-relation"` outside a collection renders a `TreeArrayField` instead of chips. That
+branch resolves the reference list once through `useTreeChoices` and reads the selected ids from
+the ambient record, so it mounts no React Admin `ReferenceArrayField` at all. Inside a datagrid a
+tree relation still falls back to the chip list, because a tree does not fit in a cell.
+
+## Schema mapping
+
+An array whose `items` carry a `reference`:
+
+```json
+{
+  "name": "category_ids",
+  "type": "array",
+  "items": {
+    "type": "integer",
+    "format": "relation",
+    "reference": "eshop/category",
+    "options": { "relation": { "linkMode": "dialog" } }
+  }
+}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+class Product(models.Model):
+    categories = models.ManyToManyField(Category, related_name="products")
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+class Product < ApplicationRecord
+  has_and_belongs_to_many :categories
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [SchemaReferenceField](./reference-field.mdx) — a single foreign key
+- [RecordRepresentationChip](./record-representation-chip.mdx) — the chip each element renders as
+- [ChipArrayField](./chip-array-field.mdx) — arrays of scalars
+- [FieldSchema](../types-and-schemas/field-schema.md#fieldoptions) — the full `RelationFieldOptions` type

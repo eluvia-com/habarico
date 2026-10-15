@@ -1,0 +1,92 @@
+---
+title: DateRangeInput
+sidebar_position: 7
+storybook: admin-inputs-daterangeinput--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookEmbed from "@site/src/components/StorybookEmbed";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Collects a date range in a calendar popover, with the days between the bounds highlighted as you
+hover.
+
+<StorybookPreview />
+
+The dispatcher picks it over [SchemaRangeInput](./range-input.mdx) when both bounds of a range field
+are dates — which is what makes it the default input for date filters in a list.
+
+Pick a range in the calendar below: the first click sets the lower bound, the second the upper
+one, and hovering previews everything in between.
+
+<StorybookEmbed storyId="admin-inputs-daterangeinput--playground" height={420} />
+
+## Example
+
+```tsx
+<DateRangeInput source="placed_at" label="Placed between" />
+```
+
+## Props
+
+On top of `locales` the component accepts the shared [input props](./index.md#common-props).
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field in the form record; the value is `{lower, upper}` |
+| `locales` | `string` | `navigator.language` | Locale used to render the calendar and format the value |
+| `label` | `string \| ReactElement \| false` | label from the schema | `false` hides the label |
+| `helperText` | `string \| ReactElement \| false` | `helpText` from the schema | Text under the input |
+
+The first click sets the lower bound, the second the upper one; a reset button in the popover
+clears both. Either bound may stay empty — an open range is a valid value.
+
+## Schema mapping
+
+`type: "object"` with `format: "range"` whose `properties` are both dates:
+
+```json
+{"name": "placed_at", "type": "object", "format": "range",
+ "properties": [
+   {"name": "lower", "type": "string", "format": "date"},
+   {"name": "upper", "type": "string", "format": "date"}
+ ]}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+A `RangeFilter` over a date field emits the range format, which is how a list gets a
+“placed between” filter:
+
+```python
+from django_filters import rest_framework as filters
+
+
+class OrderFilterSet(filters.FilterSet):
+    placed_at = filters.DateFromToRangeFilter()
+
+    class Meta:
+        model = Order
+        fields = ["placed_at", "status"]
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+The filter format is auto-detected from the model's filter params — declaring the filter by name
+is enough; `FilterReference` only adjusts its label, help text and default:
+
+```ruby
+filters [:placed_at, :status]
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [Filtering and searching](/python/filtering-and-searching/) — declaring filters on the Python side
+- [SchemaRangeInput](./range-input.mdx) — the generic lower/upper pair
+- [DateInput and DateTimeInput](./date-input-and-date-time-input.mdx) — a single date

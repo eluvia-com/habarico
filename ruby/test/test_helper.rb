@@ -1,0 +1,10 @@
+require 'bundler/setup'
+require 'rails'
+require 'active_support'
+require 'active_support/core_ext'
+require 'active_model'
+require 'active_record'
+require 'action_controller'
+require 'minitest/autorun'
+
+require 'habarico'

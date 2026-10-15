@@ -1,0 +1,203 @@
+variables:
+  # Switches the next flow on. The automatic beta bump is opt-in, so without this nothing moves
+  # versions on its own. It is a variable rather than an input because the bump is one repo-level
+  # job, not one per library.
+  AUTO_BETA_RELEASE: "minor"
+
+  # Hangs a GitLab Release object on every stable release tag, so "what is released" is readable
+  # on the Releases page (and in GET /groups/:id/releases) instead of being a list of prefixed
+  # tags. It is set here and not per library because root variables are forwarded to the child
+  # pipelines, and the job runs there: a monorepo library owns its version file, so the release
+  # is created in the child of the library the tag belongs to, with its own prefix and its own
+  # changelog section as the description. Betas are excluded by the job itself.
+  #
+  # RELEASE_ASSET_LINKS is deliberately not set: each language template already points it at the
+  # registry it publishes to (the version's package page for node and python, the .gem file for
+  # ruby), and one value here would override all three at once.
+  CREATE_GITLAB_RELEASE: "true"
+
+
+include:
+  # `name` is the library directory and drives everything derived from it: the trigger job name,
+  # WORKDIR, RELEASE_PREFIX, the release-branch and release-tag patterns, and the child CI file
+  # path (<name>/.gitlab-ci.yml). The only other input, release_from_next, defaults to "true".
+  #
+  # The repo-level release-next-auto and release-next-final jobs come with the component - they
+  # are defined once no matter how many times it is included, so there is nothing extra to add.
+  - component: $CI_SERVER_FQDN/gitlab-ci/ci-toolbox/monorepo-library@2
+    inputs:
+      name: node
+  - component: $CI_SERVER_FQDN/gitlab-ci/ci-toolbox/monorepo-library@2
+    inputs:
+      name: python
+  - component: $CI_SERVER_FQDN/gitlab-ci/ci-toolbox/monorepo-library@2
+    inputs:
+      name: ruby
+
+
+# Only what genuinely differs between the libraries. These blocks are merged into the trigger jobs
+# generated above - variables are deep merged key by key. Do not add `rules:` here: arrays replace
+# rather than merge, so it would wipe out the component's routing, including the tag rule that
+# drives publish.
+node:
+  variables:
+    # `npm ci` pulls the full Storybook/Playwright dev tree and `npm run build` runs rollup over
+    # it, which does not fit the 2Gi the default pool allows at all - hence the larger pool, and
+    # the headroom above the template's 2Gi default.
+    PUBLISH_JOB_TAGS: "high-resources"
+    KUBERNETES_PUBLISH_MEMORY_REQUEST: "2Gi"
+    KUBERNETES_PUBLISH_MEMORY_LIMIT: "4Gi"
+
+
+python:
+  variables:
+    # Below the template's 1Gi, and deliberately: this suite is pytest against a Django settings
+    # module - no browser, no node tree - and has run inside 500Mi since HAB-707. If it ever
+    # starts being OOM-killed, raise both keys rather than only the limit.
+    KUBERNETES_UNIT_TESTS_MEMORY_REQUEST: "500Mi"
+    KUBERNETES_UNIT_TESTS_MEMORY_LIMIT: "500Mi"
+
+
+ruby:
+  variables:
+    # ruby-library defaults UNIT_TESTS to false - without this the suite never runs.
+    UNIT_TESTS: "true"
+    # Also the default ($CI_PROJECT_NAME happens to match), but set explicitly so renaming the
+    # project cannot silently break `gem build`.
+    GEM_NAME: "habarico"
+    KUBERNETES_UNIT_TESTS_MEMORY_REQUEST: "2Gi"
+    KUBERNETES_UNIT_TESTS_MEMORY_LIMIT: "2Gi"
+
+
+# --- the documentation site ---------------------------------------------------------------------
+#
+# The pages of the three libraries live in `<library>/docs/` since HAB-873, next to the code they
+# document and inside the release tag of that library. The site itself is a repository of its own,
+# `eluvia/habarico/hab-docs`: it clones the pages from here (and the paid ones from
+# habarico-enterprise), renders one site out of the two and publishes it.
+#
+# Nothing here publishes the site. A release of a free library is always followed by a release of
+# the paid package that depends on it, so the paid release is the last step of every release cycle
+# and the one moment the site is built - the `trigger-docs` job of `habarico-enterprise` starts
+# the publish, which reads all six packages at their newest stable tags, the ones made here
+# included (HAB-872). A free release with no paid release behind it reaches the site with the next
+# one, or with a manual run of the publish in `hab-docs`.
+#
+# What this repository does is check: `docs-check` builds the whole site on a merge request that
+# touches a page, and `docs-changelog-check` reads the changelogs on a merge request that touches
+# one. Both clone `hab-docs`, and `docs-check` clones `habarico-enterprise` on top of it - the
+# site needs both halves. So this project has to be on the job token allowlist of `hab-docs` and
+# of `habarico-enterprise`, and `hab-docs` on the one of this project, because its own build
+# clones these pages (HAB-869).
+
+
+# A merge request that changes a page builds the whole site, which is what `onBrokenLinks: throw`
+# runs in: a renamed heading or a moved page fails the merge request that caused it rather than the
+# publish weeks later. Free and paid pages link to each other across the two repositories, so the
+# check is only worth anything when it builds both.
+#
+# An ordinary job rather than a downstream pipeline in `hab-docs`, and that is not a preference:
+# `master` there is protected, and only a user who may merge or push to a protected branch can
+# start a pipeline on it - a merge request from a Developer would create nothing. Running the build
+# here also keeps the Spaces credentials out of a merge request pipeline.
+#
+# Which revision of the other two repositories it builds against is the branch of the same name
+# where there is one, and the default branch otherwise: a change that spans free and paid pages is
+# two merge requests on branches of the same name, and this is what lets each of them be verified
+# before the other is merged (scripts/docs-check.sh in hab-docs does the same for the sibling
+# monorepo).
+#
+# No `cache:` for the `npm ci` of the site - the runners have no distributed cache, so an archive
+# is never restored and only costs the upload; add one back once the runners have one.
+docs-check:
+  stage: triggers
+  image: node:22
+  tags:
+    # The site is one Docusaurus process holding every page it renders and peaks at ~2.2 GB cold,
+    # still over 2Gi with a single SSG worker; the default runner pool refuses a job asking for
+    # more than 2Gi at all. Moves to the default pool once its cap is raised above that.
+    - high-resources
+  variables:
+    KUBERNETES_MEMORY_REQUEST: "2Gi"
+    KUBERNETES_MEMORY_LIMIT: "4Gi"
+    HAB_DOCS_PROJECT: "eluvia/habarico/hab-docs"
+    HAB_DOCS_DIR: "$CI_BUILDS_DIR/hab-docs"
+  script:
+    - |
+      url="https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${HAB_DOCS_PROJECT}.git"
+      ref="$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+      # The URL carries the job token, so neither it nor a failure of this is ever echoed.
+      if ! git ls-remote --exit-code --heads "$url" "$ref" >/dev/null 2>&1; then
+        ref="master"
+      fi
+      echo "[docs-check] building with hab-docs at $ref"
+      rm -rf "$HAB_DOCS_DIR"
+      git clone --depth 1 --branch "$ref" "$url" "$HAB_DOCS_DIR" >/dev/null
+    - HABARICO_PATH="$CI_PROJECT_DIR" "$HAB_DOCS_DIR/scripts/docs-check.sh"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - "*/docs/**/*"
+        - "contract/openapi.yaml"
+        - "contract/schema.svg"
+        - ".gitlab-ci.yml"
+
+# The pages of a merge request on the test host, by hand: starts the preview publish of `hab-docs`
+# (`publish-docs-next`) with this branch, which it reads in every monorepo that has it and at `next`
+# in the others - the choice `docs-check` makes. The site is then at docs.habarico.test.eluvia.dev
+# until the next preview replaces it; one preview exists at a time.
+#
+# A downstream pipeline on the protected `master` of `hab-docs` is created only for a user who may
+# merge there - a Maintainer of `hab-docs`; for anyone else this job fails, and the merge request
+# does not (`allow_failure`). No `strategy: depend`: the preview is not a check of this merge
+# request.
+docs-preview:
+  stage: triggers
+  # Only the two below go downstream, not the release switches at the top of this file.
+  inherit:
+    variables: false
+  variables:
+    DOCS_NEXT: "true"
+    DOCS_NEXT_BRANCH: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+  trigger:
+    project: eluvia/habarico/hab-docs
+    branch: master
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - "*/docs/**/*"
+        - "contract/openapi.yaml"
+        - "contract/schema.svg"
+        - ".gitlab-ci.yml"
+      when: manual
+      allow_failure: true
+
+
+# A merge request that changes a changelog has it read the way the site reads it. The changelog
+# pages of docs.habarico.com are generated from these files, and a release heading without a date,
+# an `[Unreleased]` that slipped below a release, a code fence left open or a link to a file that
+# moved would break them - at publish time, under the bot. Not a build of the site (a changelog
+# changes in almost every merge request, and the build is minutes on the expensive runner) but
+# the generator's own check, on the default pool, in seconds: it needs nothing but Node.
+docs-changelog-check:
+  stage: triggers
+  image: node:22
+  variables:
+    HAB_DOCS_PROJECT: "eluvia/habarico/hab-docs"
+    HAB_DOCS_DIR: "$CI_BUILDS_DIR/hab-docs"
+  script:
+    - |
+      url="https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${HAB_DOCS_PROJECT}.git"
+      ref="$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
+      if ! git ls-remote --exit-code --heads "$url" "$ref" >/dev/null 2>&1; then
+        ref="master"
+      fi
+      echo "[docs-changelog-check] checking with hab-docs at $ref"
+      rm -rf "$HAB_DOCS_DIR"
+      git clone --depth 1 --branch "$ref" "$url" "$HAB_DOCS_DIR" >/dev/null
+    - node "$HAB_DOCS_DIR/scripts/gen-changelogs.mjs" --check --root "$CI_PROJECT_DIR"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - "CHANGELOG.md"
+        - "*/CHANGELOG.md"

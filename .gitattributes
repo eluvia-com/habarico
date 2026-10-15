@@ -1,0 +1,8 @@
+# Nearly every merge request appends to the `## [Unreleased]` section of a changelog, so two
+# branches almost always touch the same lines and conflict on merge. Git's built-in `union` driver
+# resolves such a hunk by keeping both sides' lines, one after the other, instead of writing
+# conflict markers. It works line by line, so a multi-line entry survives as one block; two
+# branches rewording the same line still leave both versions for someone to delete by hand.
+#
+# Scoped to changelogs on purpose: `union` on source files would produce code neither side wrote.
+CHANGELOG.md merge=union

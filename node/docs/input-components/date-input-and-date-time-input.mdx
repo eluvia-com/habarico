@@ -1,0 +1,82 @@
+---
+title: DateInput and DateTimeInput
+sidebar_position: 5
+storybook: admin-inputs-dateinput--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Collect a date, or a date and a time, through a MUI X picker.
+
+<StorybookPreview />
+
+`DateInput` stores a plain `YYYY-MM-DD` string in the local time zone — no time component and no
+UTC shift. `DateTimeInput` keeps the time part.
+
+## Example
+
+```tsx
+<DateInput source="delivery_on" disablePast />
+<DateTimeInput source="published_at" minDate={new Date()} />
+```
+
+## Props
+
+Both components accept the shared [input props](./index.md#common-props), plus the picker
+constraints below.
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field in the form record |
+| `minDate` | `Date` | — | Earliest selectable date |
+| `maxDate` | `Date` | — | Latest selectable date |
+| `disableFuture` | `boolean` | `false` | Blocks every date after today |
+| `disablePast` | `boolean` | `false` | Blocks every date before today |
+| `shouldDisableDate` | `(date: Date) => boolean` | — | Blocks individual dates — e.g. weekends |
+| `disabled` | `boolean` | `false` | Disables the input |
+| `readOnly` | `boolean` | `false` | Renders the value without allowing edits |
+
+Clearing the picker stores `null`.
+
+:::tip
+The picker constraints are client-side comfort, not validation. A rule the backend also enforces
+belongs in `validate` as well, otherwise a crafted request bypasses it.
+:::
+
+## Schema mapping
+
+`format: "date"` selects `DateInput`, `format: "date-time"` selects `DateTimeInput`, and
+`format: "time"` selects `TimeInput`.
+
+```json
+{"name": "delivery_on", "type": "string", "format": "date", "nullable": true}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+class Order(models.Model):
+    placed_at = models.DateTimeField(auto_now_add=True)
+    delivery_on = models.DateField(null=True, blank=True)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+create_table :orders do |t|
+  t.datetime :placed_at
+  t.date :delivery_on
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [DateField](../field-components/date-field.mdx) — the display counterpart
+- [DateRangeInput](./date-range-input.mdx) — a pair of dates picked together

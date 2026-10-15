@@ -1,0 +1,73 @@
+---
+title: TimeField
+sidebar_position: 6
+storybook: admin-fields-timefield--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+Displays a time-of-day value in the active locale.
+
+Use it for a clock time that carries no date — opening hours, a pickup slot. For a full timestamp
+reach for [DateField](./date-field.mdx) instead.
+
+## Example
+
+```tsx
+<TimeField source="pickup_from" />
+// 09:00:00 → "9:00 AM" in en, "9:00" in cs
+```
+
+## Props
+
+On top of these it accepts the shared [field props](./index.md#common-props).
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field on the record |
+| `locales` | `string` | the admin's active locale | Overrides the locale used for formatting |
+| `sx` | `SxProps<Theme>` | — | MUI style override; the field sets `white-space: nowrap` by default |
+
+## Behaviour
+
+The value is expected as an `HH:MM:SS` string. It is parsed into hours, minutes and seconds and
+formatted with `Intl.DateTimeFormat` at `timeStyle: 'short'` — so seconds are not shown even when
+the value carries them.
+
+An empty value renders as an empty string. A non-string value is rendered as-is, without
+formatting.
+
+## Schema mapping
+
+The component is picked for `format: "time"`:
+
+```json
+{"name": "pickup_from", "type": "string", "format": "time"}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+class Pickup(models.Model):
+    pickup_from = models.TimeField()
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+class Pickup < ApplicationRecord
+  # t.time :pickup_from
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [TimeInput](../input-components/time-input.mdx) — the form counterpart
+- [DateField](./date-field.mdx) — dates and full timestamps
+- [FieldSchema](../types-and-schemas/field-schema.md) — the full shape of a field schema

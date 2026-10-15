@@ -1,0 +1,1 @@
+export {SchemaGalleryBox} from './SchemaGalleryBox';

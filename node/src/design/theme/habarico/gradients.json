@@ -1,0 +1,34 @@
+{
+  "light": {
+    "vivid": [
+      "radial-gradient(circle at left top, rgb(215 224 223) -20%, rgb(226 244 242 / 80%) 10%, rgb(159 219 226 / 60%) 50%, transparent 100% 100%)",
+      "radial-gradient(ellipse at right bottom, rgb(227 208 255 / 90%) -10%, transparent)",
+      "radial-gradient(ellipse at right top, rgb(255 255 255), rgb(225 244 255) 60%, rgb(128 241 255) 100%)"
+    ],
+    "subtle": [
+      "radial-gradient(ellipse at 110% 0%, rgb(9 187 203 / 3%) 0%, transparent 60%)",
+      "radial-gradient(ellipse at 130% 100%, rgb(247 25 121 / 6%) 0%, transparent 80%)",
+      "linear-gradient(rgb(252 253 253), rgb(247 249 251))"
+    ],
+    "neutral": [
+      "radial-gradient(ellipse at 20% 0%, rgb(145 158 171 / 10%) 0%, transparent 100%)",
+      "linear-gradient(rgb(249 250 251), rgb(249 250 251))"
+    ]
+  },
+  "dark": {
+    "vivid": [
+      "radial-gradient(circle at left top, rgb(120 38 89) -20%, rgb(27 44 86 / 80%) 20%, rgba(55, 51, 111, 0.4) 80%, transparent 100%)",
+      "radial-gradient(ellipse at right bottom, rgb(6 128 128), transparent)",
+      "radial-gradient(ellipse at right top, rgb(95 3 57), rgb(26 98 120) 60%, rgb(1 6 16) 100%)"
+    ],
+    "subtle": [
+      "radial-gradient(ellipse at 110% 0%, rgb(9 187 203 / 15%) 0%, transparent 60%)",
+      "radial-gradient(ellipse at 130% 100%, rgb(247 25 121 / 20%) 0%, transparent 80%)",
+      "linear-gradient(rgb(20 26 33), rgb(20 26 33))"
+    ],
+    "neutral": [
+      "radial-gradient(ellipse at 20% 0%, rgb(37 47 57 / 20%) 0%, rgb(32 42 51 / 20%) 100%)",
+      "linear-gradient(rgb(20 26 33), rgb(20 26 33))"
+    ]
+  }
+}

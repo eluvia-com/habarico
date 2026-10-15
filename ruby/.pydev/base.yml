@@ -1,0 +1,8 @@
+# developers-chamber (pydev) configuration
+
+# Versioning: a plain-text VERSION file (Ruby convention) instead of version.json.
+# pydev reads and bumps it via `pydev version` using the "text" file type.
+version:
+  files:
+    - VERSION
+  file_type: text

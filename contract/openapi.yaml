@@ -1,0 +1,4447 @@
+openapi: 3.0.3
+info:
+  title: Habarico
+  description: |
+    Habarico is framework that simplify development of CMS and ERP system development.
+    It adds layer of schemas that describes all resources, views and actions in the system.
+    UI is generated from the schemas but still allows customisation.
+    The main endpoint is `/admin/schema` which returns base schema for the service resources.
+    This schema only contains low-level details about the resources. For higher detail schema 
+    use `/admin/{resource_name}/schema` or `/{resource_name}/{record_pk}/schema` endpoints. 
+    These endpoints returns schema for the resource list and detail respectively.
+    
+    For example for resource user `/admin/schema` returns all actions and views that are supported in
+    `/admin/user` and `/admin/user/{record_pk}` endpoints. `/admin/user/schema` returns only actions and views 
+    that are supported in `/admin/user` endpoint and `/admin/user/{record_pk}/schema` returns only actions and views 
+    that are supported in `/admin/user/{record_pk}` endpoint but with higher detail.
+  version: 3.3.4
+  contact:
+    email: lubos.matl@eluvia.com
+servers:
+  - url: 'http://localhost'
+paths:
+  /{api_prefix}/{service_name}/admin/schema:
+    get:
+      summary: Get schema for service.
+      description: |
+        Get schema for service. This endpoint is the main entry point for the service.
+        There are described all resources with actions, views and menus with low-level details.
+        Main purpose of this endpoint is to generate UI structure and menu for the service.
+        The list of base resource schema is returned. Every base schema contains:
+        * `name` - name of the resource
+        * `label` - label of the resource
+        * `pk_field_name` - name of the primary key field
+        * `views` - list of all views that can be used for the resource.
+        * `actions` - list of all actions that can be used for the resource.
+        * `menu` - description of the menu for the resource.
+      operationId: get_schema
+      tags:
+        - schema
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+      responses:
+        '200':
+          $ref: '#/components/responses/ServiceSchemaResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+  /{api_prefix}/{service_name}/admin/uploads/initiate:
+    post:
+      summary: Initiate a chunked upload.
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — provided by the paid `habarico-enterprise` package; a free-only install does not expose this endpoint.
+
+        Starts a chunked upload of a file. For the `s3-multipart` provider the response shape
+        depends on the file size, signalled by the `mode` discriminator:
+
+        * `mode: put` (files below the S3 multipart minimum, 5 MB): a single presigned PUT `url`
+          is returned. The browser uploads the whole file in one request; there is no `complete`
+          step (the object is fully uploaded by the PUT).
+        * `mode: multipart` (larger files): an S3 multipart upload is created and presigned URLs are
+          returned per part. The browser uploads the parts directly to storage and then calls
+          `complete`. `complete` is only called when `mode == "multipart"`.
+      operationId: upload_initiate
+      tags:
+        - uploads
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - name: target
+          in: query
+          required: false
+          schema:
+            type: string
+          description: >-
+            Opaque upload target. Omit for the default storage; otherwise a signed token (issued by
+            habarico in a field's `initiate_url`) or the name of a target registered through
+            `register_upload_target`. A `STORAGES` alias resolves only inside a signed token; sent
+            as plaintext it is not accepted and the endpoint answers 404. The token is signed, not
+            encrypted - its payload, a storage alias or target name plus the field's upload limits,
+            is readable by anyone holding the URL, but cannot be altered or forged. Treat it as
+            tamper-proof, never as secret. It never names anything internal: a storage is always
+            identified by a name the project itself configured, never by the model field it backs.
+      requestBody:
+        $ref: '#/components/requestBodies/UploadInitiateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/UploadInitiateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+  /{api_prefix}/{service_name}/admin/uploads/complete:
+    post:
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — provided by the paid `habarico-enterprise` package; a free-only install does not expose this endpoint.
+      summary: Complete a chunked upload.
+      operationId: upload_complete
+      tags:
+        - uploads
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - name: target
+          in: query
+          required: false
+          schema:
+            type: string
+          description: >-
+            Opaque upload target. Omit for the default storage; otherwise a signed token (issued by
+            habarico in a field's `initiate_url`) or the name of a target registered through
+            `register_upload_target`. A `STORAGES` alias resolves only inside a signed token; sent
+            as plaintext it is not accepted and the endpoint answers 404. The token is signed, not
+            encrypted - its payload, a storage alias or target name plus the field's upload limits,
+            is readable by anyone holding the URL, but cannot be altered or forged. Treat it as
+            tamper-proof, never as secret. It never names anything internal: a storage is always
+            identified by a name the project itself configured, never by the model field it backs.
+      requestBody:
+        $ref: '#/components/requestBodies/UploadCompleteRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/UploadCompleteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+  /{api_prefix}/{service_name}/admin/uploads/abort:
+    post:
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — provided by the paid `habarico-enterprise` package; a free-only install does not expose this endpoint.
+      summary: Abort a chunked upload.
+      operationId: upload_abort
+      tags:
+        - uploads
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - name: target
+          in: query
+          required: false
+          schema:
+            type: string
+          description: >-
+            Opaque upload target. Omit for the default storage; otherwise a signed token (issued by
+            habarico in a field's `initiate_url`) or the name of a target registered through
+            `register_upload_target`. A `STORAGES` alias resolves only inside a signed token; sent
+            as plaintext it is not accepted and the endpoint answers 404. The token is signed, not
+            encrypted - its payload, a storage alias or target name plus the field's upload limits,
+            is readable by anyone holding the URL, but cannot be altered or forged. Treat it as
+            tamper-proof, never as secret. It never names anything internal: a storage is always
+            identified by a name the project itself configured, never by the model field it backs.
+      requestBody:
+        $ref: '#/components/requestBodies/UploadAbortRequest'
+      responses:
+        '204':
+          description: Upload aborted.
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+  /{api_prefix}/{service_name}/admin/search:
+    get:
+      summary: Get objects of resource by search.
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — provided by the paid `habarico-enterprise` package; a free-only install does not expose this endpoint.
+
+        Get list of objects of resource by search to allow full text search over all the service resources.
+      operationId: get_search
+      tags:
+        - search
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/search_query'
+        - $ref: '#/components/parameters/search_limit'
+      responses:
+        '200':
+          $ref: '#/components/responses/ServiceSearchResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+  /{api_prefix}/{service_name}/admin/{resource_name}:
+    get:
+      summary: Get objects of resource.
+      description: |
+        Returns list of objects of resource. Every objects contains meta information about the object. 
+        The meta contains schema of the objects, especially the actions that can be performed on the object.
+        The resource schema (supported methods and fields) is not included in the response 
+        (use `schema` endpoint for that, the reason is faster response). Meta contains also `repr` value 
+        which is the string representation of the object and `tags` witch can be used 
+        to style the object in the UI/Table.
+      operationId: get_resource_object_list
+      tags:
+        - resource
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/order_by'
+        - $ref: '#/components/parameters/filter'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceObjectListResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+    post:
+      summary: Create a new object.
+      description: |
+        Create a new object of the resource. The object is created with the data provided in the request body.
+        Newly created object is returned with the meta information about the object.
+      operationId: create_resource_object
+      tags:
+        - resource
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+      requestBody:
+        $ref: '#/components/requestBodies/ResourceObjectRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/ResourceObjectResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+  /{api_prefix}/{service_name}/admin/{resource_name}/aggregate:
+    get:
+      summary: Aggregate objects of resource.
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — provided by the paid `habarico-enterprise` package; a free-only install does not expose this endpoint.
+
+        Computes an aggregation over the resource objects matching the optional filter
+        query parameters. Reuses the same `filter_queryset` / `ComplexFilterBackend`
+        as the resource list endpoint, so widget filters apply identically.
+
+        **Optional endpoint.** Available only on resources where the admin opts in via
+        `ModelAdmin`. Resources without the opt-in return HTTP 404 for this path. The
+        availability is signalled in the resource schema via `aggregate_enabled: true`
+        (see `GlobalResourceSchema`).
+
+        ## Aggregation target
+
+        * `count` – `field` is ignored.
+        * `min` / `max` / `sum` / `avg` – `field` is required and must include the chosen
+          function in its `aggregations` whitelist (see `FieldSchema.aggregations`).
+
+        ## Grouping via `group_by`
+
+        `group_by` is a repeat-style query parameter
+        (`?group_by=field1&group_by=field2:trunc:month`). Each item has the form
+        `<field>[:<bucket_fn>[:<arg>]]`:
+
+        * `<field>` – plain field name. Each field must include `exact` in its
+          `FieldSchema.group_by` whitelist.
+        * `<field>:trunc:<gran>` – date / datetime truncation. `gran` is one of
+          `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`.
+          Field must include `trunc:<gran>` in its `group_by` whitelist. Bucket labels
+          are ISO 8601 timestamps in the active Django timezone (`TIME_ZONE` setting,
+          optionally overridden per-request via Django's standard timezone middleware
+          / `timezone.activate()`). Implemented on the backend with Django ORM
+          `TruncSecond` / `TruncMinute` / `TruncHour` / `TruncDay` / `TruncWeek` /
+          `TruncMonth` / `TruncQuarter` / `TruncYear`.
+        * `<field>:width:<n>` – numeric fixed-width bucketing into `[0, n)`,
+          `[n, 2n)`, … Bucket labels are the lower bounds. Field must include `width`
+          in its `group_by` whitelist.
+
+        With no `group_by` the response contains a single bucket with the scalar value.
+
+        ## Limits and safety
+
+        * Whitelist via `aggregations` / `group_by` on `FieldSchema` prevents SQL
+          injection and schema leaks. Fields without an entry are rejected with HTTP 422.
+        * Hard limit on the number of returned buckets (default 50) – exceeding the
+          limit yields HTTP 422.
+        * Row-level permissions are inherited from `get_queryset`, so aggregates reflect
+          only rows the current user is allowed to see.
+      operationId: aggregate_resource_objects
+      tags:
+        - aggregate
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - name: function
+          in: query
+          required: true
+          description: Aggregate function to apply.
+          schema:
+            $ref: '#/components/schemas/AggregateFunctionType'
+        - name: field
+          in: query
+          required: false
+          description: |
+            Field aggregated by `function`. Required for `min` / `max` / `sum` / `avg`;
+            ignored for `count`. The chosen `function` must be present in the field's
+            `aggregations` whitelist in the resource schema.
+          schema:
+            type: string
+          example: price
+        - name: group_by
+          in: query
+          required: false
+          description: |
+            One or more `group_by` items in the form
+            `<field>[:<bucket_fn>[:<arg>]]`. Repeat the parameter to group by several
+            keys (`?group_by=category&group_by=created_at:trunc:month`). Each field /
+            bucket function combination must be whitelisted in the field's `group_by`
+            schema entry. See the endpoint description for the full syntax.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+          examples:
+            exact:
+              summary: Exact value grouping
+              value: [category__name]
+            time_trunc:
+              summary: Date / datetime truncation
+              value: ["created_at:trunc:month"]
+            numeric_width:
+              summary: Numeric fixed-width bucketing
+              value: ["price:width:100"]
+            combined:
+              summary: Multiple keys combined
+              value: [category__name, "created_at:trunc:month"]
+      responses:
+        '200':
+          $ref: '#/components/responses/AggregateResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+  /{api_prefix}/{service_name}/admin/{resource_name}/export:
+    get:
+      summary: Export objects of resource.
+      description: |
+        Returns the resource objects matching the current list filters as a downloadable
+        document. It takes the `filter` and `order_by` parameters of the resource list
+        endpoint and answers them the same way, so the export contains exactly the rows the
+        list shows, in the order it shows them, including the row-level restrictions the
+        resource puts on its queryset.
+
+        The response carries a `Content-Disposition: attachment` header with the file name
+        (`<resource_name>.<format>`). Clients reading the file name from JavaScript need the
+        header exposed via CORS (`Access-Control-Expose-Headers`).
+
+        **Optional endpoint.** The backend switches the export on per resource
+        (`export_enabled`); it is off by default. Resources that do
+        not export return HTTP 404 for this path. The export button itself is signalled in
+        the list view schema through the `list_actions` slot with an action of type
+        `export`.
+
+        ## Formats
+
+        The `format` query parameter is resolved by content negotiation against the formats
+        the resource offers. `csv` is built in; `xlsx` requires the optional `openpyxl`
+        dependency on the backend. Requesting a format the resource does not offer returns
+        HTTP 404; omitting the parameter serves the first offered format.
+
+        ## Columns
+
+        Without `fields` the resource exports its whole configured column set. `fields`
+        narrows it down and defines the column order; a field the resource does not export
+        is rejected with HTTP 422. Column headers are the verbose names of the model fields.
+
+        ## Limits and safety
+
+        * Exports above a fixed row limit (10 000) are rejected with HTTP 422 - building
+          them synchronously would block the worker. Answering a bigger export in the
+          background instead is **Premium**, provided by the paid `habarico-enterprise`
+          package.
+        * Reading the resource is required; a resource the user may not read returns
+          HTTP 405 for this path.
+        * Values a spreadsheet application would evaluate as a formula are escaped by the
+          renderers (CSV / XLSX injection).
+      operationId: export_resource_objects
+      tags:
+        - export
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/order_by'
+        - $ref: '#/components/parameters/filter'
+        - name: format
+          in: query
+          required: false
+          description: |
+            Document format. Resolved against the formats the resource offers; the first
+            one is used when the parameter is omitted. `csv` and `xlsx` are the formats the
+            backend ships with; the set is open, since a backend may register further
+            renderers under their own format names.
+          schema:
+            type: string
+          example: csv
+        - name: fields
+          in: query
+          required: false
+          description: |
+            Comma separated subset of the exported columns, in the order they should appear
+            in the document. Defaults to every column the resource exports.
+          schema:
+            type: string
+          example: code,name,price
+        - name: ids
+          in: query
+          required: false
+          description: |
+            Comma separated primary keys of the explicitly selected rows. Combined with the
+            filters; omit it to export everything matching the current filter.
+          schema:
+            type: string
+          example: 1,2,3
+      responses:
+        '200':
+          description: The exported document.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+  /{api_prefix}/{service_name}/admin/{resource_name}/schema:
+    get:
+      summary: Get schema for resource.
+      description: |
+        Returns schema of the resource list. The schema has tree parts:
+        * `views` - list of views that can be used for the resource. 
+                    But only views for general purpose (without object pk) are returned.
+        * `actions` - list of actions that can be used for the resource. 
+                      But only actions for general purpose (without object pk) are returned.
+        * `endpoints` - map of endpoints that can be used for the resource according to HTTP method.
+                        Every endpoint contains schema of fields and filters which can be used for the endpoint.
+                        Only endpoints that are supported by the list resource (without pk) are returned.
+      operationId: get_resource_schema
+      tags:
+        - schema
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceListSchemaResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+  /{api_prefix}/{service_name}/admin/{resource_name}/{record_pk}:
+    get:
+      summary: Get resource object detail.
+      description: |
+        Returns detail of the object of resource. Oects contains meta information about the object. 
+        The meta contains schema of the objects, especially the actions that can be performed on the object.
+        The resource schema (supported methods and fields) is not included in the response 
+        (use `schema` endpoint for that, the reason is faster response). Meta contains also `repr` value 
+        which is the string representation of the object and `tags` witch can be used 
+        to style the object in the detail view.
+      operationId: get_resource_object_detail
+      tags:
+        - resource
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/record_pk'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceObjectResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+    put:
+      summary: Update object.
+      description: |
+        Update object. The object is updated with the data provided in the request body.
+        Updated object is returned with the meta information about the object.
+      operationId: update_resource_object
+      tags:
+        - resource
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/record_pk'
+      requestBody:
+        $ref: '#/components/requestBodies/ResourceObjectRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceObjectResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+    patch:
+      summary: Partial update object.
+      description: |
+        Partial update object. The object is updated with the data provided in the request body.
+        Updated object is returned with the meta information about the object.
+      operationId: partial_update_resource_object
+      tags:
+        - resource
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/record_pk'
+      requestBody:
+        $ref: '#/components/requestBodies/ResourceObjectRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceObjectResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+    delete:
+      summary: Delete object.
+      description: |
+        Delete object. The object is deleted and no content is returned.
+        If the object is not found, 404 error is returned.
+      operationId: delete_resource_object
+      tags:
+        - resource
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/record_pk'
+      responses:
+        '204':
+          description: Object deleted
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+  /{api_prefix}/{service_name}/admin/{resource_name}/{record_pk}/schema:
+    get:
+      summary: Get schema for object
+      description: |
+        Returns schema of the resource detail. The schema has tree parts:
+        * `views` - list of views that can be used for the resource. 
+                    But only views for detail resource (with object pk) are returned.
+        * `actions` - list of actions that can be used for the resource. 
+                      But only actions for detail resource (with object pk) are returned.
+        * `endpoints` - map of endpoints that can be used for the resource according to HTTP method.
+                        Every endpoint contains schema of fields and filters which can be used for the endpoint.
+                        Only endpoints that are supported by the detail resource (with pk) are returned.
+      operationId: get_resource_object_schema
+      tags:
+        - schema
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/record_pk'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceDetailSchemaResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+  /{api_prefix}/{service_name}/admin/{resource_name}/{action_name}/schema:
+    get:
+      summary: Get schema for resource action.
+      description: |
+        Returns schema of the resource list. The schema has tree parts:
+        * `views` - list of views that can be used for the resource. 
+                    But only views for general purpose (without object pk) are returned.
+        * `actions` - list of actions that can be used for the resource. 
+                      But only actions for general purpose (without object pk) are returned.
+        * `endpoints` - map of endpoints that can be used for the resource according to HTTP method.
+                        Every endpoint contains schema of fields and filters which can be used for the endpoint.
+                        Only endpoints that are supported by the list resource (without pk) are returned.
+      operationId: get_resource_action_schema
+      tags:
+        - schema
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/action_name'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceListSchemaResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+  /{api_prefix}/{service_name}/admin/{resource_name}/{record_pk}/{action_name}/schema:
+    get:
+      summary: Get schema for object action
+      description: |
+        Returns schema of the resource detail. The schema has tree parts:
+        * `views` - list of views that can be used for the resource. 
+                    But only views for detail resource (with object pk) are returned.
+        * `actions` - list of actions that can be used for the resource. 
+                      But only actions for detail resource (with object pk) are returned.
+        * `endpoints` - map of endpoints that can be used for the resource according to HTTP method.
+                        Every endpoint contains schema of fields and filters which can be used for the endpoint.
+                        Only endpoints that are supported by the detail resource (with pk) are returned.
+      operationId: get_resource_object_action_schema
+      tags:
+        - schema
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/record_pk'
+        - $ref: '#/components/parameters/action_name'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceDetailSchemaResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+  /{api_prefix}/{service_name}/admin/{resource_name}/aggregate/schema:
+    get:
+      summary: Get schema for the aggregate endpoint of resource.
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — provided by the paid `habarico-enterprise` package; a free-only install does not expose this endpoint.
+
+        Returns the schema describing fields and filters available on the resource
+        aggregate endpoint (`/admin/{resource_name}/aggregate`). Only fields whitelisted
+        for aggregation (non-empty `aggregations`) or for `group_by` (non-empty
+        `group_by`) are listed. Filters are the same as those supported by the resource
+        list endpoint (`ComplexFilterBackend`).
+
+        Available only on resources that opt in via `aggregate_enabled: true` in the
+        resource schema. Returns HTTP 404 otherwise.
+      operationId: get_aggregate_schema
+      tags:
+        - schema
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+      responses:
+        '200':
+          $ref: '#/components/responses/AggregateSchemaResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+  /{api_prefix}/{service_name}/admin/{resource_name}/{action_name}:
+    description: |
+      Action is extended functionality of the resource. It can be for example:
+      * export
+      * synchronization with external service
+      * complex changing state of the object
+      Actions are represented as buttons in the UI.
+      Actions without object pk are used for general purpose. For example export multiple objects.
+    get:
+      summary: Get resource action result.
+      description: |
+        Get is used only for background actions and return status of the action.
+      operationId: get_resource_action
+      tags:
+        - resource action
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/action_name'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+    post:
+      summary: Create resource action result.
+      description: |
+        Start action or background action.
+      operationId: create_resource_action
+      tags:
+        - resource action
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/action_name'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+    put:
+      summary: Update resource action.
+      description: |
+         Start action or background action. Put can be used for specific cases whet source object is updated.
+      operationId: update_resource_action
+      tags:
+        - resource action
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/action_name'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+    patch:
+      summary: Partial update resource action.
+      description: |
+        Start action or background action. Put can be used for specific cases whet source object is updated.
+      operationId: partial_update_resource_action
+      tags:
+        - resource action
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/action_name'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+  /{api_prefix}/{service_name}/admin/{resource_name}/{record_pk}/{action_name}:
+    description: |
+      Action is extended functionality of the resource. It can be for example:
+      * export
+      * synchronization with external service
+      * complex changing state of the object
+      Actions are represented as buttons in the UI.
+      Actions with object pk are used for concrete action on the object. For example export of the object.
+    get:
+      summary: Get resource object action result.
+      description: |
+        Get is used only for background actions and return status of the action.
+      operationId: get_object_resource_action
+      tags:
+        - resource action
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/action_name'
+        - $ref: '#/components/parameters/record_pk'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+    post:
+      summary: Create resource object action.
+      description: |
+        Start action or background action.
+      operationId: create_object_resource_action
+      tags:
+        - resource action
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/action_name'
+        - $ref: '#/components/parameters/record_pk'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+    put:
+      summary: Update resource object action.
+      description: |
+        Start action or background action. Put can be used for specific cases whet source object is updated.
+      operationId: update_object_resource_action
+      tags:
+        - resource action
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/action_name'
+        - $ref: '#/components/parameters/record_pk'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+    patch:
+      summary: Partial update resource object action.
+      description: |
+        Start action or background action. Put can be used for specific cases whet source object is updated.
+      operationId: partial_object_update_resource_action
+      tags:
+        - resource action
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+        - $ref: '#/components/parameters/action_name'
+        - $ref: '#/components/parameters/record_pk'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResourceActionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowedResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+  /{api_prefix}/{service_name}/admin/user-preferences:
+    description: |
+      **Optional feature.** The whole `user-preferences` endpoint group is not required for a
+      Habarico service to be considered compliant. Backends that do not register any preferences
+      (or that disable the feature entirely) may omit these endpoints; clients must therefore
+      tolerate `404` responses on the entire group and fall back to local defaults.
+
+      User preferences provide a per-user key-value store on the backend, used by the admin UI to
+      persist context across devices and sessions (e.g. dashboard widgets, list filters, view mode,
+      column selection). Each key must be registered on the backend via `register_preference`
+      together with its JSON Schema; only registered keys can be read or written.
+    get:
+      summary: List user preferences for the current user.
+      description: |
+        Returns every registered preference for the authenticated user. Items with a stored value
+        carry it together with the `updated_at` timestamp of the last write; registered keys with
+        no stored value yet are returned with the registered default and `updated_at: null`.
+        Pattern-only registrations with no stored value are omitted.
+      operationId: list_user_preferences
+      tags:
+        - user preferences (optional)
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserPreferenceListResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+    delete:
+      summary: Delete all user preferences for the current user.
+      description: |
+        Removes every stored preference value for the authenticated user. Registered keys
+        themselves are not affected — subsequent `GET` requests will return registered defaults.
+        Always returns 204, even if the user had no stored values.
+      operationId: delete_all_user_preferences
+      tags:
+        - user preferences (optional)
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+      responses:
+        '204':
+          description: All preference values for the user deleted (or none were stored).
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+  /{api_prefix}/{service_name}/admin/user-preferences/{key}:
+    description: |
+      Single user-preference resource identified by `key`. The key must be registered on the
+      backend; otherwise both `GET` and `PUT` return 404. JSON Schema validation is enforced on
+      `PUT`. On `GET`, a stored value that no longer matches the current schema is deleted and the
+      registered default is returned in its place; there is no migration hook.
+
+      **Standard key → schema mapping** (well-known keys whose value is validated against the
+      named schema; `<resource>` / `<preferenceKey>` are placeholders):
+
+      | Preference key                              | Schema                       |
+      | ------------------------------------------- | ---------------------------- |
+      | `locale`                                    | `LocalePreference`           |
+      | `theme`                                     | `ThemePreference`            |
+      | `preferences.dashboard`                     | `DashboardPreference`        |
+      | `preferences.layout.app.pageWidth`          | `AppPageWidthPreference`     |
+      | `preferences.layout.app.contrastMode`       | `ContrastModePreference`     |
+      | `preferences.layout.app.stripedRows`        | `StripedRowsPreference`      |
+      | `preferences.layout.app.density`            | `AppDensityPreference`       |
+      | `<preferenceKey>.columns`                   | `ColumnsPreference`          |
+      | `<preferenceKey>.columnWidths`              | `ColumnWidthsPreference`     |
+      | `<resource>.savedQueries`                   | `SavedQueriesPreference`     |
+
+      Any other key falls back to a backend-defined JSON Schema registered via
+      `register_preference`.
+    get:
+      summary: Get a single user preference value.
+      description: |
+        Returns the stored preference value for the authenticated user.
+        If the key is registered but the user has no stored value, returns the default
+        registered for the key. If the stored value fails validation against the current schema
+        it is deleted and the registered default is returned instead, or `404` when the key has
+        no default.
+      operationId: get_user_preference
+      tags:
+        - user preferences (optional)
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/user_preference_key'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserPreferenceItemResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+    put:
+      summary: Set a user preference value.
+      description: |
+        Validates the request body against the JSON Schema registered for `key` and persists it
+        for the authenticated user. Returns the stored item including its `updated_at` timestamp.
+      operationId: put_user_preference
+      tags:
+        - user preferences (optional)
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/user_preference_key'
+      requestBody:
+        $ref: '#/components/requestBodies/UserPreferenceValueRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserPreferenceItemResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+    delete:
+      summary: Delete a user preference value.
+      description: |
+        Removes the stored preference value for the authenticated user. The key itself remains
+        registered on the backend, so subsequent `GET` requests will return the registered
+        default. Returns 404 if the key is not registered. Deleting a key that has no stored
+        value is a no-op and still returns 204.
+      operationId: delete_user_preference
+      tags:
+        - user preferences (optional)
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/user_preference_key'
+      responses:
+        '204':
+          description: Preference value deleted (or no value was stored).
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+components:
+  parameters:
+    api_prefix:
+      name: api_prefix
+      in: path
+      required: true
+      schema:
+        type: string
+    service_name:
+      name: service_name
+      in: path
+      required: true
+      schema:
+        type: string
+    search_query:
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — accepted only when the paid `habarico-enterprise` package is installed.
+      name: search
+      in: query
+      required: true
+      schema:
+        type: string
+        description: |
+          Search query for the service. It is used for full text search over all the service resources.
+
+          The search matches against fields declared in each resource's ``search_fields``. Text
+          fields (``CharField``, ``TextField`` and subclasses), choice fields, ``BooleanField``
+          and numeric fields are supported and produce aligned highlights. Date/time and
+          ``UUIDField`` are not recommended in ``search_fields`` - the DB query matches the ISO
+          form but the FE typically renders the value differently, so the returned highlight
+          offsets won't line up with what the user sees. For dates, use a range filter instead.
+    search_limit:
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** - accepted only when the paid `habarico-enterprise` package is installed.
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 5
+        description: |
+          Results contributed by *each* resource, not by the response as a whole - a request fans
+          out over every resource with ``global_fulltext_search_enabled``, so the response may hold
+          up to ``limit`` objects per resource.
+
+          A value outside this range - non-numeric, zero, negative, or above the maximum - is
+          refused with ``422``. Omitting the parameter (or sending it empty) applies the default.
+          Both the default and the maximum are configurable per project (``HABARICO_SEARCH`` in
+          Python, ``HabaricoEnterprise::Search::Config`` in Ruby), so a deployment may accept more
+          than the documented maximum - or less.
+    order_by:
+      name: order_by
+      in: query
+      required: false
+      schema:
+        type: string
+        example: 'placed_at:desc,number:asc'
+        description: |
+          Ordering of the list: `field:direction` entries separated by `,`, applied left to right.
+          `direction` is `asc` or `desc`, lower-case. Whitespace around an entry is ignored, and a
+          missing or empty parameter leaves the resource's own default ordering in place.
+
+          Anything else is refused with `422`: a missing or repeated `:`, an empty field name, and
+          a direction in any other spelling (`ASC`, `ascending`, `up`).
+
+          `field` is a value the resource schema advertises as `sort_by` — which is not always the
+          field's own name. A range field sorts by its lower bound, a column reached over an
+          association is addressed as `association__column`, and a field may name a different
+          column to sort by. Anything the schema does not advertise is refused with `422`, on
+          `order_by__<field>`. A resource that forces its ordering ignores the parameter instead.
+
+          In a service serving camel-case names the parameter is `orderBy`; the field names inside
+          it are unaffected.
+    filter:
+      name: filter
+      in: query
+      required: false
+      schema:
+        type: string
+        example: 'status="published"&category__in=[3, 7]'
+        description: |
+          Filtering of the list: `field=<JSON value>` terms joined by `&`, the whole of it being
+          the single value of this one parameter and percent-encoded as such. A term's value is
+          JSON, so a string is quoted (`status="published"`), and a number, a boolean and an array
+          are written as themselves (`category__in=[3, 7]`). A missing or empty parameter filters
+          nothing away.
+
+          `field` is a filter the resource schema advertises - the `name` of a `FilterSchema`,
+          lookup suffix included where the filter has one (`__in`, `__gte`, `__icontains`). A field
+          the resource does not offer for filtering is refused with `422`, and the unknown fields of
+          one request are answered together; a term that is not `field=<JSON value>` is answered on
+          its own, before any field name is looked at.
+
+          A `search=` term carries a fulltext query rather than a field filter - it is how the
+          frontend sends the list's search box. Which resources answer it is a backend matter: in
+          the Python backend the fulltext search is **Premium**.
+
+          A filter may also be sent as a query parameter of its own (`?status=published`), which
+          both backends accept. `filter` is the form the frontend sends and the only one validated
+          as a whole, so it is the one to write a client against.
+    resource_name:
+      name: resource_name
+      in: path
+      required: true
+      schema:
+        type: string
+    record_pk:
+      name: record_pk
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/KeyType'
+    action_name:
+      name: action_name
+      in: path
+      required: true
+      schema:
+        type: string
+    user_preference_key:
+      name: key
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-zA-Z][a-zA-Z0-9_.-]*$'
+        description: |
+          Preference key registered on the backend via `register_preference`. Must match
+          `^[a-zA-Z][a-zA-Z0-9_.-]*$` (ASCII letters, digits, underscore, dot and hyphen;
+          must start with a letter). Habarico JS uses camelCase segments (e.g.
+          `preferences.layout.app.pageWidth`) and may embed UUIDs with hyphens in per-widget
+          keys (e.g. `preferences.widget.<uuid>.datagrid.columnWidths`).
+  schemas:
+    # Custom types
+    FieldType:
+      type: string
+      enum:
+        - string
+        - number
+        - integer
+        - boolean
+        - array
+        - object
+      description: |
+        Type of the field, these types are the same as JSON types 
+        (https://swagger.io/docs/specification/v3_0/data-models/data-types/).
+    FieldFormatType:
+      type: string
+      enum:
+        - date
+        - date-time
+        - time
+        - text
+        - rich-text
+        - email
+        - url
+        - password
+        - base64-image
+        - base64-file
+        - uuid
+        - relation
+        - tree-relation
+        - choices
+        - search
+        - decimal
+        - phone
+        - czech-bank-account
+        - czech-ico
+        - czech-dic
+        - czech-birth-number
+        - czech-id-card-number
+        - ai
+        - ai-text
+        - range
+      description: |
+        Format of the field. Format specifies how the field will be displayed in the view.
+        Value is not required, if not set default format will be used. Currently supported formats are:
+        * `date` - date format (ISO 8601).
+        * `date-time` - date and time format (ISO 8601).
+        * `time` - time format (ISO 8601).
+        * `text` - text format, used for multiline texts.
+        * `rich-text` - rich text format with wysiwyg editor.
+        * `email` - email format (RFC 5322).
+        * `url` - URL format (RFC 3986).
+        * `password` - password format. Password value is hidden.
+        * `base64-image` - base64 image format. It is used for object type fields with subfields 
+                           (content, filename, url, format, size).
+        * `base64-file` - base64 file format. It is used for object type fields with subfields 
+                          (content, filename, url, format, size).
+        * `uuid` - text with UUID format.
+        * `relation` - relation format, rendered as a selectbox with search.
+        * `tree-relation` - relation format for a self-referencing (hierarchical) resource, rendered
+                            as a tree selector. The parent field is named by
+                            `RelationFieldOptions.parent`.
+        * `choices` - choices format with predefined choices.
+        * `search` - search format used for filter.
+        * `decimal` - decimal number format, rendered with a fixed fraction-digit range instead of the
+                      plain number rendering.
+        * `phone` - phone format.
+        * `czech-bank-account` - Czech bank account format.
+        * `czech-ico` - Czech ICO format.
+        * `czech-dic` - Czech DIC format.
+        * `czech-birth-number` - Czech birth number format.
+        * `czech-id-card-number` - Czech ID card number format.
+        * `ai` - AI format used for auto complete.
+        * `ai-text` - AI text format for auto complete.
+        * `range` - range format for number, date, string and other ranges.
+      nullable: true
+    ColorType:
+      type: string
+      enum:
+        - primary
+        - secondary
+        - success
+        - error
+        - warning
+        - info
+        - inherit
+      description: |
+        Color of the action button. Color specifies the color of the action button.
+        Value is not required, if not set default color will be used. Currently supported colors are:
+        * `primary` - primary color.
+        * `secondary` - secondary color.
+        * `success` - success color.
+        * `error` - error color.
+        * `warning` - warning color.
+        * `info` - info color.
+        * `inherit` - inherit color.
+      nullable: true
+    BoxType:
+      type: string
+      enum:
+        - tab
+        - tab-item
+        - wizard
+        - simple
+        - list
+        - object
+        - array
+        - grid
+        - grid-item
+        - gallery
+      description: |
+        Box type, defines type of the box. Box is used for grouping fields.
+        Currently supported box types are:
+        * `tab` - tab box.
+        * `tab-item` - item box inside tab or wizard.
+        * `wizard` - wizard box.
+        * `simple` - simple box with fields and or sub-boxes.
+        * `list` - list box.
+        * `object` - object box for complex object field.
+        * `array` - array box for array object field.
+        * `grid` - grid box.
+        * `grid-item` - grid item box.
+        * `gallery` - gallery box for displaying images as a carousel.
+    ActionStateType:
+      type: string
+      enum:
+        - running
+        - success
+        - error
+      description: |
+        State of the action. Currently supported states are:
+        * `running` - action is running.
+        * `success` - action was successful.
+        * `error` - action failed.
+    RequestMethodType:
+      type: string
+      enum:
+        - get
+        - post
+        - put
+        - patch
+        - delete
+      example: get
+      description: supported HTTP methods.
+    TextAlignType:
+      type: string
+      enum:
+        - left
+        - center
+        - right
+      example: left
+      description: Text alignment for the field.
+    DialogWidthType:
+      type: string
+      nullable: true
+      description: |
+        Width of the dialog. Only used when mode is `dialog`.
+        Accepts MUI breakpoints (`xs`, `sm`, `md`, `lg`, `xl`) or a pixel value string (e.g. `800px`).
+      example: lg
+    SortDirectionType:
+      type: string
+      enum:
+        - asc
+        - desc
+      example: asc
+      description: |
+        Sort direction:
+        * `asc` - ascending order.
+        * `desc` - descending order.
+    ViewType:
+      type: string
+      enum:
+        - create
+        - list
+        - show
+        - edit
+        - action
+      example: create
+      description: |
+        View type, currently supported are create, list, show and edit:
+        * `create` - create new object
+        * `list` - list of objects
+        * `show` - object detail
+        * `edit` - edit object
+        * `action` - action view, used sending data to the REST action
+
+        The names `list`, `create`, `edit` and `show` are **reserved**: both backend and frontend map them
+        to fixed, short browser (SPA) routes, recognised by this `type`. Any other view is addressed by its
+        `action_name` (see `ViewEndpointParameters`). The browser route is derived by the frontend as follows
+        (it is **not** the REST `endpoint`):
+        * `list` -> `/{resource}`
+        * `create` -> `/{resource}/create`
+        * `edit` -> `/{resource}/{id}`
+        * `show` -> `/{resource}/{id}/show`
+        * non-reserved, list-level -> `/{resource}/a/{action_name}`
+        * non-reserved, detail -> `/{resource}/{id}/a/{action_name}`
+
+        The presentation `mode` (`redirect`/`modal`/`sidepanel`) does not change the route, only how the view
+        is shown.
+    ViewModeType:
+      type: string
+      enum:
+        - redirect
+        - dialog
+        - sidepanel
+      example: redirect
+      description: |
+        Presentation mode of the view. Mode defines how the view will be opened:
+        * `redirect` - navigate to the view's own browser route
+        * `dialog` - open the view in a modal dialog
+        * `sidepanel` - open the view in a docked side panel
+
+        The mode never changes the browser route (see `ViewType`), only the way the view is rendered.
+
+        What an omitted mode falls back to depends on where it is used:
+        * on a trigger (`ViewActionParameters.mode`, `ViewActionDescriptorParameters.mode`) - the
+          trigger inherits the target view's own `mode`, and only then falls back to `redirect`
+        * on a view (`GlobalViewSchema.mode`) - this is that own `mode`, used when a trigger opens
+          the view without specifying one; when omitted the frontend falls back to `redirect`
+        * on a relation field (`RelationFieldOptions.link_mode`) - how the linked record's view is
+          opened
+      nullable: true
+    ActionType:
+      type: string
+      enum:
+        - view
+        - link
+        - resource
+        - save
+        - ai-assistant
+        - upload-images
+        - export
+      example: view
+      description: |
+        Action type, currently supported are view, link and resource:
+        * `view` - redirect to view
+        * `link` - link to external URL
+        * `resource` - call resource action
+        * `save` - save the object
+        * `ai-assistant` - open the AI assistant for the record. Like `resource`, it is configured by
+          `ResourceActionParameters` and requires its `endpoint`.
+        * `upload-images` - bulk-upload image files
+        * `export` - export list data to a file
+    AfterSaveType:
+      type: string
+      enum:
+        - stay
+        - prev
+        - show
+        - list
+      example: prev
+      description: |
+        Behaviour after a successful save:
+        * `stay` - stay on the current form (do not navigate away)
+        * `prev` - navigate back (browser history back / close dialog)
+        * `show` - open the show view for the saved record
+        * `list` - navigate to the list view of the resource
+    MenuType:
+      type: string
+      enum:
+        - view
+        - link
+        - text
+      example: view
+      description: |
+        Menu type, defines if menu item is link to view or external URL:
+        * `view` - resource view (list, create, show, edit) will be opened
+        * `link` - external URL will be opened
+        * `text` - simple text item, not clickable
+    KeyType:
+      type: string
+      format: uuid
+      pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+      description: |
+        Key type, defines type of the key field. Key field is used for object identification.
+        Identifiers are always UUIDs (RFC 4122) — numeric identifiers are not supported.
+    FilterValues:
+      type: object
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: integer
+          - type: boolean
+      example:
+        is_active: true
+      description: |
+        Filter values keyed by field name.
+
+        What they apply to depends on where they are used:
+        * `extra_filters` - filters applied to the listed items on top of the user's own filters
+        * `sort_for_filters` - sorting is offered only while the list is filtered by exactly these
+          values
+    KeyValue:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+      description: |
+        Key value type defines key value pair. It is used for choices or filters defined on the server side.
+    TargetType:
+      type: string
+      description: |
+        Target type, defines type of the target field.
+        Target field is used for filtering list according to the source object.
+
+        Not to be confused with `LinkTargetType`, which says where a link opens.
+      example: permissions
+    LinkTargetType:
+      type: string
+      enum:
+        - self
+        - blank
+      example: blank
+      description: |
+        Where a link opens. The value is stored without the leading underscore; clients prepend it
+        when rendering, so `blank` becomes the HTML `target="_blank"`.
+        * `self` - open in the current tab
+        * `blank` - open in a new tab
+    ReferenceType:
+      type: string
+      description: |
+        Reference type, defines name of the related resource. For resource from the same service, 
+        only resource name is required. If resource is from another service, 
+        reference is in format `service_name/resource_name`.
+      example: auth/user
+    DetailType:
+      type: boolean
+      example: false
+      description: |
+        Defines if view or action is generated for object detail (URL has pk) or general (URL has no pk, list of objects)
+    EnumType:
+      type: array
+      items:
+        type: object
+        properties:
+          value:
+            $ref: '#/components/schemas/KeyType'
+          label:
+            type: string
+            example: Enum label
+          color:
+            $ref: '#/components/schemas/ColorType'
+          icon:
+            type: string
+            example: FiberNew
+            description: >
+              Optional MUI icon name for this enum value, overrides default action icon.
+      nullable: true
+
+    ValidatorRule:
+      type: object
+      description: |
+        A single validation rule enforced by the frontend before submit. `type` selects which
+        constraint this rule represents; `value` holds the constraint value (its JSON type
+        depends on `type` — e.g. an integer for `max_length`/`min_length`, a number for
+        `max_value`/`min_value`, a JavaScript-compatible regex string for `regex`). The optional
+        `message` is shown when the rule is violated; when omitted the frontend falls back to a
+        generic default message.
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          description: The kind of constraint this rule enforces.
+          enum:
+            - max_length
+            - min_length
+            - max_value
+            - min_value
+            - regex
+        value:
+          oneOf:
+            - type: integer
+            - type: number
+            - type: string
+          example: 100
+          description: |
+            The constraint value the input is checked against. An integer for `max_length`/
+            `min_length`, a number for `max_value`/`min_value`, or a regular expression string
+            (JavaScript-compatible) for `regex`.
+        message:
+          type: string
+          example: "Enter no more than 100 characters."
+          description: Error message shown when the rule is violated.
+
+    # Base response schemas
+    Error:
+      type: object
+      readOnly: true
+      description: |
+        Single error object. All API errors are returned in this format wrapped in the `errors` array.
+        The `source` field uses `__` as separator for nested fields (e.g. `address__city`).
+        In DEBUG mode an additional `traceback` field may be present.
+      required:
+        - error
+        - status
+        - message
+        - timestamp
+      properties:
+        message:
+          type: string
+          example: This field is required.
+          description: Human-readable error description.
+        status:
+          type: integer
+          example: 422
+          description: HTTP status code repeated from the response.
+        source:
+          type: string
+          nullable: true
+          example: field_name__sub_field_name
+          description: |
+            Path to the field that caused the error, using `__` as separator for nested fields.
+            `null` for non-field errors (e.g. general validation errors).
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00.123456+00:00"
+          description: ISO 8601 timestamp with timezone when the error was handled.
+        error:
+          type: string
+          example: Unprocessable Entity
+          description: HTTP status text corresponding to the status code.
+        traceback:
+          type: string
+          description: Python traceback. Only present when the server runs in DEBUG mode.
+    Errors:
+      type: object
+      readOnly: true
+      description: |
+        Standard error envelope returned by all error responses.
+        Every error response, regardless of HTTP status code, uses this structure.
+      required:
+        - errors
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Error'
+    OffsetPaginationMeta:
+      type: object
+      readOnly: true
+      properties:
+        limit:
+          type: integer
+          format: int64
+          example: 20
+        offset:
+          type: integer
+          format: int64
+        cursor:
+          oneOf:
+            - type: integer
+              format: int64
+            - type: string
+          example: 20
+          description: |
+            Opaque pagination cursor. Treat it as a token to pass back verbatim, not as a number -
+            a backend may return it either as an integer offset or as an encoded string.
+        total_count:
+          type: integer
+          format: int64
+          example: 1
+
+    # Parameters
+    ActionViewChoice:
+      type: object
+      description: |
+        Single choice of a view action. Selecting it opens the target view with the choice's own
+        parameters.
+      properties:
+        label:
+          type: string
+          example: Menu choice label
+          description: Label of the menu item.
+        parameters:
+          type: object
+          description: |
+            Object with view parameters which will be sent to the view.
+          additionalProperties: true
+    ViewActionDescriptorParameters:
+      type: object
+      nullable: true
+      properties:
+        mode:
+          $ref: '#/components/schemas/ViewModeType'
+        dialog_width:
+          $ref: '#/components/schemas/DialogWidthType'
+        parameters:
+          type: object
+          description: |
+            Object with view parameters which will be sent to the view.
+          additionalProperties: true
+        keep_linked_parent:
+          type: boolean
+          nullable: true
+          description: |
+            Should the view keep the parent object in the URL path when navigating to the linked resource.
+        choices:
+          type: array
+          description: |
+            List of choices which will be shown in the menu.
+            All menu data will be added to the query string.
+          items:
+            $ref: '#/components/schemas/ActionViewChoice'
+    ViewActionParameters:
+      type: object
+      nullable: true
+      example:
+        name: list
+      description:
+        View parameters, required if menu type is `view`.
+      properties:
+        name:
+          type: string
+          example: view_name
+          description: Name of the view which will be opened.
+        endpoint:
+          $ref: '#/components/schemas/ViewActionEndpointParameters'
+        choices:
+          type: array
+          description: |
+            List of choices which will be shown in the menu. 
+            All menu data will be added to the query string.
+          items:
+            $ref: '#/components/schemas/ActionViewChoice'
+        parameters:
+          type: object
+          description: |
+            Object with view parameters which will be sent to the view.
+          additionalProperties: true
+        mode:
+          $ref: '#/components/schemas/ViewModeType'
+        dialog_width:
+          $ref: '#/components/schemas/DialogWidthType'
+        keep_linked_parent:
+          type: boolean
+          nullable: true
+          description: |
+            Should the view keep the parent object in the URL path when navigating to the linked resource.
+      required:
+        - name
+    LinkActionParameters:
+      type: object
+      nullable: true
+      description:
+        Link parameters, required if menu type is `link`.
+      properties:
+        url:
+          type: string
+          format: uri
+          example: https://example.com
+          description: |
+            URL which will be opened. May be templated with record values (`%{data.website}`),
+            which is why clients restrict what they honour: only `http:`, `https:` and relative
+            URLs are opened, and always with `noopener,noreferrer`. Any other scheme —
+            `javascript:`, `data:`, `blob:`, but also `mailto:` and `tel:` — is refused, so a
+            value saved by a user cannot become code running in an admin's session.
+        target:
+          $ref: '#/components/schemas/LinkTargetType'
+      required:
+        - url
+    ViewActionEndpointParameters:
+      type: object
+      description: |
+        Endpoint parameters. Endpoint is used for calling resource action.
+      properties:
+        reference:
+          oneOf:
+            - $ref: '#/components/schemas/ReferenceType'
+          description: Reference to another service resource. Required if view is from another service or resource.
+        action_name:
+          type: string
+          example: action_name
+          description: Name of the resource action which will be called. Value is required only if action is not standard.
+        record_pk:
+          oneOf:
+            - $ref: '#/components/schemas/KeyType'
+          description: Value of the object primary key. Required if action is for specific object.
+    ResourceActionEndpointParameters:
+      type: object
+      description: |
+        Endpoint parameters. Endpoint is used for calling resource action.
+      properties:
+        path:
+          type: string
+          example: resource_name
+          description: |
+            Name of the resource which will be called. Value is required only if standard resource path is not used.
+        method:
+          $ref: '#/components/schemas/RequestMethodType'
+        reference:
+          oneOf:
+            - $ref: '#/components/schemas/ReferenceType'
+          description: Reference to another service resource. Required if view is from another service or resource.
+        action_name:
+          type: string
+          example: action_name
+          description: Name of the resource action which will be called. Value is required only if action is not standard.
+        record_pk:
+          oneOf:
+            - $ref: '#/components/schemas/KeyType'
+          description: Value of the object primary key. Required if action is for specific object.
+      required:
+        - method
+    ViewEndpointParameters:
+      type: object
+      description: |
+        Endpoint parameters. Endpoint is used for calling resource action.
+
+        This is the **REST API** endpoint (the data source, e.g. `GET /admin/article/1/`), not the browser
+        (SPA) route. The browser route is derived by the frontend from the view `type`, `is_detail` and
+        `action_name` - see `ViewType` for the convention.
+      properties:
+        path:
+          type: string
+          example: resource_name
+          description: |
+            Name of the resource which will be called. Value is required only if standard resource path is not used.
+        method:
+          $ref: '#/components/schemas/RequestMethodType'
+        reference:
+          oneOf:
+            - $ref: '#/components/schemas/ReferenceType'
+          description: Reference to another service resource. Required if view is from another service or resource.
+        action_name:
+          type: string
+          example: action_name
+          description: Name of the resource action which will be called. Value is required only if action is not standard.
+      required:
+        - method
+    ConfirmDialogProperties:
+      type: object
+      description: |
+        Confirm dialog parameters, dialog is shown before action is executed.
+      properties:
+        title:
+          type: string
+          example: Confirm title
+          description: Confirm dialog title.
+        message:
+          type: string
+          example: Confirm message
+          description: Confirm dialog message.
+      nullable: true
+      required:
+        - title
+        - message
+    ResourceActionParameters:
+      type: object
+      nullable: true
+      description: |
+        View parameters, required if type is `view`.
+      properties:
+        endpoint:
+          $ref: '#/components/schemas/ResourceActionEndpointParameters'
+        data:
+          type: object
+          description: Data which will be sent to the resource action.
+        is_background:
+          type: boolean
+          example: false
+          description: Defines if action is background.
+      required:
+        - is_background
+    SaveActionParameters:
+      type: object
+      nullable: true
+      description: |
+        Save action parameters, required if action type is `save`.
+      properties:
+        data:
+          type: object
+          description: Data that will be added to the object on save.
+        after_save:
+          $ref: '#/components/schemas/AfterSaveType'
+    UploadImagesActionParameters:
+      type: object
+      nullable: true
+      description: |
+        Upload images action parameters, present when action type is `upload-images` and at least
+        one parameter is set. Omitted entirely when no parameter is provided.
+      properties:
+        reference:
+          type: string
+          example: photos
+          description: |
+            Resource where images will be created. When set, images are uploaded to this resource
+            instead of the current resource context.
+        target:
+          type: string
+          example: article
+          description: |
+            Field name on the image model linking to the parent record. When set together with
+            `reference`, the current record's ID is used as the target value.
+        accept:
+          type: array
+          items:
+            type: string
+          example:
+            - .png
+            - .jpg
+          description: |
+            List of accepted file types. When not set, the frontend uses its own
+            default (`.png,.jpg,.jpeg,.bmp,.gif`).
+        data:
+          type: object
+          description: Additional data that will be added to each uploaded image record.
+        image_field:
+          type: string
+          example: photo
+          description: |
+            Field name on the image model that holds the uploaded image file. When not set, the
+            frontend uses its own default.
+    ExportActionParameters:
+      type: object
+      nullable: true
+      description: |
+        Export action parameters, present when action type is `export` and at least one parameter
+        is set. Omitted entirely when no parameter is provided.
+      properties:
+        format:
+          type: string
+          example: csv
+          description: |
+            Export format (e.g. `csv`, `xlsx`). When not set, the backend default format is used.
+        fields:
+          type: array
+          items:
+            type: string
+          example:
+            - title
+            - status
+          description: |
+            List of field names to export. When not set, the backend exports its default
+            set of fields.
+    SortableParameters:
+      type: object
+      description: |
+        Drag & drop sorting configuration of a list. If set, rows of the list can be reordered.
+      nullable: true
+      properties:
+        field_name:
+          type: string
+          example: field_name
+          description: Field name used for sorting.
+        sort_for_filters:
+          $ref: '#/components/schemas/FilterValues'
+    ListBoxParameters:
+      type: object
+      description: |
+        List box parameters. List box is used for displaying objects in the table.
+      properties:
+        reference:
+          type: string
+          example: auth/user
+          description: Reference to another service resource.
+        target:
+          $ref: '#/components/schemas/TargetType'
+        row_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Actions rendered as inline buttons on each table row (e.g. edit, delete).
+            Null means all supported object actions are shown.
+          nullable: true
+        toolbar_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Actions rendered in the table's own toolbar (top of the resource list, e.g. create),
+            separate from the box-level toolbar which belongs to the box root. Absent when not configured.
+          nullable: true
+        list_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Utility actions rendered next to the filter bar, separate from row and toolbar actions
+            (e.g. export, print). Absent when not configured.
+          nullable: true
+        default_sorting:
+          oneOf:
+            - $ref: '#/components/schemas/SortDescriptor'
+          description: Default ordering of the list.
+        extra_filters:
+          $ref: '#/components/schemas/FilterValues'
+        filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterDescriptor'
+          description: List of filters which will be shown in the list view.
+        sortable:
+          oneOf:
+            - $ref: '#/components/schemas/SortableParameters'
+          description: |
+            List box can be drag & drop sortable. If sortable is set, list will be sortable.
+        schema_params:
+          type: object
+          description: |
+            Parameters that will be send to get schema request.
+        double_click_action:
+          allOf:
+            - $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Action to activate on row double-click, described as an action descriptor carrying its own
+            `view` mode. A plain action name (e.g. `show`, `edit`, `create-invoice`) provided in code is
+            normalized into this descriptor. Reserved view targets (`show`/`edit`/`create`/`list`) map to
+            fixed frontend routes; absent means the default behaviour applies.
+        single_click_action:
+          allOf:
+            - $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Action to activate on a single row click, described as an action descriptor carrying its own
+            `view` mode (set `view.mode` to `sidepanel` to open a record preview beside the table). A plain
+            action name provided in code is normalized into this descriptor. Absent means a single click
+            does nothing.
+      required:
+        - reference
+    GalleryBoxParameters:
+      type: object
+      description: |
+        Gallery box parameters. Gallery box is used for displaying images from another resource as a carousel.
+      properties:
+        reference:
+          type: string
+          example: photos/photo
+          description: Reference to another service resource.
+        image_field:
+          type: string
+          example: image
+          description: Name of the field containing the image object ({url, filename}).
+        target:
+          $ref: '#/components/schemas/TargetType'
+        default_sorting:
+          oneOf:
+            - $ref: '#/components/schemas/SortDescriptor'
+          description: Default ordering of the gallery.
+        extra_filters:
+          $ref: '#/components/schemas/FilterValues'
+        filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterDescriptor'
+          description: List of filters which will be shown in the gallery view.
+        schema_params:
+          type: object
+          description: Parameters that will be sent to get schema request.
+      required:
+        - reference
+        - image_field
+    TabBoxParameters:
+      type: object
+      description: |
+        Tab box parameters. Present when box type is `tab`.
+      properties:
+        show_toolbar_navigation:
+          type: boolean
+          example: false
+          description: Show previous/next navigation buttons in the box toolbar. Defaults to `false` for tab boxes.
+    WizardBoxParameters:
+      type: object
+      description: |
+        Wizard box parameters. Present when box type is `wizard`.
+      properties:
+        show_toolbar_navigation:
+          type: boolean
+          example: true
+          description: Show previous/next navigation buttons in the box toolbar. Defaults to `true` for wizard boxes.
+        validate_steps:
+          type: boolean
+          example: true
+          description: Validate the current step before moving to the next one. Defaults to `true`.
+    GridItemBoxParameters:
+      type: object
+      description: |
+        Grid item box parameters. Grid is used to position boxes in the grid.
+      properties:
+        xs:
+          type: integer
+          example: 12
+          description: Grid item width for xs breakpoint.
+        sm:
+          type: integer
+          example: 6
+          description: Grid item width for sm breakpoint.
+        md:
+          type: integer
+          example: 4
+          description: Grid item width for md breakpoint.
+        lg:
+          type: integer
+          example: 3
+          description: Grid item width for lg breakpoint.
+        xl:
+          type: integer
+          example: 2
+          description: Grid item width for xl breakpoint.
+      required:
+        - xs
+        - sm
+        - md
+        - lg
+        - xl
+    ObjectBoxParameters:
+      type: object
+      description: |
+        Object box parameters are used to show complex field (object or array type) in the view.
+      properties:
+        target:
+          $ref: '#/components/schemas/TargetType'
+      required:
+        - target
+    ArrayBoxParameters:
+      type: object
+      description: |
+          Array box parameters are used to show array field in the view.
+      properties:
+          target:
+            $ref: '#/components/schemas/TargetType'
+          listed:
+            $ref: '#/components/schemas/ListedOptions'
+          inline:
+            type: boolean
+            example: true
+            description: |
+              Render the array items inline, like table rows. Defaults to `true` unless the box
+              contains nested boxes.
+      required:
+          - target
+    ListedOptions:
+      type: object
+      description: |
+        Array box values will be listed according to choice field.
+      properties:
+        field_name:
+          type: string
+          example: field_name
+          description: Field name used for listing.
+        other_values:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: integer
+          description: List of values which will not shown as the checkbox.
+          nullable: true
+        inline:
+          type: boolean
+          example: false
+          description: Show be fields displayed inline like the table.
+          nullable: true
+    FilterDescriptorOptions:
+      type: object
+      description: |
+        Field options are used for overriding field properties.
+      nullable: true
+      properties:
+        prefix:
+          type: string
+          example: $
+          description: Prefix for the field value. It can be used for units.
+        postfix:
+          type: string
+          example: USD
+          description: Postfix for the field value. It can be used for units.
+    DynamicRenderOptions:
+      type: object
+      description: |
+        Dynamic render is used for dynamic rendering of an element according to other field values.
+      properties:
+        show_query:
+          type: string
+          example: "is_active == true && is_admin == false"
+          description: The element will be shown if query is true.
+        required_query:
+          type: string
+          example: "is_active == true && is_admin == false"
+          description: The element will be required if query is true.
+    ChoicesFieldOptions:
+      type: object
+      description: Options specific to choices (select/radio) fields.
+      properties:
+        icons_key:
+          type: string
+          example: article_statuses
+          description: Icons key defines key for list of icons used in the choices format.
+    ImageFieldOptions:
+      type: object
+      description: Options specific to image fields.
+      properties:
+        resize_width:
+          type: integer
+          example: 100
+          description: Resize width for the image field (in pixels).
+        crop_aspect_ratio:
+          type: number
+          example: 1.5
+          description: Crop aspect ratio for the image field (e.g. 1.5 for 3:2).
+    RelationFieldOptions:
+      type: object
+      description: |
+        Configuration for relation fields.
+      properties:
+        filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/KeyValue'
+          description: Filter used to get values for relation field.
+        sort:
+          oneOf:
+            - $ref: '#/components/schemas/SortDescriptor'
+          description: Sorting used for relation field.
+        preserve_order:
+          type: boolean
+          description: |
+            Preserve order of the values in relation field according to the order of the values in the source field.
+            Default value is `true` if sort is not set, otherwise default value is `false`.
+        show_link:
+          type: boolean
+          description: Show link (default is true)
+        link_mode:
+          $ref: '#/components/schemas/ViewModeType'
+        dialog_width:
+          $ref: '#/components/schemas/DialogWidthType'
+        keep_linked_parent:
+          type: boolean
+          description: |
+            Should relation view keep parent object in the URL path when opened from relation field, default is `false`
+        show_edit_button:
+          type: boolean
+          description: Show edit button next to input.
+        show_create_button:
+          type: boolean
+          description: Show create button next to input.
+        parent:
+          type: string
+          example: parent_field_name
+          description: Parent field name for the tree structure (tree-relation fields).
+    AiFieldOptions:
+      type: object
+      description: Options specific to AI-assisted fields.
+      properties:
+        source_fields:
+          type: array
+          items:
+            type: string
+          description: List of field names used as context for AI auto-completion. Empty list means all fields.
+    FieldOptions:
+      type: object
+      description: |
+        Field options are used for defining extra field properties.
+      nullable: true
+      properties:
+        choices:
+          $ref: '#/components/schemas/ChoicesFieldOptions'
+        image:
+          $ref: '#/components/schemas/ImageFieldOptions'
+        ai:
+          $ref: '#/components/schemas/AiFieldOptions'
+        dynamic_render:
+          $ref: '#/components/schemas/DynamicRenderOptions'
+        validators:
+          type: array
+          description: |
+            Validation rules enforced by the frontend before submit. The rules are auto-extracted
+            from the serializer field constraints (`max_length`, `min_length`, `max_value`,
+            `min_value` and the first `RegexValidator` in `field.validators`) and can be overridden
+            per rule type via the `validators` argument of the `Field` descriptor or the field
+            options. Backend validation is always performed regardless of this configuration. At
+            most one rule per `type` is expected.
+          items:
+            $ref: '#/components/schemas/ValidatorRule'
+        relation:
+          $ref: '#/components/schemas/RelationFieldOptions'
+        text_align:
+          $ref: '#/components/schemas/TextAlignType'
+        number:
+          $ref: '#/components/schemas/NumberFieldOptions'
+        prefix:
+          type: string
+          example: $
+          description: Prefix for the field value. It can be used for units.
+        postfix:
+          type: string
+          example: USD
+          description: Postfix for the field value. It can be used for units.
+        phone:
+          $ref: '#/components/schemas/PhoneFieldOptions'
+        target:
+          $ref: '#/components/schemas/LinkTargetType'
+        upload:
+          $ref: '#/components/schemas/UploadFieldOptions'
+        max_size:
+          type: integer
+          example: 5242880
+          description: |
+            Largest file in bytes the frontend accepts for this field, checked before the upload
+            starts (`file.size > max_size` is refused). Backend validation is always performed
+            regardless of this value - this only spares the user an upload that would be refused
+            anyway. When a chunked-upload provider serves the field, this is the same ceiling its
+            `initiate` endpoint enforces; omitted when the field declares no limit of its own.
+
+            A project may set it directly; the field's own `MaxFileSizeValidator` fills it
+            automatically, without overriding a value set by hand. With `habarico-enterprise`
+            installed, the project-wide upload size ceiling is folded in too for a field a
+            chunked-upload provider actually serves.
+        accept:
+          type: array
+          items:
+            type: string
+          example:
+            - image/png
+            - image/jpeg
+          description: |
+            File types the frontend accepts for this field, checked before the upload starts. An
+            entry is a filename extension (`.png`), a concrete media type (`image/png`) or a
+            media-type wildcard (`image/*`). Backend validation is always performed regardless of
+            this list. Omitted when the field declares no restriction, or when its restriction
+            cannot be expressed in this form - the frontend must not treat an absent `accept` as
+            "everything is allowed server-side".
+
+            A project may set it directly; the field's own `FileExtensionValidator` (or, for an
+            image field, Django's `validate_image_file_extension`) fills it automatically, without
+            overriding a value set by hand.
+
+            A project may set it directly; `habarico-enterprise` also fills it from the field's own
+            declared content-type validation, without overriding a value set by hand.
+    NumberFieldOptions:
+      type: object
+      description: |
+        Intl.NumberFormat options used for number formatting.
+      nullable: true
+      properties:
+        style:
+          type: string
+          example: unit
+          description: Number format style.
+          enum:
+            - unit
+            - currency
+        currency:
+          type: string
+          example: USD
+          description: Currency code used for currency format.
+        unit:
+          type: string
+          example: meter
+          description: Unit code used for unit format.
+        minimum_fraction_digits:
+          type: integer
+          example: 2
+          description: Minimum number of fraction digits.
+        maximum_fraction_digits:
+          type: integer
+          example: 2
+          description: Maximum number of fraction digits.
+    PhoneFieldOptions:
+      type: object
+      description: |
+        Phone format options used for phone field.
+      properties:
+        default_region:
+          type: string
+          example: CZ
+          description: Default region used for phone number defined in  ISO 3166-1
+        allowed_regions:
+          type: array
+          items:
+            type: string
+          description: List of allowed regions used for phone number defined in ISO 3166-1
+    UploadFieldOptions:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Present only when a chunked upload provider is configured. Tells the frontend to
+        switch from base64 to chunked upload when the file exceeds `threshold` bytes.
+
+        On POST/PUT a file/image field accepts EITHER the existing base64 payload (the
+        `content`/`filename`/... object) OR an object `{"upload_key": "<key returned by
+        complete>"}` referencing a chunk-uploaded file.
+
+        This object is a discriminated union: `provider` selects the active provider and
+        determines which provider-specific fields are present. `initiate_url` and `endpoint`
+        are mutually exclusive – exactly one is returned per field, never both. Clients must
+        branch on `provider`, not on the presence of a particular field.
+      properties:
+        provider:
+          type: string
+          enum:
+            - s3-multipart
+            - tus
+        threshold:
+          type: integer
+          description: Byte size at/above which chunked upload is used.
+        chunk_size:
+          type: integer
+          description: Size in bytes of a single chunk/part the frontend should slice the file into.
+        min_chunk_size:
+          type: integer
+          description: |
+            Present only for provider `s3-multipart`. The S3 hard minimum part size in bytes
+            (every part except the last must be at least this large). The frontend uses it to
+            decide multipart vs. a single upload before calling `initiate` - a file smaller than
+            this cannot be split into multiple parts.
+        initiate_url:
+          type: string
+          description: |
+            Present only for provider `s3-multipart`. URL of the Habarico initiate
+            endpoint (`/admin/uploads/initiate`, already carrying the opaque `target` query
+            param) that the frontend POSTs to in order to start the two-step S3 flow
+            (initiate → upload parts directly to storage → complete). It is an action URL
+            on this service, not the storage URL.
+        endpoint:
+          type: string
+          description: |
+            Present only for provider `tus`. Base URL of the external tusd service that the
+            tus client uploads to directly; Habarico only advertises it and later finalizes
+            the result. It is the upload target itself, not a Habarico endpoint.
+    BoxOptions:
+      type: object
+      description: |
+        Box options are used for defining extra box properties.
+      nullable: true
+      properties:
+        dynamic_render:
+          $ref: '#/components/schemas/DynamicRenderOptions'
+    ListViewParameters:
+      type: object
+      nullable: true
+      description: |
+        List view parameters, required if type is `list`.
+      properties:
+        boxes:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldDescriptor'
+          description: |
+            List of fields and it's configuration which will be shown in the list view.
+            Null value means all fields will be shown.
+        row_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Actions rendered as inline buttons on each table row (e.g. edit, delete).
+            Null means all supported object actions are shown.
+        toolbar_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Actions rendered in the toolbar above the table (e.g. create, bulk delete).
+            Null means all supported actions are shown.
+          nullable: true
+        list_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Utility actions rendered next to the filter bar, separate from row and toolbar actions
+            (e.g. export, print). Absent when not configured.
+          nullable: true
+        default_sorting:
+          oneOf:
+            - $ref: '#/components/schemas/SortDescriptor'
+          description: Default ordering of the list.
+        extra_filters:
+          $ref: '#/components/schemas/FilterValues'
+        filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterDescriptor'
+          description: List of filters which will be shown in the list view.
+        sortable:
+          oneOf:
+            - $ref: '#/components/schemas/SortableParameters'
+          description: |
+            List box can be drag & drop sortable. If sortable is set, list will be sortable.
+        double_click_action:
+          allOf:
+            - $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Action to activate on row double-click, described as an action descriptor carrying its own
+            `view` mode. A plain action name (e.g. `show`, `edit`, `create-invoice`) provided in code is
+            normalized into this descriptor. Reserved view targets (`show`/`edit`/`create`/`list`) map to
+            fixed frontend routes; absent means the default behaviour applies.
+        single_click_action:
+          allOf:
+            - $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Action to activate on a single row click, described as an action descriptor carrying its own
+            `view` mode (set `view.mode` to `sidepanel` to open a record preview beside the table). A plain
+            action name provided in code is normalized into this descriptor. Emitted only when the target
+            view is available; absent means a single click does nothing.
+    DetailViewParameters:
+      type: object
+      description: |
+        Detail view parameters, required if type is `show`, `edit` or `create`.
+      properties:
+        box:
+          allOf:
+            - $ref: '#/components/schemas/BoxSchema'
+          description: Box schema used for displaying detail layout.
+        toolbar_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Actions rendered in the toolbar at the top of the view (e.g. delete, custom actions).
+            Null means all supported actions are shown.
+          nullable: true
+        bottom_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Actions rendered at the bottom of the view below the form fields (e.g. save, cancel).
+            Null means all supported actions are shown.
+          nullable: true
+      required:
+        - box
+    FieldWrapperProperties:
+      type: object
+      description: |
+        Wrapper field around more fields. Wrapper is used for grouping fields.
+      properties:
+        divider:
+          type: string
+          example: ", "
+          description: Separator used for joining field values.
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldDescriptor'
+          description: List of fields inside the wrapper.
+    # Descriptors - it is just an identifier of existing object with possibility to override some properties.
+    FieldDescriptor:
+      type: object
+      description: |
+        Field descriptor is used for defining field that are shown in a view.
+      properties:
+        type:
+          type: string
+          enum:
+            - field
+          description: Descriptor type. Always set to 'field'.
+        name:
+          type: string
+          example: field_name
+          description: Field name.
+        label:
+          type: string
+          example: Field label
+          description: Field label that overrides default field label. If not set, field name is used.
+        short_label:
+          type: string
+          example: Short field label
+          description: Short field label used as header in the list view. If not set, field label is used.
+        help_text:
+          type: string
+          example: Field help text
+          description: Field help text used as a form field tooltip. If not set, field help text is used.
+        sortable:
+          type: boolean
+          example: false
+          description: Defines if field is sortable. Default value is false.
+        sort_by:
+          type: string
+          example: field_name
+          description: Field name used for sorting. If not set, field name is used.
+        read_only:
+          type: boolean
+          example: false
+          description: Defines if field is read only. Default value is false.
+        write_only:
+          type: boolean
+          example: false
+          description: Defines if field is write only. Default value is false.
+        default_value:
+          example: default_value
+          description: Default field value that overrides default field value. If not set, default field value is used.
+        action:
+          oneOf:
+            - $ref: '#/components/schemas/ActionDescriptor'
+            - $ref: '#/components/schemas/ActionSchema'
+          description: Action that is shown in the field.
+        wrapper:
+          $ref: '#/components/schemas/FieldWrapperProperties'
+        options:
+          $ref: '#/components/schemas/FieldOptions'
+      required:
+        - type
+        - name
+    ActionDescriptor:
+      type: object
+      description: |
+        Field descriptor is used for defining action that are shown in a view.
+      properties:
+        name:
+          type: string
+          example: field_name
+          description: Action name.
+        label:
+          type: string
+          example: Action label
+          description: Action label that overrides default action label. If not set, action name is used.
+        icon:
+          type: string
+          example: Action icon
+          description: Action icon that overrides default action icon. If not set, default icon is used.
+        color:
+          oneOf:
+            - $ref: '#/components/schemas/ColorType'
+          description: Action color that overrides default action color. If not set, default color is used.
+        action:
+          oneOf:
+            - $ref: '#/components/schemas/ActionSchema'
+          description: Action that is shown in the field.
+        view:
+          oneOf:
+            - $ref: '#/components/schemas/ViewActionDescriptorParameters'
+          description: View that is shown in the field.
+        menu_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDescriptor'
+          description: List of sub actions which will be shown in the action menu.
+          nullable: true
+      required:
+        - name
+    SortDescriptor:
+      type: object
+      description: |
+        Sort descriptor is used for defining ordering of the list, table or selectbox items of an objects.
+      properties:
+        field_name:
+          type: string
+          example: field_name
+          description: Field name used for ordering.
+        direction:
+          $ref: '#/components/schemas/SortDirectionType'
+      required:
+        - field_name
+        - direction
+    FilterDescriptor:
+      type: object
+      description: |
+        Filter descriptor is used for defining filter that are shown in a view.
+      properties:
+        name:
+          type: string
+          example: filter_name
+          description: Filter name.
+        label:
+          type: string
+          example: Filter label
+          description: Filter label that overrides default filter label. If not set, filter name is used.
+        help_text:
+          type: string
+          example: Field help text
+          description: Field help text used as a filter tooltip. If not set, filter help text is used.
+        is_always_on:
+          type: boolean
+          example: false
+          description: >-
+            Defines if the filter is always displayed. If true, the filter is shown at all times;
+            if false, it is hidden among the background (advanced) filters. Default value is false.
+        default_value:
+          example: default_value
+          description: Default filter value that overrides default filter value. If not set, default filter value is used.
+        options:
+          $ref: '#/components/schemas/FilterDescriptorOptions'
+      required:
+        - name
+    # Schemas
+    GlobalViewSchema:
+      type: object
+      readOnly: true
+      description: |
+        Simplified schema of the service view. All supported views are returned for the resource.
+      properties:
+        name:
+          type: string
+          example: view_name
+          description: Name of the view, must be unique within resource.
+        type:
+          $ref: '#/components/schemas/ViewType'
+        is_detail:
+          $ref: '#/components/schemas/DetailType'
+        endpoint:
+          $ref: '#/components/schemas/ViewEndpointParameters'
+        mode:
+          $ref: '#/components/schemas/ViewModeType'
+      required:
+        - name
+        - type
+        - is_detail
+        - endpoint
+    ActionSchema:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/ActionType'
+        is_detail:
+          $ref: '#/components/schemas/DetailType'
+        confirm_dialog:
+          $ref: '#/components/schemas/ConfirmDialogProperties'
+        view:
+          $ref: '#/components/schemas/ViewActionParameters'
+        link:
+          $ref: '#/components/schemas/LinkActionParameters'
+        resource:
+          $ref: '#/components/schemas/ResourceActionParameters'
+        save:
+          $ref: '#/components/schemas/SaveActionParameters'
+        upload_images:
+          $ref: '#/components/schemas/UploadImagesActionParameters'
+        export:
+          $ref: '#/components/schemas/ExportActionParameters'
+        label:
+          type: string
+          example: Action label
+          description: Action label that overrides default action label. If not set, action name is used.
+        icon:
+          type: string
+          example: Action icon
+          description: Action icon that overrides default action icon. If not set, default icon is used.
+        color:
+          oneOf:
+            - $ref: '#/components/schemas/ColorType'
+          description: Action color that overrides default action color. If not set, default color is used.
+    GlobalResourceActionSchema:
+      type: object
+      readOnly: true
+      description: |
+        Simplified schema of the service view. All supported actions are returned for the resource.
+      properties:
+        name:
+          type: string
+          example: action_name
+          description: Name of the action, must be unique within resource.
+        type:
+          $ref: '#/components/schemas/ActionType'
+        is_detail:
+          $ref: '#/components/schemas/DetailType'
+        show_in_detail:
+          type: boolean
+          example: false
+          description: |
+            Defines if action is shown in object detail views.
+        show_in_list:
+          type: boolean
+          example: false
+          description: |
+              Defines if action is shown in list views.
+      required:
+        - name
+        - type
+        - is_detail
+        - show_in_detail
+        - show_in_list
+    MenuGroupSchema:
+      type: object
+      readOnly: true
+      description: |
+          Object represents schema of the service menu group. Groups with same name are merged.
+      properties:
+        name:
+          type: string
+          example: menu_name
+          description: Menu name.
+        label:
+          type: string
+          example: Menu label
+          description: Menu label
+        icon:
+          type: string
+          example: menu_icon
+          description: Menu icon. You can chose from MUI icons (https://mui.com/material-ui/material-icons).
+          nullable: true
+        color:
+          $ref: '#/components/schemas/ColorType'
+        priority:
+          type: integer
+          example: 100
+          description: Menu priority defines order of the menu item in the menu. Lower priority means higher position.
+        parent:
+          oneOf:
+            - $ref: '#/components/schemas/MenuGroupSchema'
+          description: Parent menu group. Group is shown as the root if parent is not set.
+      required:
+        - name
+        - label
+        - priority
+    MenuSchema:
+      type: object
+      readOnly: true
+      description: |
+          Object represents schema of the resource menu.
+      required:
+        - label
+      properties:
+        name:
+          type: string
+          example: menu_name
+          description: Menu name, value must be unique across the service.
+        label:
+          type: string
+          example: Menu label
+          description: Menu label.
+        icon:
+          type: string
+          example: menu_icon
+          description: Menu icon. You can chose from MUI icons (https://mui.com/material-ui/material-icons).
+        color:
+          $ref: '#/components/schemas/ColorType'
+        priority:
+          type: integer
+          example: 100
+          description: Menu priority defines order of the menu item in the menu.
+        type:
+          $ref: '#/components/schemas/MenuType'
+        parent:
+          oneOf:
+            - $ref: '#/components/schemas/MenuGroupSchema'
+          description: Parent menu group. Group is shown as the root if parent is not set.
+        view:
+          $ref: '#/components/schemas/ViewActionParameters'
+        link:
+          $ref: '#/components/schemas/LinkActionParameters'
+    GlobalResourceSchema:
+      type: object
+      readOnly: true
+      description: |
+        Represents schema of one resource. Resource schema defines name, label, 
+        list of supported views, name of the pk field, list of supported actions and menu schema.
+      properties:
+        name:
+          type: string
+          example: resource_name
+          description: Resource name must be unique within the service.
+        label:
+          type: string
+          example: Resource label
+          description: Resource label.
+        pk_field_name:
+          type: string
+          example: id
+          description: Name of the primary key field of the resource.
+        views:
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalViewSchema'
+          description: List of supported views for the resource.
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalResourceActionSchema'
+          description: List of supported actions for the resource.
+        menu:
+          oneOf:
+            - $ref: '#/components/schemas/MenuSchema'
+          description: Menu schema for the resource.
+          example:
+            label: Menu label
+            icon: Abc
+            priority: 10
+            type: view
+            view:
+              name: users-list
+        global_fulltext_search_enabled:
+          type: boolean
+          example: false
+          description: |
+            **Premium** — contributed by the paid `habarico-enterprise` package; absent from a
+            free-only install.
+
+            When true, this resource is included in the application-wide fulltext search across
+            all registered admins. Does not affect search within the resource's own list view.
+        aggregate_enabled:
+          type: boolean
+          example: false
+          description: |
+            **Premium** — contributed by the paid `habarico-enterprise` package; absent from a
+            free-only install.
+
+            When true, this resource exposes the aggregate endpoint at
+            `/{api_prefix}/{service_name}/admin/{resource_name}/aggregate` and the
+            companion schema endpoint at `.../aggregate/schema`. Default false – admin
+            opts in per-resource. Resources without the opt-in return HTTP 404 for both.
+        dashboard_enabled:
+          type: boolean
+          example: false
+          description: |
+            **Premium** — contributed by the paid `habarico-enterprise` package; absent from a
+            free-only install.
+
+            When true, this resource can be used for a dashboard. Default false – admin opts in
+            per-resource.
+    ObjectResourceSchema:
+      type: object
+      readOnly: true
+      description: |
+        Represents schema of one resource. Resource schema defines name, label, 
+        list of supported views, name of the pk field, list of supported actions and menu schema.
+      properties:
+        name:
+          type: string
+          example: resource_name
+          description: Resource name must be unique within the service.
+        label:
+          type: string
+          example: Resource label
+          description: Resource label.
+        pk_field_name:
+          type: string
+          example: id
+          description: Name of the primary key field of the resource.
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceActionSchema'
+          description: List of supported actions for the resource. Only actions allowed for concreate response (detail, list) are returned.
+      required:
+        - name
+        - pk_field_name
+        - actions
+    SearchResourceSchema:
+      type: object
+      readOnly: true
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Represents schema of one resource. Resource schema defines name, label,
+      properties:
+        name:
+          type: string
+          example: resource_name
+          description: Resource name must be unique within the service.
+        label:
+          type: string
+          example: Resource label
+          description: Resource label.
+        icon:
+          type: string
+          example: resource_icon
+          description: Resource icon. You can chose from MUI icons (https://mui.com/material-ui/material-icons).
+    BoxSchema:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/BoxType'
+        name:
+          type: string
+          example: box_name
+          description: Box name, must be unique within the resource.
+        label:
+          type: string
+          example: Box label
+          description: Box label
+        card:
+          type: boolean
+          nullable: true
+          example: true
+          description: |
+            Whether the box is displayed as a card. Three states: `true` always renders the card,
+            `false` never does - not even when the box has a label or toolbar actions, in which case
+            the label becomes a plain section heading - and `null` (or an absent key) leaves the
+            decision to the frontend. Unset, a box takes the card when it has a label, toolbar
+            actions or is collapsible, and additionally when it is the first box of a view rendered
+            on a page surface. A layout box holding no fields of its own (a grid, a tab or wizard
+            step, a bare wrapper) hands that default down to its children instead, so the card lands
+            on the first box that actually holds content. Inside a dialog or a side panel the
+            overlay itself is the card, so nothing takes the default.
+        collapsible:
+          type: string
+          nullable: true
+          example: open
+          enum:
+            - open
+            - closed
+          description: |
+            Makes the box collapsible and sets the state it is rendered in. Null means the box is not
+            collapsible. A collapsible box keeps its header even without a label, because the header
+            hosts the toggle.
+        boxes:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/BoxSchema'
+              - $ref: '#/components/schemas/FieldDescriptor'
+              - type: array
+                items:
+                  $ref: '#/components/schemas/FieldDescriptor'
+          description: List of boxes and fields
+        read_only:
+          type: boolean
+          example: false
+          description: |
+            Defines if box is only read-only.
+            Value is used for example for rendering save button in the form.
+        toolbar_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Actions rendered in the box's toolbar (top of the box / card header area). On a plain box
+            the toolbar is always visible; on a step container (tab/wizard) the actions appear on the
+            last step. Absent when not configured.
+          nullable: true
+        bottom_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDescriptor'
+          description: |
+            Actions rendered at the bottom of the box, below the fields — similar to form submit buttons
+            at the view level. Absent when not configured.
+          nullable: true
+        tab:
+          $ref: '#/components/schemas/TabBoxParameters'
+        wizard:
+          $ref: '#/components/schemas/WizardBoxParameters'
+        grid_item:
+          $ref: '#/components/schemas/GridItemBoxParameters'
+        list:
+          $ref: '#/components/schemas/ListBoxParameters'
+        object:
+          $ref: '#/components/schemas/ObjectBoxParameters'
+        array:
+          $ref: '#/components/schemas/ArrayBoxParameters'
+        gallery:
+          $ref: '#/components/schemas/GalleryBoxParameters'
+        options:
+          $ref: '#/components/schemas/BoxOptions'
+      required:
+        - type
+    FieldSchema:
+      type: object
+      properties:
+        name:
+          type: string
+          example: field_name
+          description: Field name.
+        type:
+          $ref: '#/components/schemas/FieldType'
+        format:
+          $ref: '#/components/schemas/FieldFormatType'
+        label:
+          type: string
+          example: Field label
+          description: Field label.
+          nullable: true
+        short_label:
+          type: string
+          example: Field
+          description: Shorter field label, used where space is tight - for example a list column header.
+          nullable: true
+        help_text:
+          type: string
+          example: Field help text
+          description: Field help text.
+          nullable: true
+        read_only:
+          type: boolean
+          example: false
+          description: Defines if field is read-only.
+        write_only:
+          type: boolean
+          example: false
+          description: Defines if field is write-only.
+        nullable:
+          type: boolean
+          example: false
+          description: Defines if field is nullable.
+        required:
+          type: boolean
+          example: false
+          description: Defines if field is required.
+        default_value:
+          example: default_value
+          description: Default field value.
+        sortable:
+          type: boolean
+          example: false
+          description: Defines if field is sortable.
+        sort_by:
+          type: string
+          example: field_name
+          description: Field name used for sorting. If not set, field name is used.
+        reference:
+          $ref: '#/components/schemas/ReferenceType'
+        enum:
+          $ref: '#/components/schemas/EnumType'
+        items:
+          oneOf:
+            - $ref: '#/components/schemas/FieldSchema'
+          description: List of field items. Used for array type.
+        properties:
+          type: array
+          description: |
+            Array of field properties. Properties are used for object type fields.
+          items:
+            $ref: '#/components/schemas/FieldSchema'
+          nullable: true
+        options:
+          $ref: '#/components/schemas/FieldOptions'
+      required:
+        - type
+        - required
+        - nullable
+        - read_only
+        - write_only
+        - sortable
+    FilterSchema:
+      description: |
+        Filter schema is used for describing filter that resource supports.
+      type: object
+      properties:
+        name:
+          type: string
+          example: Filter name
+          description: Filter name.
+        type:
+          $ref: '#/components/schemas/FieldType'
+        format:
+          $ref: '#/components/schemas/FieldFormatType'
+        label:
+          type: string
+          example: Filter label
+          description: Filter label.
+          nullable: true
+        help_text:
+          type: string
+          example: Filter help text
+          description: Filter help text.
+          nullable: true
+        default_value:
+          example: default_value
+          description: Default filter value.
+        reference:
+          $ref: '#/components/schemas/ReferenceType'
+        enum:
+          $ref: '#/components/schemas/EnumType'
+        items:
+          oneOf:
+            - $ref: '#/components/schemas/FilterSchema'
+          description: List of field items. Used for array type.
+        properties:
+          type: object
+          description: |
+            Object with field properties. Properties are used for object type fields.
+          additionalProperties:
+            $ref: '#/components/schemas/FilterSchema'
+          nullable: true
+        options:
+          $ref: '#/components/schemas/FieldOptions'
+        is_always_on:
+          type: boolean
+          example: false
+          description: >-
+            Defines if the filter is always displayed. If true, the filter is shown at all times;
+            if false, it is hidden among the background (advanced) filters. Default value is false.
+      required:
+        - type
+
+    ResourceActionSchema:
+      description:
+        Action schema is used for describing action that resource supports.
+        Only valid actions for the current resource are returned.
+        It means that for detail resource will be returned only detail actions.
+      allOf:
+        - $ref: '#/components/schemas/GlobalResourceActionSchema'
+        - type: object
+          properties:
+            label:
+              type: string
+              example: Action label
+              description: Action label that is used for rendering action button.
+              nullable: true
+            icon:
+              type: string
+              example: action_icon
+              description: |
+                Action icon that is used for rendering action button.
+                You can chose from MUI icons (https://mui.com/material-ui/material-icons).
+              nullable: true
+            color:
+              oneOf:
+                - $ref: '#/components/schemas/ColorType'
+              description: |
+                Action color that is used for rendering action button. 
+                If not set, primary color is used.
+            confirm_dialog:
+              $ref: '#/components/schemas/ConfirmDialogProperties'
+            view:
+              $ref: '#/components/schemas/ViewActionParameters'
+            link:
+              $ref: '#/components/schemas/LinkActionParameters'
+            resource:
+              $ref: '#/components/schemas/ResourceActionParameters'
+    ViewSchema:
+      description: |
+        View schema is used for describing view that resource supports.
+        Only valid views for the current resource are returned. 
+        It means that for detail resource will be returned only detail views.
+      allOf:
+        - $ref: '#/components/schemas/GlobalViewSchema'
+        - type: object
+          properties:
+            label:
+              type: string
+              example: View label
+              description: View label.
+            list:
+              $ref: '#/components/schemas/ListViewParameters'
+            detail:
+              $ref: '#/components/schemas/DetailViewParameters'
+            breadcrumbs:
+              type: array
+              nullable: true
+              items:
+                $ref: '#/components/schemas/MenuSchema'
+              description: Breadcrumb trail of the view (chain of menu items leading to it).
+    MethodSchema:
+      type: object
+      description: |
+        Method schema is used for describing method that resource supports.
+      properties:
+        fields:
+          type: array
+          items:
+              $ref: '#/components/schemas/FieldSchema'
+          description: List of fields and it's configuration which will be shown in the list view.
+        filters:
+          type: array
+          items:
+              $ref: '#/components/schemas/FilterSchema'
+          description: List of filters which will be shown in the list view.
+      required:
+        - fields
+        - filters
+    AggregateFieldSchema:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Field exposed by the aggregate endpoint. Listed only for fields that are valid
+        aggregation targets (non-empty `aggregations`) or valid `group_by` keys
+        (non-empty `group_by`). Trimmed to aggregate-relevant properties only – there
+        is no `sortable` / `read_only` / `write_only` / `required` here, since they do
+        not apply to aggregation.
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          example: amount
+          description: Field name. Matches the value used in `field` / `group_by` query parameters.
+        label:
+          type: string
+          example: Field label
+          description: Field label.
+          nullable: true
+        type:
+          $ref: '#/components/schemas/FieldType'
+        aggregations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AggregateFunctionType'
+          description: |
+            Whitelist of aggregation functions allowed when this field is the target of
+            the aggregate endpoint (`function=...&field=...`). Empty / omitted means the
+            field cannot be an aggregation target.
+          example: [sum, avg, min, max, count]
+        group_by:
+          type: array
+          items:
+            type: string
+          description: |
+            Whitelist of `group_by` forms allowed for this field. Each entry is a bucket
+            function name as it appears in the `group_by` query parameter:
+              * `exact` – direct value grouping (`group_by=<field>`)
+              * `trunc:<gran>` – date / datetime truncation, where `gran` is one of
+                `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`
+              * `width` – numeric fixed-width bucketing (`group_by=<field>:width:<n>`)
+            Empty / omitted means the field cannot be used in `group_by`.
+          example: [exact, trunc:day, trunc:month]
+        enum:
+          allOf:
+            - $ref: '#/components/schemas/EnumType'
+          description: |
+            Value/label pairs for a `choices` field. Grouped results return the raw stored
+            value, so the frontend uses this mapping to render the display label. Mutually
+            exclusive with `reference`.
+        reference:
+          allOf:
+            - $ref: '#/components/schemas/ReferenceType'
+          description: |
+            Related admin resource name when the field is a relation. Grouped results return
+            the raw primary key, so the frontend uses this to resolve the related object.
+            Mutually exclusive with `enum`.
+        options:
+          allOf:
+            - $ref: '#/components/schemas/FieldOptions'
+          description: |
+            Rendering options for the field, exposed the same way as on `FieldSchema`.
+            Currently carries `prefix` / `postfix` for decorating the aggregated value
+            (e.g. a currency symbol or unit).
+    AggregateSchema:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Aggregate endpoint schema. Returned by `/admin/{resource_name}/aggregate/schema`
+        on resources where `aggregate_enabled: true` is set in the resource schema.
+        Lists the fields available for aggregation (each with its own whitelist of
+        aggregation functions and `group_by` forms) and the filters that can be applied.
+        Filters reuse the same `ComplexFilterBackend` as the list endpoint.
+      required:
+        - fields
+        - filters
+      properties:
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/AggregateFieldSchema'
+          description: Fields exposed by the aggregate endpoint.
+        filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterSchema'
+          description: Filters that can be applied to the aggregated dataset.
+    EndpointsSchema:
+      type: object
+      description: |
+        Endpoints schema describes the endpoints a resource supports, one entry per HTTP method.
+        Each entry is a `MethodSchema` describing the fields and filters of that endpoint; a method
+        that is absent is not supported.
+      properties:
+        get:
+          $ref: '#/components/schemas/MethodSchema'
+        post:
+          $ref: '#/components/schemas/MethodSchema'
+        patch:
+          $ref: '#/components/schemas/MethodSchema'
+        put:
+          $ref: '#/components/schemas/MethodSchema'
+        delete:
+          $ref: '#/components/schemas/MethodSchema'
+    LocalResourceSchema:
+      description: |
+        Local resource schema is returned by the per-resource schema routes
+        (`/admin/{resource_name}/**/schema`). Unlike `GlobalResourceSchema`, which describes every
+        resource of the service in a lightweight, context-free form, this one describes a single
+        resource in the context of a concrete request (`_target`, `_source`, `record_pk`).
+      allOf:
+        - $ref: '#/components/schemas/ObjectResourceSchema'
+        - type: object
+          properties:
+            views:
+              type: array
+              items:
+                $ref: '#/components/schemas/ViewSchema'
+              description: List of supported views for the resource. Only views allowed for concreate response (detail, list) are returned.
+            endpoints:
+              $ref: '#/components/schemas/EndpointsSchema'
+      required:
+        - name
+        - pk_field_name
+        - views
+        - actions
+        - endpoints
+    ActionResultMeta:
+      type: object
+      readOnly: true
+      description: |
+          Meta information about the action result contains action representation and its schema.
+      properties:
+        message:
+          type: string
+          example: Action result message
+          description: Action result message
+        state:
+          $ref: '#/components/schemas/ActionStateType'
+        trigger_action:
+          $ref: '#/components/schemas/ActionSchema'
+    ResourceObjectMeta:
+      type: object
+      readOnly: true
+      description: |
+        Meta information about the resource object contains object representation and its schema.
+      properties:
+        repr:
+          type: string
+          example: Resource object representation
+          description: String representation of the resource object
+        schema:
+          $ref: '#/components/schemas/ObjectResourceSchema'
+        tags:
+          type: array
+          items:
+              type: string
+          description: List of tags for the resource object.
+          nullable: true
+        trigger_action:
+          $ref: '#/components/schemas/ActionSchema'
+        highlights:
+          allOf:
+            - $ref: '#/components/schemas/SearchHighlights'
+          description: |
+              Present only on list endpoint responses when the request carried a non-empty
+              ``search`` query and at least one ``search_fields`` path matched on this object.
+              Same shape as the service search endpoint's ``highlights``; ``value`` here is the
+              full field value (no snippet trimming), ``offsets`` reference positions in the
+              original raw value.
+      required:
+        - repr
+        - schema
+    ResourceObject:
+      type: object
+      description: |
+        Resource object is used for representing resource object with the meta information.
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResourceObjectMeta'
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: integer
+          - type: number
+          - type: boolean
+          - type: array
+          - type: object
+    ResourceObjectList:
+      type: object
+      description: |
+        Paginated page of resource objects returned by a list endpoint.
+      properties:
+        meta:
+          $ref: '#/components/schemas/OffsetPaginationMeta'
+        objects:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceObject'
+    SearchHighlights:
+      type: array
+      readOnly: true
+      x-habarico-tier: enterprise
+      description: |
+          **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+          Highlights of ``search_fields`` matches for one object, one entry per matched path.
+          Fields without a match are omitted. The same shape is used both by the service search
+          endpoint (with snippet-radius trimming) and by the list endpoint's ``meta.highlights``
+          sidecar (with the full field value). Clients can either render ``value`` directly
+          (already contains ``<mark>...</mark>``) or use ``offsets`` to place markers on the raw
+          cell value.
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+            example: author__name
+            description: |
+                Field path exactly as declared in the resource's ``search_fields`` (may traverse
+                relations via ``__``).
+          value:
+            type: string
+            example: "<mark>Alpha</mark> article"
+            description: |
+                HTML-escaped rendition of the resolved field value with each matched substring
+                wrapped in ``<mark>...</mark>``. In the search endpoint the value is trimmed to
+                a context window around the matches with leading/trailing ``...``. In the list
+                endpoint the full field value is returned. Choice fields and booleans use their
+                human-readable display (``get_<field>_display()`` and ``gettext("Yes"/"No")``
+                respectively). The FE decides per field type whether to render the marks inline
+                or just flag the whole cell.
+          label:
+            type: string
+            example: Author name
+            description: |
+                Human-readable label of the field (from the underlying Django field's
+                ``verbose_name``).
+          offsets:
+            type: array
+            description: |
+                Half-open ``[start, end]`` spans of each match in the ORIGINAL (raw,
+                non-escaped, non-marked) field value returned by the field-path traversal.
+                Independent of any snippet trimming applied to ``value``.
+            items:
+              type: array
+              minItems: 2
+              maxItems: 2
+              items:
+                type: integer
+        required:
+          - name
+          - value
+          - label
+          - offsets
+    SearchResultObject:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Single hit of a resource search.
+      properties:
+        id:
+          type: string
+          example: id
+          description: Primary key of the resource object.
+        title:
+          type: string
+          example: Resource object title
+          description: Title of the resource object.
+        description:
+          type: string
+          example: Resource object description
+          description: Description of the resource object.
+        highlights:
+          $ref: '#/components/schemas/SearchHighlights'
+      required:
+        - id
+        - title
+        - highlights
+    SearchResourceObjects:
+      type: object
+      readOnly: true
+      x-habarico-tier: enterprise
+      description: |
+          **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+          Search resource object is used for representing search result of the resource object.
+      properties:
+        meta:
+          $ref: '#/components/schemas/SearchResourceSchema'
+        objects:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResultObject'
+      required:
+        - meta
+        - objects
+    ActionResult:
+      type: object
+      properties:
+        meta:
+          $ref: '#/components/schemas/ActionResultMeta'
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: integer
+          - type: number
+          - type: boolean
+          - type: array
+          - type: object
+    ServiceSchema:
+      type: array
+      readOnly: true
+      description: |
+        Returns list of resource schemas for the service.
+      items:
+        $ref: '#/components/schemas/GlobalResourceSchema'
+    UserPreferenceValue:
+      description: |
+        Stored preference value. The exact JSON shape is defined by the JSON Schema registered
+        for the preference key on the backend.
+
+        The `anyOf` below lists the standard preference shapes used by Habarico JS / react-admin
+        for well-known keys (locale, theme, dashboard widgets, app layout settings, saved
+        queries, datagrid columns and column widths) **and** allows any other JSON value (object,
+        array, string, number, boolean) so backends can register custom preferences with arbitrary
+        schemas.
+
+        **Standard key → schema mapping** (well-known keys whose value is validated against the
+        named schema below; `<resource>` is the resource name, `<preferenceKey>` is a free
+        client-chosen identifier):
+
+        | Preference key                              | Schema                       |
+        | ------------------------------------------- | ---------------------------- |
+        | `locale`                                    | `LocalePreference`           |
+        | `theme`                                     | `ThemePreference`            |
+        | `preferences.dashboard`                     | `DashboardPreference`        |
+        | `preferences.layout.app.pageWidth`          | `AppPageWidthPreference`     |
+        | `preferences.layout.app.contrastMode`       | `ContrastModePreference`     |
+        | `preferences.layout.app.stripedRows`        | `StripedRowsPreference`      |
+        | `preferences.layout.app.density`            | `AppDensityPreference`       |
+        | `<preferenceKey>.columns`                   | `ColumnsPreference`          |
+        | `<preferenceKey>.columnWidths`              | `ColumnWidthsPreference`     |
+        | `<resource>.savedQueries`                   | `SavedQueriesPreference`     |
+
+        Any other key falls back to the generic JSON-value branches and must be registered on
+        the backend with its own JSON Schema.
+      anyOf:
+        - $ref: '#/components/schemas/LocalePreference'
+        - $ref: '#/components/schemas/ThemePreference'
+        - $ref: '#/components/schemas/DashboardPreference'
+        - $ref: '#/components/schemas/AppPageWidthPreference'
+        - $ref: '#/components/schemas/ContrastModePreference'
+        - $ref: '#/components/schemas/StripedRowsPreference'
+        - $ref: '#/components/schemas/AppDensityPreference'
+        - $ref: '#/components/schemas/ColumnsPreference'
+        - $ref: '#/components/schemas/ColumnWidthsPreference'
+        - $ref: '#/components/schemas/SavedQueriesPreference'
+        - type: object
+          additionalProperties: true
+          nullable: true
+        - type: array
+          items: {}
+        - type: string
+        - type: number
+        - type: boolean
+    UserPreferenceItem:
+      type: object
+      description: |
+        A single user-preference entry. `key` is the registered preference key, `value` is the
+        resolved JSON value (validated against the key's JSON Schema), and `updated_at` is the
+        ISO 8601 timestamp of the last successful write — or `null` when the key is registered
+        but the user has no stored value yet (the response carries the registered default
+        instead).
+      required:
+        - key
+        - value
+        - updated_at
+      properties:
+        key:
+          type: string
+          pattern: '^[a-zA-Z][a-zA-Z0-9_.-]*$'
+        value:
+          $ref: '#/components/schemas/UserPreferenceValue'
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    UserPreferenceList:
+      type: array
+      description: |
+        List of user-preference items for the current user. Includes every explicitly registered
+        preference key (returning the registered default with `updated_at: null` when the user
+        has no stored value yet) plus any stored records whose key matches a registered pattern.
+      items:
+        $ref: '#/components/schemas/UserPreferenceItem'
+    LocalePreference:
+      type: string
+      description: |
+        Locale code stored under the `locale` preference key. Matches the active translation
+        bundle on the client (e.g. `cs`, `en`, `de`).
+      example: cs
+    ThemePreference:
+      type: string
+      enum:
+        - light
+        - dark
+      description: |
+        Theme mode stored under the `theme` preference key.
+    AppPageWidthPreference:
+      type: string
+      enum:
+        - full
+        - centered
+      description: |
+        Page width mode stored under the `preferences.layout.app.pageWidth` key. `full` fills
+        the viewport; `centered` constrains content to a max width and centers it.
+    ContrastModePreference:
+      type: boolean
+      description: |
+        High-contrast mode toggle stored under the `preferences.layout.app.contrastMode` key.
+    StripedRowsPreference:
+      type: boolean
+      description: |
+        Datagrid striped-rows toggle stored under the `preferences.layout.app.stripedRows` key.
+        Applied globally as a body CSS class so every datagrid picks it up.
+    AppDensityPreference:
+      type: string
+      enum:
+        - compact
+        - standard
+        - comfortable
+      description: |
+        UI density stored under the `preferences.layout.app.density` key. Controls row height
+        and spacing in datagrids and forms.
+    SortPreference:
+      type: object
+      description: |
+        Sort descriptor as used by react-admin list params (`{field, order}`).
+      required:
+        - field
+        - order
+      properties:
+        field:
+          type: string
+        order:
+          type: string
+          enum:
+            - ASC
+            - DESC
+    SavedQueryValue:
+      type: object
+      description: |
+        List state captured by a saved query.
+      properties:
+        filter:
+          type: object
+          additionalProperties: true
+        displayedFilters:
+          type: object
+          additionalProperties:
+            type: boolean
+        sort:
+          $ref: '#/components/schemas/SortPreference'
+        perPage:
+          type: integer
+          minimum: 1
+    SavedQueryPreference:
+      type: object
+      description: |
+        A single saved query as stored by react-admin `FilterButton` under the
+        `<resource>.savedQueries` preference key.
+      required:
+        - label
+        - value
+      properties:
+        label:
+          type: string
+        value:
+          $ref: '#/components/schemas/SavedQueryValue'
+    SavedQueriesPreference:
+      type: array
+      description: |
+        List of saved queries stored under the `<resource>.savedQueries` preference key.
+      items:
+        $ref: '#/components/schemas/SavedQueryPreference'
+    ColumnsPreference:
+      type: array
+      description: |
+        Visible column field names stored by `<DatagridConfigurable>` under the
+        `<preferenceKey>.columns` key. Order matches the column display order.
+      items:
+        type: string
+    ColumnWidthsPreference:
+      type: object
+      description: |
+        Per-column pixel widths stored by `<Datagrid>` under the
+        `<preferenceKey>.columnWidths` key. Keys are column field sources, values
+        are widths in pixels. Missing columns fall back to the column's default width.
+      additionalProperties:
+        type: number
+        minimum: 0
+    WidgetType:
+      type: string
+      description: |
+        Dashboard widget kind. Not a closed enum: besides the built-in kinds below, a
+        client may register **custom** widget types via its `WidgetProvider`. The backend
+        MUST accept any string here and MUST NOT reject unknown widget types. Custom
+        widgets manage their own data, so they persist only `id`, `type`, `layout` and an
+        optional `label` (no `resource` / aggregate / chart fields).
+
+        Built-in kinds:
+
+        * `table` – renders a `SchemaDatagrid` subset (selected columns, filters, sort).
+        * `simple-aggregate` – renders a single computed scalar value over the standard
+          list endpoint, without requiring the aggregate endpoint. Supports only `count`
+          (the list `total`), `min` and `max` (the `field` value of the first row when
+          sorted asc / desc, so `field` must be `sortable`). Available on any resource
+          with a list view.
+        * `aggregate` – renders a single computed scalar value via the resource aggregate
+          endpoint (`/{api_prefix}/{service_name}/admin/{resource_name}/aggregate`), using
+          `field` + `aggregateFunction` (`count` / `sum` / `avg` / `min` / `max`) and no
+          `group_by`. Available only on resources with `aggregate_enabled: true`.
+        * `bar` / `pie` / `line` – chart widgets backed by the resource aggregate endpoint.
+          They group the aggregated value over one or more `groupBy` dimensions and render
+          chart-type-specific display via `chartOptions`. Available only on resources with
+          `aggregate_enabled: true`.
+    TruncBucket:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Date / datetime truncation bucket for a group-by field.
+      required: [type, granularity]
+      properties:
+        type:
+          type: string
+          enum: [trunc]
+        granularity:
+          type: string
+          enum: [second, minute, hour, day, week, month, quarter, year]
+    WidthBucket:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Numeric fixed-width bucket for a group-by field.
+      required: [type, size]
+      properties:
+        type:
+          type: string
+          enum: [width]
+        size:
+          type: number
+    GroupByBucket:
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Bucketing applied to a group-by field. Omitted → exact-value grouping.
+      oneOf:
+        - $ref: '#/components/schemas/TruncBucket'
+        - $ref: '#/components/schemas/WidthBucket'
+      discriminator:
+        propertyName: type
+        mapping:
+          trunc: '#/components/schemas/TruncBucket'
+          width: '#/components/schemas/WidthBucket'
+    GroupByItem:
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+      type: object
+      required: [field]
+      properties:
+        field:
+          type: string
+          description: Field name as used in the aggregate group_by query param.
+        bucket:
+          $ref: '#/components/schemas/GroupByBucket'
+    ChartOptions:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — the dashboard ships in the paid `habarico-enterprise` package. A free-only install stores this payload under `preferences.dashboard` but has no widgets to render it.
+
+        Chart-type-specific display options.
+      properties:
+        orientation:
+          type: string
+          enum: [vertical, horizontal]
+          description: Bar chart orientation.
+        variant:
+          type: string
+          enum: [pie, doughnut]
+          description: Pie chart variant.
+    AggregateFunctionType:
+      type: string
+      enum:
+        - count
+        - min
+        - max
+        - sum
+        - avg
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Aggregate function used by the aggregate endpoint
+        (`/{api_prefix}/{service_name}/admin/{resource_name}/aggregate`) and by the
+        `aggregate` dashboard widget.
+
+        * `count` – number of records matching the (filtered) query; `field` is ignored.
+        * `min` / `max` – minimum / maximum value of `field`. The widget computes these on
+          the frontend by sorting, so it does not require `field` to be `aggregable` – only
+          `sortable`. The backend aggregate endpoint requires `field` to be `aggregable`.
+        * `sum` / `avg` – numeric aggregations computed by the backend aggregate endpoint.
+          `field` must be `aggregable` and reference a numeric column.
+    WidgetLayout:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — the dashboard ships in the paid `habarico-enterprise` package. A free-only install stores this payload under `preferences.dashboard` but has no widgets to render it.
+
+        Grid placement of a widget on the dashboard. `x`/`y` are the top-left cell, `w`/`h`
+        are width/height in grid cells.
+      required:
+        - x
+        - y
+        - w
+        - h
+      properties:
+        x:
+          type: integer
+          minimum: 0
+        y:
+          type: integer
+          minimum: 0
+        w:
+          type: integer
+          minimum: 1
+        h:
+          type: integer
+          minimum: 1
+    WidgetConfig:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — the dashboard ships in the paid `habarico-enterprise` package. A free-only install stores this payload under `preferences.dashboard` but has no widgets to render it.
+
+        Single dashboard widget definition. Mirrors the `WidgetConfig` type in Habarico JS
+        (`src/types.ts`).
+      required:
+        - id
+        - type
+        - layout
+      properties:
+        id:
+          type: string
+        resource:
+          type: string
+          description: |
+            Resource the widget reads from (`service/resource`). Required for built-in
+            data-driven widgets (table / aggregate / chart). Omitted for custom widgets
+            that manage their own data source.
+        type:
+          $ref: '#/components/schemas/WidgetType'
+        label:
+          type: string
+        layout:
+          $ref: '#/components/schemas/WidgetLayout'
+        filters:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            Filter values applied to the widget's data source, keyed by field name.
+            Frontend passes them through to react-admin's `filter` prop.
+        sort:
+          $ref: '#/components/schemas/SortPreference'
+        perPage:
+          type: integer
+          minimum: 1
+        columns:
+          type: array
+          items:
+            type: string
+          description: |
+            Visible column field names (table widget). Frontend expands each name into a
+            `FieldDescriptor` internally.
+        field:
+          type: string
+          description: |
+            Measure field for `aggregate` / `bar` / `pie` / `line` widgets. Required for
+            `min`, `max`, `sum` and `avg`; ignored for `count`. The field must include the
+            chosen function in its `aggregations` whitelist in the aggregate schema
+            (the aggregate endpoint enforces this).
+        aggregateFunction:
+          $ref: '#/components/schemas/AggregateFunctionType'
+        groupBy:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupByItem'
+          description: |
+            Group-by dimensions for chart widgets (`bar` / `pie` / `line`). The first item
+            is the primary axis (x-axis for `bar` / `line`, slices for `pie`); `bar` and
+            `line` accept a second item that splits the data into series. Each field /
+            bucket combination must be whitelisted in the field's `group_by` aggregate
+            schema entry. Omitted / empty for the scalar `aggregate` widget.
+        chartOptions:
+          $ref: '#/components/schemas/ChartOptions'
+        color:
+          oneOf:
+            - $ref: '#/components/schemas/ColorType'
+          description: |
+            Color accent applied to the widget (MUI palette key).
+    DashboardPreference:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — the dashboard ships in the paid `habarico-enterprise` package. A free-only install stores this payload under `preferences.dashboard` but has no widgets to render it.
+
+        Dashboard layout stored under the `preferences.dashboard` preference key by the
+        Habarico JS `useDashboardStore` hook (MR !370). Backend MUST reject configurations
+        with overlapping widget layouts.
+      required:
+        - widgets
+      properties:
+        widgets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WidgetConfig'
+    AggregateBucket:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Single row of the aggregate endpoint result. Represents one combination of
+        `group_by` keys together with the aggregated value.
+      required:
+        - value
+      properties:
+        group:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: |
+            Map of `group_by` key → bucket label for this row. The key is the field name
+            as it appeared in the request (without the bucket function suffix). The value
+            is the bucket label – the raw field value for `exact`, an ISO 8601 timestamp
+            for `trunc:<gran>` (start of the bucket in the active Django timezone),
+            or the numeric lower bound for `width:<n>`.
+            `null` (or omitted) when the request did not specify any `group_by`.
+          example:
+            category__name: Books
+            created_at: "2026-01-01T00:00:00+00:00"
+            price: 100
+        value:
+          type: number
+          nullable: true
+          description: |
+            Aggregated value. `null` only for `avg` / `min` / `max` when the bucket
+            contains no rows (e.g. due to row-level permissions filtering). `count`
+            and `sum` always return a number.
+          example: 42
+    AggregateResult:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Response payload of the aggregate endpoint
+        (`GET /{api_prefix}/{service_name}/admin/{resource_name}/aggregate`).
+        Returns an array of buckets. When no `group_by` is requested the array contains
+        exactly one bucket with the scalar aggregate value.
+        The backend enforces a hard limit on the number of buckets (default 50); requests
+        producing more buckets are rejected with HTTP 422.
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AggregateBucket'
+    UploadInitiateRequest:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Body of the initiate request describing the file to be uploaded.
+      required:
+        - filename
+        - size
+        - content_type
+      properties:
+        filename:
+          type: string
+        size:
+          type: integer
+          description: File size in bytes.
+        content_type:
+          type: string
+        part_size:
+          type: integer
+          description: Desired part size in bytes (optional).
+    UploadPart:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        A single presigned part returned for a `mode: multipart` initiate.
+      properties:
+        part_number:
+          type: integer
+        url:
+          type: string
+          description: Presigned PUT URL for the part.
+    UploadInitiateResult:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Response payload of the initiate endpoint. A discriminated union keyed by `mode`:
+        `put` carries `url`; `multipart` carries `upload_id`/`part_size`/`parts`. `key` is
+        present in both modes.
+      required:
+        - mode
+        - key
+      properties:
+        mode:
+          type: string
+          enum:
+            - put
+            - multipart
+          description: >-
+            Discriminator for the upload flow. `put` for a single presigned PUT
+            (small files, no `complete` step); `multipart` for an S3 multipart upload.
+        key:
+          type: string
+          description: Temporary object key under tmp_prefix. Present for both modes.
+        url:
+          type: string
+          description: >-
+            Present only for `mode: put`. Presigned PUT URL for uploading the whole file
+            in one request. The client must send a matching `Content-Type` header.
+        upload_id:
+          type: string
+          description: 'Present only for `mode: multipart`.'
+        part_size:
+          type: integer
+          description: 'Present only for `mode: multipart`.'
+        parts:
+          type: array
+          description: 'Present only for `mode: multipart`. One presigned URL per part.'
+          items:
+            $ref: '#/components/schemas/UploadPart'
+    UploadCompletePart:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        A single uploaded part reported back on complete.
+      required:
+        - part_number
+        - etag
+      properties:
+        part_number:
+          type: integer
+        etag:
+          type: string
+    UploadCompleteRequest:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Body of the complete request finalizing a `mode: multipart` upload.
+      required:
+        - upload_id
+        - key
+        - parts
+      properties:
+        upload_id:
+          type: string
+        key:
+          type: string
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/UploadCompletePart'
+    UploadCompleteResult:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Response payload of the complete endpoint.
+      properties:
+        key:
+          type: string
+          description: Final temporary key to send as upload_key in POST/PUT.
+    UploadAbortRequest:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Body of the abort request cancelling an in-progress multipart upload.
+      required:
+        - upload_id
+        - key
+      properties:
+        upload_id:
+          type: string
+        key:
+          type: string
+  responses:
+    BadRequestResponse:
+      description: |
+        Bad request (HTTP 400). Returned for malformed requests, e.g. invalid JSON body
+        or explicitly raised `BadRequest` exceptions.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Errors'
+          example:
+            errors:
+              - error: Bad Request
+                status: 400
+                message: JSON parse error – Expecting value.
+                source: null
+                timestamp: "2024-01-15T10:30:00.123456+00:00"
+    ValidationErrorResponse:
+      description: |
+        Unprocessable entity (HTTP 422). Returned when request data fails validation.
+        This includes form field validation on create/update, invalid filter values,
+        and invalid `order_by` query parameter values.
+        The `source` field identifies which field caused the error (using `__` for nested fields).
+
+        A client reads `status` and `source`; those are the contract. The `message` is written for
+        a person, is translated into the request's language, and its English wording differs
+        between the two backends — the examples below show one backend's phrasing, not a string to
+        match on.
+
+        For `order_by` the errors of every entry are collected into one response, except a
+        malformed entry (the `order_by` source below): that one is answered on its own, before any
+        field name is looked at.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Errors'
+          examples:
+            field_validation:
+              summary: Form field validation error
+              value:
+                errors:
+                  - error: Unprocessable Entity
+                    status: 422
+                    message: This field is required.
+                    source: title
+                    timestamp: "2024-01-15T10:30:00.123456+00:00"
+                  - error: Unprocessable Entity
+                    status: 422
+                    message: Ensure this value has at most 100 characters.
+                    source: name
+                    timestamp: "2024-01-15T10:30:00.123456+00:00"
+            nested_field:
+              summary: Nested field validation error
+              value:
+                errors:
+                  - error: Unprocessable Entity
+                    status: 422
+                    message: Enter a valid email address.
+                    source: author__email
+                    timestamp: "2024-01-15T10:30:00.123456+00:00"
+            ordering_unknown_field:
+              summary: 'order_by – unknown field name'
+              value:
+                errors:
+                  - error: Unprocessable Entity
+                    status: 422
+                    message: 'Unknown field name.'
+                    source: order_by__unknown_field
+                    timestamp: "2024-01-15T10:30:00.123456+00:00"
+            ordering_invalid_direction:
+              summary: 'order_by – invalid direction (not asc/desc)'
+              value:
+                errors:
+                  - error: Unprocessable Entity
+                    status: 422
+                    message: 'Unknown direction "up", value must be "asc" or "desc".'
+                    source: order_by__title
+                    timestamp: "2024-01-15T10:30:00.123456+00:00"
+            ordering_invalid_format:
+              summary: 'order_by – malformed entry (expected field:direction)'
+              value:
+                errors:
+                  - error: Unprocessable Entity
+                    status: 422
+                    message: 'Invalid format, expected "field_name:asc" or "field_name:desc".'
+                    source: order_by
+                    timestamp: "2024-01-15T10:30:00.123456+00:00"
+            filter_reverse_field:
+              summary: '_reverse_field – invalid value'
+              value:
+                errors:
+                  - error: Unprocessable Entity
+                    status: 422
+                    message: Invalid value of the filter _reverse_field.
+                    source: filter___reverse_field
+                    timestamp: "2024-01-15T10:30:00.123456+00:00"
+            filter_reverse_filter:
+              summary: '_reverse_filter – invalid value'
+              value:
+                errors:
+                  - error: Unprocessable Entity
+                    status: 422
+                    message: Invalid value of the filter _reverse_filter.
+                    source: filter___reverse_filter
+                    timestamp: "2024-01-15T10:30:00.123456+00:00"
+    NotFoundResponse:
+      description: |
+        Not found (HTTP 404). Returned when the requested object does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Errors'
+          example:
+            errors:
+              - error: Not Found
+                status: 404
+                message: Not found.
+                source: null
+                timestamp: "2024-01-15T10:30:00.123456+00:00"
+    MethodNotAllowedResponse:
+      description: |
+        Method not allowed (HTTP 405). Returned when the admin configuration disables the requested action.
+        For example, when `can_create`, `can_update`, or `can_delete` is set to `False` on the admin class.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Errors'
+          example:
+            errors:
+              - error: Method Not Allowed
+                status: 405
+                message: Method "POST" not allowed.
+                source: null
+                timestamp: "2024-01-15T10:30:00.123456+00:00"
+    ServiceSchemaResponse:
+      description: Service schema response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ServiceSchema'
+    ServiceSearchResponse:
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — returned only by the paid `habarico-enterprise` package.
+
+        Service search response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SearchResourceObjects'
+    ResourceDetailSchemaResponse:
+      description: Resource detail schema response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LocalResourceSchema'
+    ResourceListSchemaResponse:
+      description: Resource detail schema response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LocalResourceSchema'
+    ResourceObjectResponse:
+      description: Resource object response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResourceObject'
+    ResourceObjectListResponse:
+      description: List of resource objects response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResourceObjectList'
+    ResourceActionResponse:
+      description: Action response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ActionResult'
+    UserPreferenceItemResponse:
+      description: Single user-preference item response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserPreferenceItem'
+    UserPreferenceListResponse:
+      description: List of user-preference items for the current user.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserPreferenceList'
+    AggregateResponse:
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — returned only by the paid `habarico-enterprise` package.
+
+        Aggregate result (HTTP 200). One bucket per combination of `group_by` keys, or a
+        single bucket when no `group_by` is requested.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AggregateResult'
+          examples:
+            scalar:
+              summary: Scalar aggregate (no group_by)
+              value:
+                results:
+                  - value: 1234
+            group_by_exact:
+              summary: Group-by exact value (`group_by=category__name`)
+              value:
+                results:
+                  - group:
+                      category__name: Books
+                    value: 512
+                  - group:
+                      category__name: Music
+                    value: 89
+            group_by_trunc:
+              summary: Group-by date truncation (`group_by=created_at:trunc:month`)
+              value:
+                results:
+                  - group:
+                      created_at: "2026-01-01T00:00:00+00:00"
+                    value: 12
+                  - group:
+                      created_at: "2026-02-01T00:00:00+00:00"
+                    value: 27
+                  - group:
+                      created_at: "2026-03-01T00:00:00+00:00"
+                    value: 31
+            group_by_width:
+              summary: Group-by numeric width buckets (`group_by=price:width:100`)
+              value:
+                results:
+                  - group:
+                      price: 0
+                    value: 18
+                  - group:
+                      price: 100
+                    value: 42
+                  - group:
+                      price: 200
+                    value: 7
+            group_by_combined:
+              summary: Multiple `group_by` keys combined
+              value:
+                results:
+                  - group:
+                      category__name: Books
+                      created_at: "2026-01-01T00:00:00+00:00"
+                    value: 5
+                  - group:
+                      category__name: Music
+                      created_at: "2026-01-01T00:00:00+00:00"
+                    value: 3
+    AggregateSchemaResponse:
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — returned only by the paid `habarico-enterprise` package.
+
+        Aggregate endpoint schema response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AggregateSchema'
+    UploadInitiateResponse:
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — returned only by the paid `habarico-enterprise` package.
+
+        Upload initiated.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UploadInitiateResult'
+    UploadCompleteResponse:
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — returned only by the paid `habarico-enterprise` package.
+
+        Upload completed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UploadCompleteResult'
+  requestBodies:
+    ResourceObjectRequest:
+      description: Resource object request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResourceObject'
+    UserPreferenceValueRequest:
+      description: |
+        New value for the user preference. The body is the raw JSON value (object, array, etc.)
+        and is validated against the JSON Schema registered for the key. A schema mismatch yields
+        HTTP 422 with the standard error envelope.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserPreferenceValue'
+    UploadInitiateRequest:
+      required: true
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — accepted only by the paid `habarico-enterprise` package.
+
+        Initiate a chunked upload.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UploadInitiateRequest'
+    UploadCompleteRequest:
+      required: true
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — accepted only by the paid `habarico-enterprise` package.
+
+        Complete a chunked upload.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UploadCompleteRequest'
+    UploadAbortRequest:
+      required: true
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — accepted only by the paid `habarico-enterprise` package.
+
+        Abort a chunked upload.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UploadAbortRequest'

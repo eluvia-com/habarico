@@ -1,0 +1,114 @@
+# Mirror of node/.gitlab-ci.yml (ci-toolbox/node-library@2 + the repo's storybook-tests job).
+# This workflow only runs checks; publishing lives in publish.yml - see .github/README.md.
+name: Node
+
+on:
+  pull_request:
+    paths:
+      - "node/**"
+      - ".github/workflows/node.yml"
+  workflow_dispatch:
+
+# GitLab runs these jobs on merge requests only (`$CI_MERGE_REQUEST_ID` in every rule), so a new
+# push to the same branch supersedes the previous run rather than queueing behind it.
+concurrency:
+  group: node-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: node
+
+env:
+  # NODE_VERSION from ci-toolbox/node-library@2. The repo pins nothing of its own.
+  NODE_VERSION: "24"
+  # node/.npmrc points the @eluvia scope at the GitLab npm registry and interpolates this
+  # variable. npm rejects an *undefined* variable, not an empty one, so an unset secret still
+  # installs cleanly as long as no @eluvia package is actually fetched - and today none is.
+  GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+
+jobs:
+  code-quality:
+    name: code-quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: node/package-lock.json
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Runs tsc with --max-old-space-size=4096; the hosted runner has 16 GB.
+      - name: Typecheck
+        run: npm run typecheck
+
+  unit-tests:
+    name: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: node/package-lock.json
+
+      - run: npm ci
+
+      # `vitest run --project=unit` plus `npm run test:scripts` (the uploader's `node --test`
+      # suite). The storybook project is exercised by the job below.
+      - run: npm test
+
+  storybook-tests:
+    name: storybook-tests
+    runs-on: ubuntu-latest
+    # A wedged Chromium produces no output at all. The suite itself takes ~2 minutes, so cap the
+    # job and fail fast instead of waiting out the default 6-hour limit.
+    timeout-minutes: 20
+    env:
+      # Nothing here needs to phone home, and it is one less thing to fail on a slow network.
+      STORYBOOK_DISABLE_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: node/package-lock.json
+
+      - run: npm ci
+
+      # Only chromium is fetched - see the `instances` list in vitest.config.ts - which keeps
+      # this well under a minute. --with-deps adds the shared libraries Chromium needs.
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Renders every exported story in headless Chromium and fails if one throws. Measured peak
+      # for the whole process tree is ~3.2 GB, comfortably inside the runner's 16 GB.
+      - name: Story tests
+        run: npm run test:storybook
+
+      # Still worth its own step: @storybook/addon-vitest runs with `disableAddonDocs`, so the
+      # autodocs/MDX side of the build is the one thing the story tests above do not exercise.
+      - name: Build Storybook
+        run: npm run build-storybook
+
+      # On failure vitest writes a screenshot of the story that failed next to it
+      # (`browser.screenshotFailures` in vitest.config.ts).
+      - name: Upload failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-screenshots
+          path: node/src/**/__screenshots__/
+          retention-days: 7
+          if-no-files-found: ignore

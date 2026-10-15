@@ -1,0 +1,87 @@
+---
+title: SchemaObjectArrayInput
+sidebar_position: 13
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Collects a repeatable list of objects — one block of inputs per item, with add and remove
+controls.
+
+<StorybookPreview />
+
+Use it for lines that belong to the record itself (order items, price tiers). To pick existing
+records of another resource use [SchemaArrayInput](./array-input.mdx).
+
+## Example
+
+```tsx
+<SchemaObjectArrayInput source="items" items={orderSchema.fields.items.items} />
+```
+
+## Props
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Path to the array in the form record; the last segment becomes the box target |
+| `items` (required) | `ItemFieldSchema \| FieldSchema` | — | Schema of one item; its `properties` become the inputs |
+| `label` | `string \| ReactElement \| false` | label from the schema | Heading of the array box |
+
+## Schema mapping
+
+`type: "array"` whose `items.type` is `object`:
+
+```json
+{"name": "items", "type": "array",
+ "items": {"type": "object",
+   "properties": [
+     {"name": "product", "type": "integer", "format": "relation", "reference": "eshop/product"},
+     {"name": "quantity", "type": "integer", "required": true}
+   ]}}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+A nested serializer with `many=True`; the admin serializer creates, updates and deletes the rows
+to match what the form submitted:
+
+```python
+class OrderItemSerializer(AdminModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ["id", "product", "quantity"]
+
+
+class OrderSerializer(AdminModelSerializer):
+    items = OrderItemSerializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = ["id", "number", "items"]
+```
+
+:::caution
+Keep the primary key in the nested serializer's `fields`. Without it every save is read as
+“delete all rows and create new ones”, which loses the ids the rest of the system references.
+:::
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+class Order < ApplicationRecord
+  has_many :items, class_name: 'OrderItem'
+  accepts_nested_attributes_for :items, allow_destroy: true
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [SchemaObjectArrayField](../field-components/object-array-field.mdx) — the display counterpart
+- [SchemaObjectInput](./object-input.mdx) — a single nested object

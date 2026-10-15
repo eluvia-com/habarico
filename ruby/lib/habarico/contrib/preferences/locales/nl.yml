@@ -1,0 +1,8 @@
+nl:
+  habarico:
+    contrib:
+      preferences:
+        not_found: "Voorkeur niet gevonden."
+        invalid_value: "Ongeldige waarde voor voorkeur."
+        value_too_large: "De waarde van de voorkeur is te groot."
+        too_many_preferences: "Er zijn te veel voorkeuren opgeslagen voor deze gebruiker."

@@ -1,0 +1,182 @@
+---
+title: UploadInput
+sidebar_position: 10
+storybook: admin-inputs-uploadinput--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookEmbed from "@site/src/components/StorybookEmbed";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Collects files and images, by drag-and-drop or from a file dialog.
+
+<StorybookPreview />
+
+Small files travel inline as base64; from a configurable threshold up the component switches to a
+chunked provider (S3 multipart or resumable tus) and shows a progress bar. Which path is taken is
+decided by the schema, not by the caller.
+
+The component itself is free. The chunked transport behind it is not: it ships in
+`habarico-enterprise`, and without that package a past-threshold file fails with an explanatory
+error rather than being inlined. Base64 uploads work with the free package alone.
+
+Drag a file onto the area below to see the two upload paths in action — a small file is embedded
+inline, a large one shows a progress bar.
+
+<StorybookEmbed storyId="admin-inputs-uploadinput--playground" height={460} />
+
+## Example
+
+```tsx
+{/* Single image on the product itself */}
+<UploadInput source="photo" showImagePreview maxFiles={1} resizeWidth={1600} cropAspectRatio={1} />
+
+{/* Several images stored in a related model */}
+<UploadInput source="gallery" showImagePreview maxFiles={5} accept={['.jpg', '.png']} />
+```
+
+## Props
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field in the form record |
+| `label` | `ReactNode` | label from the schema | Label above the drop area |
+| `helperText` | `ReactNode` | `helpText` from the schema | Text under the drop area |
+| `readOnly` | `boolean` | `false` | Shows the current files without allowing changes |
+| `fullWidth` | `boolean` | `true` | Stretches the drop area to its container |
+| `showImagePreview` | `boolean` | `false` | Renders a thumbnail per file; the schema wrapper turns it on for `base64-image` |
+| `accept` | `string[]` | — | Allowed file types — extensions (`".pdf"`), media types (`"image/png"`) or wildcards (`"image/*"`); client-side filtering only. The drop area lists them as extensions (`image/png` → PNG; `.jpg`, `.jpeg` and `image/jpeg` all → JPG (JPEG)) and leaves out a wildcard or a media type without a known extension |
+| `maxFiles` | `number` | unlimited | `1` makes this a single-value field; any other value (including unset) makes it multi-value |
+| `maxFileSize` | `number` | — | Max file size in bytes; rejected before the upload starts, and again server-side |
+| `resizeWidth` | `number` | — | Resize width in px applied before base64 encoding |
+| `cropAspectRatio` | `number` | — | Crop ratio applied before base64 encoding, e.g. `1` for square |
+| `upload` | `UploadTransportConfig` | — | Chunked-upload configuration — see below |
+| `labels` | `UploadAreaLabels` | `ra.upload_images.*` translations | Overrides the drop-area strings |
+| `validate` | `Validator \| Validator[]` | from the schema | React Admin validators |
+
+## Schema options
+
+The schema layer maps the field's `options` and `format` onto the props above before rendering
+this component directly:
+
+| Schema key | Prop |
+|---|---|
+| `options.accept`, or `[".png", ".jpg", ".jpeg", ".bmp", ".gif"]` for `format: "base64-image"` | `accept` |
+| `options.maxFiles` on an **array** field; `1` on a direct object field | `maxFiles` |
+| `options.maxSize` | `maxFileSize` |
+| `options.image.resizeWidth` | `resizeWidth` |
+| `options.image.cropAspectRatio` | `cropAspectRatio` |
+| `options.upload` | `upload` |
+| `format === "base64-image"` | `showImagePreview` |
+
+### Single-file vs multi-file
+
+| `maxFiles` | Mode | Value sent |
+|---|---|---|
+| `1` | single | `{filename, content}` (base64) or `{upload_key}` (chunked) |
+| anything else, including unset | multi | an array of the above, one entry per file |
+
+A direct `base64-image` / `base64-file` field is always capped at one file; an array field passes
+its own `options.maxFiles` through, and an unset one means unlimited.
+
+### Chunked uploads
+
+`options.upload` is injected by the backend when a chunked provider is configured; you do not
+write it by hand. Rendering it needs `habarico-enterprise` — see
+[File uploads](/concepts/guides/file-uploads#3-turn-on-chunked-uploads-for-large-files).
+
+| Key | Type | Description |
+|---|---|---|
+| `provider` | `'s3-multipart' \| 'tus'` | Presigned PUT/multipart to S3, or a resumable tus server |
+| `threshold` | `number` | File size in bytes at which the chunked path takes over from base64 |
+| `chunkSize` | `number` | Part size in bytes |
+| `minChunkSize` | `number` | `s3-multipart` only — S3's 5 MiB floor; decides single PUT vs. multipart |
+| `initiateUrl` | `string` | `s3-multipart` only — presign endpoint, already carrying `?model=…&field=…` |
+| `endpoint` | `string` | `tus` only — tus server URL |
+
+Once a chunked upload finishes, the field value is `{upload_key}`; the backend serializer moves the
+temporary object into its final location on save.
+
+:::caution
+`resizeWidth` and `cropAspectRatio` only apply to the base64 path. A file large enough to take the
+chunked path is uploaded as-is. To resize every image, keep `threshold` above the largest expected
+image or resize server-side.
+:::
+
+:::tip
+Only the `tus` provider resumes an interrupted upload, and only while the temporary object on the
+server is still alive. `s3-multipart` restarts from the beginning after a page reload.
+:::
+
+## Schema mapping
+
+`type: "object"` with `format: "base64-image"` or `"base64-file"`, or an array whose items carry
+one of those formats:
+
+```json
+{"name": "photo", "type": "object", "format": "base64-image",
+ "options": {"accept": [".jpg", ".png"], "maxSize": 5242880,
+             "image": {"resizeWidth": 1600}}}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+A direct image field on the model:
+
+```python
+from habarico.serializers import AdminImageFileSerializer, AdminModelSerializer
+
+
+class ProductSerializer(AdminModelSerializer):
+    photo = AdminImageFileSerializer(required=False)
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "photo"]
+```
+
+Several images stored in a related model — `many=True` turns the input into multi-file mode:
+
+```python
+class ProductSerializer(AdminModelSerializer):
+    # write_only: the files are stored in ProductImage, not on Product itself
+    gallery = AdminImageFileSerializer(many=True, required=False, write_only=True)
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "gallery"]
+
+    def create(self, validated_data):
+        images = validated_data.pop("gallery", [])
+        product = super().create(validated_data)
+        for position, file_obj in enumerate(images):
+            ProductImage.objects.create(product=product, file=file_obj, position=position)
+        return product
+```
+
+Chunked uploads are configured once for the project — see
+[Chunked uploads](/python/chunked-uploads/).
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+An attachment on the model is detected as a file/image field:
+
+```ruby
+class Product < ApplicationRecord
+  has_one_attached :photo
+  has_many_attached :gallery
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [ImageField](../field-components/image-field.mdx) — the display counterpart
+- [Chunked uploads](/python/chunked-uploads/) — provider setup on the Python side
+- [FieldSchema](../types-and-schemas/field-schema.md#fieldoptions) — the full `UploadFieldOptions` type
+- [File uploads](/concepts/guides/file-uploads) — the whole path, backend included

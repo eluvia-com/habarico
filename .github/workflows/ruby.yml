@@ -1,0 +1,59 @@
+# Mirror of ruby/.gitlab-ci.yml (ci-toolbox/ruby-library@2, with UNIT_TESTS enabled in the root
+# .gitlab-ci.yml). This workflow only runs checks; publishing lives in publish.yml -
+# see .github/README.md.
+name: Ruby
+
+on:
+  pull_request:
+    paths:
+      - "ruby/**"
+      - ".github/workflows/ruby.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ruby-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: ruby
+
+jobs:
+  code-quality:
+    name: code-quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # `ruby-version` is left unset on purpose: the action then reads .ruby-version from
+      # `working-directory`, i.e. ruby/.ruby-version (3.2.10) - the same pin that overrides the
+      # template's ruby:3.0 default in ruby/.gitlab-ci.yml.
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: ruby
+
+      # rubocop is not in the Gemfile - the template installs it standalone, and .rubocop.yml
+      # relies on recent cops (Style/OneClassPerFile, Style/HashFetchChain), so the latest
+      # release is what the config is written against.
+      - name: Install RuboCop
+        run: gem install rubocop
+
+      - run: rubocop
+
+  unit-tests:
+    name: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # bundler-cache handles `bundle install` plus caching of the resolved gems. eluvia-base
+      # comes from geminabox.eluvia.dev, which serves reads without credentials, so no secret
+      # is needed here.
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: ruby
+          bundler-cache: true
+
+      # TEST_COMMAND from ci-toolbox/ruby-library@2. The Rakefile's :test task covers
+      # test/unit, test/integration and test/contrib; the integration suite runs on sqlite3.
+      - run: bundle exec rake test

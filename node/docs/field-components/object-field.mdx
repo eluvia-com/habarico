@@ -1,0 +1,88 @@
+---
+title: SchemaObjectField
+sidebar_position: 12
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Displays the properties of a nested object inside an object box.
+
+<StorybookPreview />
+
+It is a thin wrapper: the component builds a `BoxSchema` of type `object` from the field's
+`properties` and hands the rendering to `SchemaObjectBox`.
+
+## Example
+
+```tsx
+<SchemaObjectField source="shipping_address" fields={addressSchema.properties} />
+```
+
+## Props
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Path to the object on the record; the last segment becomes the box target |
+| `fields` (required) | `FieldSchema[]` | — | Schemas of the properties to render |
+| `label` | `string \| ReactElement \| false` | label from the schema | Heading of the object box |
+
+:::caution
+Plain `object` fields render nothing in a list — the dispatcher only mounts this component outside
+list views. Expose the individual properties as separate columns if you need them in a list.
+:::
+
+## Schema mapping
+
+`type: "object"` with `properties` and no more specific `format`:
+
+```json
+{"name": "shipping_address", "type": "object",
+ "properties": [
+   {"name": "street", "type": "string"},
+   {"name": "city", "type": "string"},
+   {"name": "zip", "type": "string"}
+ ]}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+A nested serializer becomes an object field — see
+[Nested serializers](/python/basic-usage/nested-serializers):
+
+```python
+class AddressSerializer(AdminModelSerializer):
+    class Meta:
+        model = Address
+        fields = ["street", "city", "zip"]
+
+
+class OrderSerializer(AdminModelSerializer):
+    shipping_address = AddressSerializer()
+
+    class Meta:
+        model = Order
+        fields = ["id", "number", "shipping_address"]
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+A `has_one` object attribute is detected as an object field:
+
+```ruby
+class Order < ApplicationRecord
+  has_one :shipping_address
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [SchemaObjectArrayField](./object-array-field.mdx) — the same idea for an array of objects
+- [SchemaObjectInput](../input-components/object-input) — the form counterpart
+- [Box types](../box-components/index.md) — the containers that do the actual layout

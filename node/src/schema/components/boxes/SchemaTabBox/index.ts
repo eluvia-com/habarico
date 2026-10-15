@@ -1,0 +1,1 @@
+export {SchemaTabBox} from './SchemaTabBox';

@@ -1,0 +1,1 @@
+export {ResourceInputProvider} from './ResourceInputProvider';

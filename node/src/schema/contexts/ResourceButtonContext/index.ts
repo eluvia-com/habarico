@@ -1,0 +1,1 @@
+export {ResourceButtonProvider} from './ResourceButtonProvider';

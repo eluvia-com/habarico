@@ -1,0 +1,228 @@
+# The finalize button. Releases every library whose directory has moved since its last stable tag,
+# all of them together, and pushes the tags that start publish.yml. It publishes nothing itself.
+#
+# Port of release-next-final from ci-toolbox/monorepo-library@2. The ordering below is not
+# cosmetic - each step is where it is for a reason, kept from the original.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Work out the release and print it, but push nothing"
+        type: boolean
+        default: false
+
+# Two finalize runs at once would race on the trunk.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    # Carries pydev, which reads each library's version file through its .pydev/base.yml.
+    # Public upstream image; set TOOLBOX_IMAGE only to override it. See publish.yml for the note
+    # on it being Alpine-based.
+    container: ${{ vars.TOOLBOX_IMAGE || 'ghcr.io/druids/developers-chamber:1' }}
+    env:
+      # Hard-coded in publish.yml's trigger, because `on:` has no contexts. Kept configurable here,
+      # where expressions do work - but the two have to agree.
+      NEXT_BRANCH: ${{ vars.NEXT_BRANCH || 'next' }}
+      STABLE_BRANCH: ${{ vars.STABLE_BRANCH || 'master' }}
+      # The level the version files are advanced by after a release. publish.yml reads the same
+      # value; if they disagreed, betas would be published under a version that never ships.
+      RELEASE_LEVEL: ${{ vars.RELEASE_LEVEL || 'minor' }}
+      CHANGELOG_PATH: CHANGELOG.md
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      # A GitHub App token, not GITHUB_TOKEN: pushes made with GITHUB_TOKEN deliberately do not
+      # start further workflow runs, so the release tags would never trigger publish.yml. The App
+      # needs contents:write and a ruleset bypass on both branches.
+      - id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v5
+        with:
+          # Tags are the comparison base, and the stable branch has to be here to fast-forward it.
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Prepare git
+        run: |
+          set -eu
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          # Work on the real tip of the trunk, not on whatever the dispatch happened to see.
+          git fetch origin "$NEXT_BRANCH" "$STABLE_BRANCH"
+          git switch -C "$NEXT_BRANCH" "origin/$NEXT_BRANCH"
+
+      # Everything from here to the commit only reads. Nothing is written or pushed until all the
+      # checks pass, so a rejected release leaves the repository exactly as it was.
+      - name: Check the stable branch can be fast-forwarded
+        run: |
+          set -eu
+          if ! git merge-base --is-ancestor "origin/$STABLE_BRANCH" "origin/$NEXT_BRANCH"; then
+            echo "ERROR: $STABLE_BRANCH is not an ancestor of $NEXT_BRANCH - someone committed to"
+            echo "$STABLE_BRANCH outside this flow, or the branches were never aligned."
+            echo "Fix it once by merging origin/$STABLE_BRANCH into $NEXT_BRANCH and pushing."
+            exit 1
+          fi
+
+      - name: Work out what to release
+        run: |
+          set -eu
+
+          # A library is a top-level directory that is a versioned unit, which is what having its
+          # own pydev config means. Derived rather than listed, so it cannot drift.
+          LIBS=""
+          for dir in */; do
+            dir="${dir%/}"
+            if [ -f "$dir/.pydev/base.yml" ] || [ -f "$dir/.pydev/base.conf" ]; then
+              LIBS="$LIBS $dir"
+            fi
+          done
+          [ -n "$LIBS" ] || { echo "ERROR: no libraries found (no <dir>/.pydev config)"; exit 1; }
+          echo "libraries:$LIBS"
+
+          : > /tmp/to_release
+          for lib in $LIBS; do
+            # `print-next -r release` is "the version this file is heading for": it strips a
+            # pre-release suffix and is a no-op on a version that has none. A suffix here is left
+            # over from the GitLab flow, where betas were committed.
+            RAW=$(cd "$lib" && pydev version print)
+            VERSION=$(cd "$lib" && pydev version print-next -r release)
+            [ "$VERSION" = "$RAW" ] || echo "  $lib: version file still carries a pre-release ($RAW), releasing $VERSION"
+
+            # The advance at the end of the previous release never ran, so the file still names an
+            # already released version. Same fallback as publish.yml - the two must agree.
+            if git rev-parse -q --verify "refs/tags/${lib}@${VERSION}" >/dev/null; then
+              VERSION=$(cd "$lib" && pydev version print-next -r "$RELEASE_LEVEL")
+              echo "  $lib: version file still on a released version, releasing $VERSION instead"
+            fi
+
+            BASE=$(git tag -l "${lib}@*" --sort=-v:refname | grep -vE -- '-(alpha|beta|rc)\.' | head -1 || true)
+            if [ -n "$BASE" ] && git diff --quiet "$BASE" HEAD -- "$lib/"; then
+              echo "  $lib: unchanged since $BASE, skipping"
+              continue
+            fi
+
+            echo "  $lib: -> $VERSION"
+            echo "$lib $VERSION" >> /tmp/to_release
+          done
+
+          if [ ! -s /tmp/to_release ]; then
+            echo "nothing to release - no library has moved since its last stable tag"
+          fi
+
+      - name: Stamp the changelogs and commit
+        run: |
+          set -eu
+          [ -s /tmp/to_release ] || exit 0
+
+          SUMMARY=""
+          while read -r lib version; do
+            # Write the version even though the file usually already says it. `-r release` only
+            # strips a pre-release suffix, so this is a no-op in the normal case - but it is what
+            # guarantees the tag points at a tree whose version file matches the tag, and it carries
+            # a file still left on a beta by the GitLab flow over without a separate migration step.
+            (cd "$lib" && pydev version bump-to-next -r release)
+            git add "$lib"
+
+            if [ -f "$lib/$CHANGELOG_PATH" ]; then
+              sed -i "s/## \[Unreleased\]/## [${version}] — $(date +%Y-%m-%d)/" "$lib/$CHANGELOG_PATH"
+              git add "$lib/$CHANGELOG_PATH"
+            fi
+            SUMMARY="${SUMMARY}${SUMMARY:+, }${lib}@${version}"
+          done < /tmp/to_release
+
+          # Keep the "Bump version to" prefix: publish.yml skips commits that start with it, so
+          # without it this commit would immediately publish a beta of the next cycle.
+          git commit -m "Bump version to ${SUMMARY}"
+          echo "release commit: $(git rev-parse --short HEAD)"
+
+      - name: Push
+        run: |
+          set -eu
+          [ -s /tmp/to_release ] || exit 0
+
+          TAGS=""
+          while read -r lib version; do
+            git tag "${lib}@${version}"
+            TAGS="$TAGS ${lib}@${version}"
+          done < /tmp/to_release
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "dry run - would push $NEXT_BRANCH, fast-forward $STABLE_BRANCH and push:$TAGS"
+            exit 0
+          fi
+
+          # Order matters: trunk first, then fast-forward the stable branch, then the tags. Tags are
+          # last because they start the publishes - if anything above fails, nothing has reached a
+          # registry yet and the state is still recoverable.
+          git push origin "$NEXT_BRANCH"
+          git push origin "$NEXT_BRANCH:$STABLE_BRANCH"
+          # shellcheck disable=SC2086
+          git push origin $TAGS
+          echo "released:$TAGS"
+
+      - name: Maintenance branches
+        run: |
+          set -eu
+          [ -s /tmp/to_release ] || exit 0
+
+          # One per released library, so a patch has somewhere to start without anyone having to cut
+          # it by hand while something is burning. An existing branch is left strictly alone - it may
+          # already carry cherry-picked fixes, and moving it would throw them away.
+          NEW=""
+          while read -r lib version; do
+            BRANCH="release/${lib}@v$(echo "$version" | cut -d. -f1,2)"
+            if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+              echo "  $BRANCH already exists, leaving it as it is"
+            else
+              git update-ref "refs/heads/$BRANCH" HEAD
+              NEW="$NEW $BRANCH"
+            fi
+          done < /tmp/to_release
+
+          if [ -z "$NEW" ]; then
+            echo "no maintenance branches created"
+          elif [ "$DRY_RUN" = "true" ]; then
+            echo "dry run - would create:$NEW"
+          else
+            # shellcheck disable=SC2086
+            git push origin $NEW
+            echo "maintenance branches:$NEW"
+          fi
+
+      - name: Advance the version files
+        run: |
+          set -eu
+          [ -s /tmp/to_release ] || exit 0
+
+          # Last, and in its own commit: the released tag has to point at a tree whose version files
+          # name the released version, not the next one. Least critical step of the release - the
+          # fallback in publish.yml makes a failure here self-correcting rather than fatal.
+          SUMMARY=""
+          while read -r lib version; do
+            NEXT_VERSION=$(cd "$lib" && pydev version bump-to-next -r "$RELEASE_LEVEL")
+            git add "$lib"
+            SUMMARY="${SUMMARY}${SUMMARY:+, }${lib}@${NEXT_VERSION}"
+          done < /tmp/to_release
+
+          git commit -m "Bump version to ${SUMMARY}"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "dry run - would push the advance to $NEXT_BRANCH: $SUMMARY"
+          else
+            git push origin "$NEXT_BRANCH"
+            echo "next cycle:$SUMMARY"
+          fi

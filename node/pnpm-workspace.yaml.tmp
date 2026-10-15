@@ -1,0 +1,23 @@
+overrides:
+  react: link:${PROJECT_PATH}/node_modules/react
+  react-admin: link:${PROJECT_PATH}/node_modules/react-admin
+  react-dom: link:${PROJECT_PATH}/node_modules/react-dom
+  react-hook-form: link:${PROJECT_PATH}/node_modules/react-hook-form
+  react-router: link:${PROJECT_PATH}/node_modules/react-router
+  react-router-dom: link:${PROJECT_PATH}/node_modules/react-router-dom
+  ra-core: link:${PROJECT_PATH}/node_modules/ra-core
+  ra-i18n-polyglot: link:${PROJECT_PATH}/node_modules/ra-i18n-polyglot
+  ra-ui-materialui: link:${PROJECT_PATH}/node_modules/ra-ui-materialui
+  '@mui/material': link:${PROJECT_PATH}/node_modules/@mui/material
+  '@mui/system': link:${PROJECT_PATH}/node_modules/@mui/system
+  '@mui/icons-material': link:${PROJECT_PATH}/node_modules/@mui/icons-material
+  '@mui/x-charts': link:${PROJECT_PATH}/node_modules/@mui/x-charts
+  '@mui/x-data-grid': link:${PROJECT_PATH}/node_modules/@mui/x-data-grid
+  '@mui/x-date-pickers': link:${PROJECT_PATH}/node_modules/@mui/x-date-pickers
+  '@mui/x-tree-view': link:${PROJECT_PATH}/node_modules/@mui/x-tree-view
+  '@emotion/react': link:${PROJECT_PATH}/node_modules/@emotion/react
+  '@emotion/styled': link:${PROJECT_PATH}/node_modules/@emotion/styled
+  '@types/react': link:${PROJECT_PATH}/node_modules/@types/react
+  '@types/react-dom': link:${PROJECT_PATH}/node_modules/@types/react-dom
+  '@tanstack/react-query': link:${PROJECT_PATH}/node_modules/@tanstack/react-query
+  '@tanstack/query-core': link:${PROJECT_PATH}/node_modules/@tanstack/query-core

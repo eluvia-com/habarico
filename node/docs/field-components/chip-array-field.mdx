@@ -1,0 +1,96 @@
+---
+title: ChipArrayField
+sidebar_position: 15
+storybook: admin-fields-chiparrayfield--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+Renders an array of scalar values as a row of chips.
+
+It is the fallback for arrays: when the items are objects or references, the dispatcher picks
+[SchemaObjectArrayField](./object-array-field.mdx) or
+[SchemaReferenceArrayField](./reference-array-field.mdx) instead.
+
+## Example
+
+```tsx
+<ChipArrayField source="tags" />
+
+// with an enum the raw values resolve to their label, colour and icon
+<ChipArrayField source="channels" choices={channelChoices} iconsKey="channels" />
+```
+
+## Props
+
+On top of these it accepts the shared [field props](./index.md#common-props).
+
+| Name                | Type      | Default | Description                                                                                            |
+| ------------------- | --------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `source` (required) | `string`  | —       | Name of the array field on the record                                                                  |
+| `choices`           | `Choices` | —       | Enum of the **items** (`{value, label, color?, icon?}`); without it the raw values are shown           |
+| `iconsKey`          | `string`  | —       | Key into the `iconsMap` on [SchemaAdmin](../base-components/schema-admin.md), giving each chip an icon |
+
+It is the presence of `choices` — not a `format` flag — that switches on the enum branch. Inside a
+datagrid, chips that have an icon collapse to icon-only, tooltipped glyphs; chips without one stay
+as chips, ellipsized to the column width.
+
+Chips never link anywhere — `linkType` is `false`. For clickable references use
+[SchemaReferenceField](./reference-field.mdx).
+
+`defaultFieldProvider` fills both props from the item schema: `choices` from `items.enum` and
+`iconsKey` from `items.options.choices.iconsKey`.
+
+## How an array is dispatched
+
+`defaultFieldProvider` looks at `schema.items`, not at the array itself:
+
+| `items`                          | Component                                                |
+| -------------------------------- | -------------------------------------------------------- |
+| `type: 'object'`, outside a list | [SchemaObjectArrayField](./object-array-field.mdx)       |
+| `type: 'object'`, inside a list  | Nothing — object arrays are not rendered as a column     |
+| carries a `reference`            | [SchemaReferenceArrayField](./reference-array-field.mdx) |
+| anything else                    | `ChipArrayField`                                         |
+
+An array without `items` in its schema renders nothing at all.
+
+## Schema mapping
+
+```json
+{
+  "name": "tags",
+  "type": "array",
+  "items": {
+    "type": "string",
+    "format": "choices",
+    "enum": [{ "value": "sale", "label": "Sale", "color": "success" }]
+  }
+}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+class Product(models.Model):
+    tags = ArrayField(models.CharField(max_length=32), blank=True, default=list)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+class Product < ApplicationRecord
+  # t.string :tags, array: true, default: []
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [SchemaArrayInput](../input-components/array-input.mdx) — the form counterpart
+- [SchemaObjectArrayField](./object-array-field.mdx) — arrays of objects
+- [SchemaArrayBox](../box-components/array-box.md) — an array laid out as a repeatable section

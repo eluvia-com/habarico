@@ -1,0 +1,66 @@
+---
+title: Rich text syntax
+sidebar_position: 7
+storybook: design-molecules-richtext--playground
+---
+
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Any string rendered via `DynamicText` (labels, titles, datagrid values) can contain special tokens that the
+frontend interprets as React components. The backend sends a plain string with embedded syntax — no schema
+changes are required.
+
+<StorybookPreview />
+
+## Supported tokens
+
+| Token                         | Description                                                      |
+|-------------------------------|------------------------------------------------------------------|
+| `[icon:IconName]`             | Inline icon from the MUI material icon set                       |
+| `[icon:IconName:#rrggbb]`     | Icon with a custom colour (3- or 6-digit hex only)               |
+| `[highlight]text[/highlight]` | Highlighted text — yellow in light mode, dark amber in dark mode |
+| `[bold]text[/bold]`           | Bold text                                                        |
+
+`IconName` must match a name in the MUI `@mui/icons-material` set (e.g. `Home`, `Star`, `CheckCircle`).
+
+## Examples
+
+```python
+# Django model / serializer — the value is just a plain string
+label = "[icon:CheckCircle:#2e7d32] Active"
+title = "[bold]Important notice[/bold]"
+status = "[highlight]Pending review[/highlight]"
+combined = "[icon:Warning:#f57c00] [highlight]Check required[/highlight] — see [bold]details[/bold]"
+```
+
+## Behaviour and edge cases
+
+- **Unknown tags** — `[unknown]text[/unknown]` — left as plain text (not consumed, not errored).
+- **Missing closing tag** — `[highlight]text` without `[/highlight]` — treated as plain text.
+- **Invalid icon colour** — non-hex value (e.g. `red`) — colour is ignored, the icon still renders.
+- **Highlight colour** — fixed by theme (semi-transparent yellow: `rgba(255, 235, 59, 0.4)` light /
+  `rgba(255, 213, 0, 0.24)` dark); custom colour is not supported.
+- **Nested tags** — not supported; inner tag syntax is rendered as literal text.
+- **`templateToStr`** — the plain-string template helper intentionally ignores rich text tokens;
+  use it only where a raw string is needed (e.g. HTTP request params).
+
+## Direct component use
+
+```typescript
+import {RichText} from '@eluvia/habarico';
+
+<RichText text = "[icon:Star:#f57f17] Featured" / >
+// Highlight colour adapts automatically to the active MUI theme mode.
+```
+
+## Parser API
+
+```typescript
+import {parseRichText, hasRichText} from '@eluvia/habarico';
+
+parseRichText('[icon:Home] Hello [bold]world[/bold]');
+// → [{type:'icon',name:'Home'}, {type:'text',value:' Hello '}, {type:'bold',value:'world'}]
+
+hasRichText('[bold]text[/bold]'); // → true
+hasRichText('plain text');        // → false
+```

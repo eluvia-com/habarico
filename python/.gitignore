@@ -1,0 +1,19 @@
+# Ignore Python cache and compiled files
+*__pycache__
+*.pyc
+
+# Ignore IDE config.
+/.idea/
+
+# Python version file.
+.python-version
+
+# Package
+/build/
+*.egg-info/
+
+# Fuse files (using command "pydev project bind-library")
+.fuse_hidden*
+
+# Variable directory.
+/var/*

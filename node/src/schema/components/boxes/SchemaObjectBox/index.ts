@@ -1,0 +1,1 @@
+export {SchemaObjectBox} from './SchemaObjectBox';

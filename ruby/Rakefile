@@ -1,0 +1,15 @@
+require "bundler/setup"
+require "bundler/gem_tasks"
+require "rake/testtask"
+
+load "rails/tasks/statistics.rake"
+
+Rake::TestTask.new(:test) do |t|
+  t.libs << "test"
+  t.test_files = FileList["test/unit/**/*_test.rb"] +
+                 FileList["test/integration/**/*_test.rb"] +
+                 FileList["test/contrib/**/*_test.rb"]
+  t.verbose = true
+end
+
+task default: :test

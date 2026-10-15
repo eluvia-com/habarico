@@ -1,0 +1,1 @@
+export {SchemaSimpleBox} from './SchemaSimpleBox';

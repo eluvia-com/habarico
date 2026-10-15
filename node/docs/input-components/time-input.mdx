@@ -1,0 +1,83 @@
+---
+title: TimeInput
+sidebar_position: 6
+storybook: admin-inputs-timeinput--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+A clock picker for a time-of-day value, stored as an `HH:MM:SS` string.
+
+Use it for a time without a date. For a timestamp use
+[DateTimeInput](./date-input-and-date-time-input.mdx).
+
+## Example
+
+```tsx
+<TimeInput source="pickup_from" label="Pickup from" />
+```
+
+## Props
+
+It takes the shared [input props](./index.md#common-props) — `source`, `label`, `helperText`,
+`validate`, `defaultValue`, `disabled` and `readOnly` behave as they do on any other input.
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field on the record |
+| `label` | `string \| false` | label from the schema | `false` renders the picker without a label |
+| `helperText` | `string \| false` | — | `false` hides the helper line unless the field is invalid |
+
+The input is always `fullWidth` and `size="small"`; the picker opens on a click anywhere in the
+field, not only on the clock icon.
+
+## Value format
+
+The picker works with `Date` internally but never stores one:
+
+- **reading** — `HH:MM:SS`, `HH:MM`, a `Date` or a timestamp number are all accepted; hours, minutes
+  and seconds are applied to today's date and milliseconds are zeroed
+- **writing** — always `"HH:MM:SS"`, zero-padded
+- clearing the field writes `null`
+
+That is why the value round-trips unchanged through a backend `TimeField` / `t.time` column, with no
+timezone involved.
+
+## Schema mapping
+
+The component is picked for `format: "time"`:
+
+```json
+{"name": "pickup_from", "type": "string", "format": "time"}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+class Pickup(models.Model):
+    pickup_from = models.TimeField()
+```
+
+`TimeFilter` maps to the same format on the filter side.
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+class Pickup < ApplicationRecord
+  # t.time :pickup_from
+end
+```
+
+The format is derived from the ActiveRecord column type.
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [TimeField](../field-components/time-field.mdx) — the display counterpart
+- [DateInput and DateTimeInput](./date-input-and-date-time-input.mdx) — dates and timestamps
+- [SchemaInput](./schema-input.md) — the dispatcher that picks this component

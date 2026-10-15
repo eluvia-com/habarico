@@ -1,0 +1,8 @@
+it:
+  habarico:
+    contrib:
+      preferences:
+        not_found: "Preferenza non trovata."
+        invalid_value: "Valore non valido per la preferenza."
+        value_too_large: "Il valore della preferenza è troppo grande."
+        too_many_preferences: "Sono memorizzate troppe preferenze per questo utente."

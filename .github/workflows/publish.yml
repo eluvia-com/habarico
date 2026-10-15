@@ -1,0 +1,384 @@
+# The only workflow that publishes anything. Betas come from a push to the trunk, stable releases
+# from a release tag; both go through the same jobs so they cannot drift apart. Keeping it in one
+# file also keeps the trusted-publisher configuration in all three registries identical - they
+# match on the workflow filename. See .github/RELEASE-DESIGN.md.
+#
+# Every job publishes to the GitLab registries, which stay where they are - internal projects
+# resolve Habarico from them during deployment, and betas are what they deploy. The public
+# registries are wired into the same jobs but switched off until the private dependencies
+# (eluvia-base, eluvia-base-django) are public; see "Going public" in .github/README.md.
+name: Publish
+
+on:
+  push:
+    # Betas. A merge to next does not publish by itself - beta-bump.yml commits a version bump for
+    # every library that moved, and it is THAT push (matched by the detect job's `if:` below) that
+    # reaches the publish logic. The merge's own run of this workflow is a no-op.
+    #
+    # Hard-coded, unlike everything else here: `on:` is evaluated before any context exists, so
+    # neither `vars` nor `env` can be used in a trigger. Renaming the trunk means editing this line
+    # and the matching ones in release.yml and beta-bump.yml.
+    branches:
+      - next
+    # Stable releases, pushed by release.yml.
+    tags:
+      - "*@*"
+
+# Never cancel a publish half-way. An interrupted upload is the one failure mode that cannot be
+# retried cleanly.
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # All three libraries publish into the one GitLab project registry - the monorepo project
+  # (eluvia/habarico/libraries/habarico, id 784). That is what the GitLab pipeline did too: its
+  # templates addressed the registry through $CI_PROJECT_ID, which in a monorepo is the same
+  # project for every library. Consumers read npm through the group-level virtual registry
+  # (groups/50, "eluvia"), which serves anything published here - so node/.npmrc needs no change.
+  GITLAB_NPM_REGISTRY: "https://gitlab.eluvia.dev/api/v4/projects/784/packages/npm/"
+  GITLAB_PYPI_REGISTRY: "https://gitlab.eluvia.dev/api/v4/projects/784/packages/pypi"
+  # Ruby has never used the GitLab registry - the gem goes to geminabox, and habarico.gemspec
+  # pins exactly this host in allowed_push_host.
+  GEMINABOX_HOST: "https://geminabox.eluvia.dev"
+
+jobs:
+  detect:
+    name: detect
+    runs-on: ubuntu-latest
+    # Carries pydev, which reads each library's version file through its .pydev/base.yml.
+    # The upstream image is public, so nothing has to be configured for this to run; set the
+    # TOOLBOX_IMAGE variable only to try a different build. It is Alpine-based - the runner
+    # mounts its musl Node build for the JavaScript actions, which is why they work here.
+    container: ${{ vars.TOOLBOX_IMAGE || 'ghcr.io/druids/developers-chamber:1' }}
+    # A tag always names an exact release - no further check needed. A branch push only reaches
+    # here when beta-bump.yml's own commit named a prerelease; an ordinary merge, release.yml's
+    # finalize commit and its advance commit all fail this and the run does nothing.
+    if: >-
+      github.ref_type == 'tag' ||
+      (startsWith(github.event.head_commit.message, 'Bump version to') &&
+       (contains(github.event.head_commit.message, '-alpha.') ||
+        contains(github.event.head_commit.message, '-beta.') ||
+        contains(github.event.head_commit.message, '-rc.')))
+    outputs:
+      versions: ${{ steps.detect.outputs.versions }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # The branch case only needs to diff HEAD against its own parent (see below); the tag
+          # case needs no history at all. Neither needs the full clone the old counter-based
+          # derivation did.
+          fetch-depth: 2
+
+      - name: Trust the workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - id: detect
+        run: |
+          set -eu
+
+          # A tag names both the library and the exact version - nothing to derive.
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            LIB="${GITHUB_REF_NAME%@*}"
+            VER="${GITHUB_REF_NAME##*@}"
+            echo "  $LIB: $VER (from tag)"
+            python3 -c "import json,sys; print('versions=' + json.dumps({sys.argv[1]: sys.argv[2]}))" \
+              "$LIB" "$VER" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # A library is a top-level directory that is a versioned unit of the monorepo, which is
+          # exactly what having its own pydev config means. Deriving the list keeps it from drifting
+          # away from what is actually in the repository.
+          LIBS=""
+          for dir in */; do
+            dir="${dir%/}"
+            if [ -f "$dir/.pydev/base.yml" ] || [ -f "$dir/.pydev/base.conf" ]; then
+              LIBS="$LIBS $dir"
+            fi
+          done
+          [ -n "$LIBS" ] || { echo "ERROR: no libraries found (no <dir>/.pydev config)"; exit 1; }
+
+          # A branch push only reaches this point when it is beta-bump.yml's own commit (the `if:`
+          # above filtered everything else out), so this exact commit named which libraries it
+          # bumped and each one's version file already carries the version to publish - nothing to
+          # derive, just read it back per library this commit actually touched.
+          : > /tmp/publish.txt
+          for lib in $LIBS; do
+            if git --no-optional-locks diff --quiet HEAD~1 HEAD -- "$lib/"; then
+              echo "  $lib: not touched by this commit, skipping"
+              continue
+            fi
+
+            VERSION=$(cd "$lib" && pydev version print)
+            case "$VERSION" in
+              *-alpha.*|*-beta.*|*-rc.*)
+                echo "  $lib: $VERSION"
+                echo "${lib} ${VERSION}" >> /tmp/publish.txt
+                ;;
+              *)
+                # Defensive: the job-level `if:` already guarantees this commit names a prerelease
+                # somewhere, but not necessarily in every library it touched.
+                echo "  $lib: touched, but its version carries no prerelease marker ($VERSION) - skipping"
+                ;;
+            esac
+          done
+
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          with open('/tmp/publish.txt') as f:
+              pairs = dict(line.split() for line in f if line.strip())
+          print('versions=' + json.dumps(pairs))
+          PY
+
+  node:
+    name: node
+    needs: detect
+    if: fromJSON(needs.detect.outputs.versions).node
+    runs-on: ubuntu-latest
+    # Pinned in the npm trusted publisher configuration.
+    environment: release
+    permissions:
+      contents: read
+      # Required for OIDC trusted publishing on npmjs.com; also what makes npm attach provenance.
+      # Unused while the public half is switched off.
+      id-token: write
+    defaults:
+      run:
+        working-directory: node
+    env:
+      VERSION: ${{ fromJSON(needs.detect.outputs.versions).node }}
+      # node/.npmrc points the @eluvia scope at the GitLab group registry and interpolates this
+      # variable, so `npm ci` needs it defined. The same token authenticates the publish below.
+      GITLAB_TOKEN: ${{ secrets.GITLAB_PACKAGES_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: node/package-lock.json
+
+      # Trusted publishing needs npm 11.5.1 or newer. Node 24 ships something recent enough today,
+      # but the publish is not the place to find out that it stopped being true.
+      - run: npm install -g npm@latest
+
+      - run: npm ci
+
+      # A beta version is derived, never committed, so the file has to be told what it is. Stable
+      # releases pass the version the tag already carries, hence --allow-same-version.
+      - name: Set version
+        run: npm version --no-git-tag-version --allow-same-version "$VERSION"
+
+      - run: npm run build
+
+      # Betas and stable releases both land here - this is the registry the Eluvia projects
+      # resolve @eluvia/habarico from, and betas are what they deploy.
+      - name: Publish to the GitLab registry
+        env:
+          GITLAB_PACKAGES_TOKEN: ${{ secrets.GITLAB_PACKAGES_TOKEN }}
+        run: |
+          set -eu
+          # npm resolves auth per registry URL by longest prefix, so appending this leaves the
+          # @eluvia scope mapping already committed in .npmrc alone - `npm ci` above needed it.
+          printf '\n%s:_authToken=%s\n' "${GITLAB_NPM_REGISTRY#https:}" "$GITLAB_PACKAGES_TOKEN" >> .npmrc
+
+          # npm refuses to publish a pre-release without an explicit --tag: it would otherwise move
+          # the "latest" dist-tag onto a beta.
+          case "$VERSION" in
+            *-alpha.*|*-beta.*|*-rc.*) DIST_TAG=beta ;;
+            *) DIST_TAG=latest ;;
+          esac
+
+          # npm's pickRegistry() honours `@scope:registry` over both --registry and
+          # publishConfig.registry, so the scoped flag is the only thing that redirects this
+          # publish - and it applies to this command alone, leaving .npmrc untouched.
+          if OUTPUT=$(npm publish --@eluvia:registry="$GITLAB_NPM_REGISTRY" --tag "$DIST_TAG" 2>&1); then
+            echo "$OUTPUT"
+          else
+            echo "$OUTPUT"
+            # Re-publishing a version is not an error: a retried job lands here, and so does a beta
+            # whose counter went backwards after a force push to the trunk.
+            case "$(echo "$OUTPUT" | tr '[:upper:]' '[:lower:]')" in
+              *epublishconflict*|*"cannot publish over"*|*"already exist"*|*"already been taken"*)
+                echo "this version is already in the GitLab registry - continuing" ;;
+              *)
+                exit 1 ;;
+            esac
+          fi
+
+      # Stable only, and only once PUBLISH_PUBLIC is set: an upload to npmjs.com cannot be undone.
+      # node is the one library that could go public today - every dependency and peer dependency
+      # it declares is already on npmjs.
+      - name: Publish to npmjs.com
+        if: ${{ vars.PUBLISH_PUBLIC == 'true' && !contains(env.VERSION, '-') }}
+        run: |
+          set -eu
+          npm publish \
+            --@eluvia:registry=https://registry.npmjs.org/ \
+            --provenance \
+            --access public \
+            --tag latest
+
+  python:
+    name: python
+    needs: detect
+    if: fromJSON(needs.detect.outputs.versions).python
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: python
+    env:
+      VERSION: ${{ fromJSON(needs.detect.outputs.versions).python }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Set version
+        run: |
+          set -eu
+          # Only the [project] version, which is the first `version = ` in the file.
+          sed -i "0,/^version = .*/s//version = \"$VERSION\"/" pyproject.toml
+          grep -m1 '^version = ' pyproject.toml
+
+      - run: pip install build twine
+
+      # One build, both registries: the same dist/* is uploaded everywhere, so nobody ends up with
+      # a wheel that differs from the one that was tested.
+      - run: python -m build
+
+      # Note the version the registry ends up carrying is PEP 440 normalised - "5.11.0-beta.13"
+      # is stored and installed as "5.11.0b13".
+      - name: Publish to the GitLab registry
+        env:
+          TWINE_REPOSITORY_URL: ${{ env.GITLAB_PYPI_REGISTRY }}
+          TWINE_USERNAME: ${{ vars.GITLAB_PACKAGES_USER }}
+          TWINE_PASSWORD: ${{ secrets.GITLAB_PACKAGES_TOKEN }}
+          TWINE_NON_INTERACTIVE: "1"
+        run: |
+          set -eu
+          # The upload has to be paired with && / || right here: under `set -e` a bare
+          # `OUTPUT=$(...); STATUS=$?` aborts the script before STATUS is even assigned.
+          OUTPUT=$(python -m twine upload --skip-existing dist/* 2>&1) && STATUS=0 || STATUS=$?
+
+          # GitLab does not implement the file-listing API --skip-existing needs, and twine refuses
+          # to attempt the upload at all rather than falling back. Retry without it; a genuine
+          # duplicate is still caught by the registry's own error below.
+          if [ "$STATUS" -ne 0 ] && echo "$OUTPUT" | grep -qi "unsupportedconfiguration"; then
+            echo "--skip-existing unsupported here, retrying without it"
+            OUTPUT=$(python -m twine upload dist/* 2>&1) && STATUS=0 || STATUS=$?
+          fi
+
+          echo "$OUTPUT"
+          if [ "$STATUS" -ne 0 ]; then
+            case "$(echo "$OUTPUT" | tr '[:upper:]' '[:lower:]')" in
+              *"already exist"*|*"already been taken"*)
+                echo "this version is already in the GitLab registry - continuing" ;;
+              *)
+                exit 1 ;;
+            esac
+          fi
+
+      # Stable only, and only once PUBLISH_PUBLIC is set. Note this is still blocked on
+      # eluvia-base / eluvia-base-django reaching public PyPI: until they do, a public habarico
+      # release declares dependencies nobody outside the company can resolve.
+      #
+      # Authenticates over OIDC against the trusted publisher configured on PyPI. No token exists.
+      - name: Publish to PyPI
+        if: ${{ vars.PUBLISH_PUBLIC == 'true' && !contains(env.VERSION, '-') }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/dist
+
+  ruby:
+    name: ruby
+    needs: detect
+    if: fromJSON(needs.detect.outputs.versions).ruby
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: ruby
+    env:
+      VERSION: ${{ fromJSON(needs.detect.outputs.versions).ruby }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: ruby
+
+      # lib/habarico/version.rb reads the VERSION file, and the gemspec reads that.
+      - name: Set version
+        run: echo "$VERSION" > VERSION
+
+      - name: Build the gem
+        run: |
+          set -eu
+          # Read the file name out of `gem build` rather than composing it from $VERSION:
+          # Gem::Version normalises a pre-release, so "0.57.0-beta.10" is written to disk as
+          # habarico-0.57.0.pre.beta.10.gem and name-$VERSION would not exist.
+          GEM_FILE=$(gem build habarico.gemspec | awk '/File:/ {print $2}')
+          if [ -z "$GEM_FILE" ] || [ ! -f "$GEM_FILE" ]; then
+            echo "ERROR: gem build produced no file"
+            exit 1
+          fi
+          echo "GEM_FILE=$GEM_FILE" >> "$GITHUB_ENV"
+          echo "built $GEM_FILE"
+
+      # Betas and stable releases both land here - geminabox is where the Rails projects resolve
+      # the gem from, and habarico.gemspec's allowed_push_host names exactly this host.
+      - name: Publish to geminabox
+        env:
+          GEMINABOX_USER: ${{ vars.GEMINABOX_USER }}
+          GEMINABOX_PASSWORD: ${{ secrets.GEMINABOX_PASSWORD }}
+        run: |
+          set -eu
+          # geminabox authenticates with HTTP basic auth carried in the URL. `gem push` compares
+          # only scheme and host against allowed_push_host, so the userinfo does not trip it.
+          # Built with parameter expansion rather than sed: a password containing "|", "&" or "/"
+          # would otherwise corrupt the substitution. It still has to be URL-safe - a literal "@"
+          # or ":" in it would break the URL itself, so percent-encode those when setting it.
+          PUSH_HOST="https://${GEMINABOX_USER}:${GEMINABOX_PASSWORD}@${GEMINABOX_HOST#https://}"
+
+          # Never echo PUSH_HOST - it carries the password.
+          echo "publishing $GEM_FILE to $GEMINABOX_HOST"
+
+          if OUTPUT=$(gem push "$GEM_FILE" --host "$PUSH_HOST" 2>&1); then
+            echo "$OUTPUT"
+          else
+            echo "$OUTPUT"
+            case "$(echo "$OUTPUT" | tr '[:upper:]' '[:lower:]')" in
+              *"repushing of gem versions is not allowed"*|*"already exist"*|*"already been taken"*|*"updating an existing gem is not permitted"*)
+                echo "this version is already in geminabox - continuing" ;;
+              *)
+                exit 1 ;;
+            esac
+          fi
+
+      # Stable only, and only once PUBLISH_PUBLIC is set. Two things still block this:
+      # habarico.gemspec pins allowed_push_host to geminabox, which makes a push to rubygems.org
+      # refuse outright, and the gem depends on eluvia-base, which is not on rubygems.org.
+      #
+      # Exchanges the OIDC token for a short-lived RubyGems API key. No long-lived key exists.
+      - name: Configure RubyGems credentials
+        if: ${{ vars.PUBLISH_PUBLIC == 'true' && !contains(env.VERSION, '-') }}
+        uses: rubygems/configure-rubygems-credentials@v1
+
+      - name: Publish to rubygems.org
+        if: ${{ vars.PUBLISH_PUBLIC == 'true' && !contains(env.VERSION, '-') }}
+        run: gem push "$GEM_FILE"

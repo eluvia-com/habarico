@@ -1,0 +1,1 @@
+export {SchemaViewTitle} from './SchemaViewTitle';

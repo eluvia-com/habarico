@@ -1,0 +1,81 @@
+---
+title: SchemaRangeField
+sidebar_position: 11
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Displays a lower–upper pair as two values separated by a dash.
+
+<StorybookPreview />
+
+Each bound is rendered by [SchemaField](./schema-field.md), so a numeric range formats as numbers
+and a date range as dates. An open bound shows `-∞` or `∞`.
+
+## Example
+
+```tsx
+<SchemaRangeField source="price_range" fields={priceRangeSchema.properties} />
+```
+
+## Props
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the object holding the range on the record |
+| `fields` (required) | `FieldSchema[]` | — | Must contain exactly the entries named `lower` and `upper` |
+
+:::caution
+The component throws when `fields` lacks a `lower` or an `upper` entry — the schema for a range
+field must expose both as `properties`.
+:::
+
+In a list each bound is boxed to a fixed width so the dash stays aligned across rows, and an empty
+range renders a centered `--`.
+
+## Schema mapping
+
+`type: "object"` with `format: "range"` and two `properties`:
+
+```json
+{"name": "price_range", "type": "object", "format": "range",
+ "properties": [
+   {"name": "lower", "type": "number"},
+   {"name": "upper", "type": "number"}
+ ]}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+A Postgres range field maps to `format: "range"`; the generator derives `lower`/`upper` from the
+range's base type:
+
+```python
+from django.contrib.postgres.fields import DecimalRangeField
+
+
+class Product(models.Model):
+    price_range = DecimalRangeField(null=True, blank=True)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+A range attribute is detected automatically:
+
+```ruby
+create_table :products do |t|
+  t.numrange :price_range
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [SchemaRangeInput](../input-components/range-input) — the form counterpart
+- [DateRangeInput](../input-components/date-range-input) — the date-range filter used in lists

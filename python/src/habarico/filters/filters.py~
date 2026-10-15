@@ -1,0 +1,182 @@
+from collections.abc import Callable
+
+from django import forms
+from django.db.models import Q
+from django.utils.translation import gettext
+from django_filters.filters import Filter, ModelChoiceFilter, UUIDFilter
+from rest_framework.exceptions import ValidationError
+from rest_framework.fields import (
+    DateField,
+    DateTimeField,
+    DecimalField,
+    FloatField,
+    IntegerField,
+)
+
+
+class ContainsUUIDFilter(UUIDFilter):
+    """
+    A filter that allows for searching for a UUID contained in a string.
+
+    If the lookup_expr is `icontains` or `contains`,
+    the field class is changed to a CharField and UUID format is not validated.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.lookup_expr in {"icontains", "contains"}:
+            self.field_class = forms.CharField
+
+
+class AdminRelatedFilterMixin:
+    """
+    A mixin which adds a reference to the filter options. This reference is used to
+    build the filter URL in the react admin.
+    """
+
+    def __init__(self, *args, reference: str, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.reference = reference
+
+
+class AdminUUIDRelatedFilter(AdminRelatedFilterMixin, UUIDFilter):
+    pass
+
+
+class AdminOptionsFilterMixin:
+    """
+    A mixin which adds options to the filter.
+    These options are used to build the filter in the react admin.
+    """
+
+    def __init__(self, *args, options: dict | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.options = options or {}
+
+    def get_options(self) -> dict:
+        return self.options
+
+
+class AdminModelChoiceFilter(AdminOptionsFilterMixin, ModelChoiceFilter):
+    """
+    A model choice filter that adds options to the filter.
+    These options are used to build the filter in the react admin
+    to automatically filter result queryset based on th DRF field get_queryset method.
+    """
+
+    def __init__(self, *args, filters: dict | Callable | None = None, **kwargs):
+        self._filters = filters
+        super().__init__(*args, **kwargs)
+
+    def get_options(self, reference: str, name: str) -> dict:
+        options = dict(self.options)
+        request = self.parent.request
+        if "filters" not in options:
+            filters = self._filters
+            if filters and callable(filters):
+                filters = filters(request)
+
+            if filters:
+                options["filters"] = [dict(name=name, value=value) for name, value in filters.items()]
+            else:
+                if reference and "filters" not in options and "/" not in reference:
+                    options["filters"] = [
+                        dict(name="_reverse_filter", value=":".join((request.method.lower(), request.path, name)))
+                    ]
+        return options
+
+    def set_filters(self, filters: dict):
+        """
+        Add a filter to the options.
+        """
+        self.options["filters"] = []
+        for k, v in filters.items():
+            self.add_filter(k, v)
+
+    def add_filter(self, name: str, value: str):
+        """
+        Add a filter to the options.
+        """
+        if "filters" not in self.options:
+            self.options["filters"] = []
+        self.options["filters"].append(dict(name=name, value=value))
+
+
+class RangeFilter(Filter):
+    """
+    A filter that allows filtering by a range of values.
+    The value should be in the format `{"lower": <value>, "upper": <value>}`.
+    """
+
+    def __init__(self, *, lower_field_name, upper_field_name, **kwargs):
+        super().__init__(**kwargs)
+        self.lower_field_name = lower_field_name
+        self.upper_field_name = upper_field_name
+        self.child = self.child_class()
+
+    def filter(self, qs, value):
+        if value:
+            if not isinstance(value, dict):
+                raise ValidationError(gettext("Value must be a dict with 'lower' or 'upper' keys."))
+
+            lower_value = value.get("lower")
+            upper_value = value.get("upper")
+
+            if lower_value is not None:
+                lower_value = self.child.run_validation(lower_value)
+                qs = qs.filter(
+                    Q(**{f"{self.upper_field_name}__gte": lower_value})
+                    | Q(**{f"{self.upper_field_name}__isnull": True})
+                )
+            if upper_value is not None:
+                upper_value = self.child.run_validation(upper_value)
+                qs = qs.filter(
+                    Q(**{f"{self.lower_field_name}__lte": upper_value})
+                    | Q(**{f"{self.lower_field_name}__isnull": True})
+                )
+
+            qs = qs.exclude(
+                Q(**{f"{self.lower_field_name}__isnull": True}) & Q(**{f"{self.upper_field_name}__isnull": True})
+            )
+
+        return qs
+
+
+class IntegerRangeFilter(RangeFilter):
+    """
+    A range filter for integer fields.
+    """
+
+    child_class = IntegerField
+
+
+class DecimalRangeFilter(RangeFilter):
+    """
+    A range filter for decimal fields.
+    """
+
+    child_class = DecimalField
+
+
+class FloatRangeFilter(RangeFilter):
+    """
+    A range filter for float fields.
+    """
+
+    child_class = FloatField
+
+
+class DateRangeFilter(RangeFilter):
+    """
+    A range filter for date fields.
+    """
+
+    child_class = DateField
+
+
+class DateTimeRangeFilter(RangeFilter):
+    """
+    A range filter for datetime fields.
+    """
+
+    child_

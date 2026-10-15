@@ -1,0 +1,90 @@
+---
+title: SchemaObjectArrayField
+sidebar_position: 13
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Displays an array of objects inside an array box — one block per item.
+
+<StorybookPreview />
+
+Use it for lines that belong to the record itself (order items, price tiers). An array of
+references to another resource renders as chips instead, via
+[SchemaReferenceField](./reference-field.mdx).
+
+## Example
+
+```tsx
+<SchemaObjectArrayField source="items" items={orderSchema.fields.items.items} />
+```
+
+## Props
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Path to the array on the record; the last segment becomes the box target |
+| `items` (required) | `ItemFieldSchema \| FieldSchema` | — | Schema of one item; its `properties` become the rendered fields |
+| `label` | `string \| ReactElement \| false` | label from the schema | Heading of the array box |
+
+The component renders nothing when `items.properties` is missing — an array of scalars is not an
+object array.
+
+:::caution
+Like [SchemaObjectField](./object-field.mdx), this component is skipped in list views.
+:::
+
+## Schema mapping
+
+`type: "array"` whose `items.type` is `object`:
+
+```json
+{"name": "items", "type": "array",
+ "items": {"type": "object",
+   "properties": [
+     {"name": "product", "type": "integer", "format": "relation", "reference": "eshop/product"},
+     {"name": "quantity", "type": "integer"},
+     {"name": "unit_price", "type": "string", "format": "decimal"}
+   ]}}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+A nested serializer with `many=True`:
+
+```python
+class OrderItemSerializer(AdminModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ["product", "quantity", "unit_price"]
+
+
+class OrderSerializer(AdminModelSerializer):
+    items = OrderItemSerializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = ["id", "number", "items"]
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+A `has_many` association whose items are rendered inline:
+
+```ruby
+class Order < ApplicationRecord
+  has_many :items, class_name: 'OrderItem'
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [SchemaObjectArrayInput](../input-components/object-array-input) — the form counterpart
+- [SchemaObjectField](./object-field.mdx) — a single nested object

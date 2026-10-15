@@ -1,0 +1,92 @@
+---
+title: TextField
+sidebar_position: 3
+storybook: admin-fields-textfield--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Displays a string value, optionally framed by a prefix and a postfix.
+
+<StorybookPreview />
+
+It is the fallback for every `string` field without a more specific format. For a fixed set of
+values use [ChoicesField](./choices-field.mdx); for pre-rendered HTML use `format: "rich-text"`,
+which maps to React Admin's `RichTextField`.
+
+## Example
+
+```tsx
+<TextField source="sku" prefix="#" />
+<TextField source="description" multiline />
+```
+
+## Props
+
+On top of `multiline` the component accepts the shared [field props](./index.md#common-props).
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field on the record |
+| `multiline` | `boolean` | `false` in a list, `true` elsewhere | Keeps line breaks (`white-space: pre-wrap`) instead of collapsing the value onto one line |
+| `emptyText` | `string` | — | Text shown when the value is empty |
+| `prefix` | `string` | — | Muted text before the value |
+| `postfix` | `string` | — | Muted text after the value |
+
+The schema layer maps `options.prefix` / `options.postfix` onto the props above, and turns
+`multiline` on for `format: "text"`, before rendering this component directly.
+
+The value — or `emptyText` when the value is empty — is truncated with an ellipsis when it does
+not fit its container. When the record came from a fulltext search, the matched part of the value
+is highlighted automatically.
+
+## Schema mapping
+
+Any `string` field without a recognised `format`, plus `format: "text"` which turns `multiline`
+on:
+
+```json
+{"name": "description", "type": "string", "format": "text"}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+`TextField` and `RichTextField` from `habarico.serializers` set the format explicitly; a plain
+`CharField`/`TextField` on the model maps to a bare `string`:
+
+```python
+from habarico.serializers import AdminModelSerializer, TextField
+
+
+class ProductSerializer(AdminModelSerializer):
+    description = TextField()
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "description"]
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+`t.text` maps to `format: "text"`, `t.string` to a bare `string`. Override per field with
+`FieldReference`:
+
+```ruby
+fields [
+  :name,
+  Habarico::FieldReference.new(name: :description, format: 'text'),
+]
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [TextInput](../input-components/text-input) — the form counterpart
+- [Rich text syntax](../utilities/rich-text-syntax.mdx) — the markup `TextField` understands
+- [NumberField](./number-field.mdx) — for numeric values

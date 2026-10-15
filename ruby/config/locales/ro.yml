@@ -1,0 +1,39 @@
+ro:
+  # Default labels for Habarico's standard actions. Host apps override any key in
+  # their own config/locales (per-resource via `actions.<resource_path>.<action>`).
+  actions:
+    common:
+      show: "Detaliu"
+      create: "Creare"
+      edit: "Editare"
+      delete: "Ștergere"
+      save: "Salvare"
+
+  # Default confirmation dialog for the standard delete action (delete_action.rb).
+  confirmations:
+    common:
+      delete:
+        title: "Sigur doriți să ștergeți această înregistrare?"
+        message: "Această acțiune va provoca o pierdere de date care nu poate fi anulată."
+
+  # Default label for the generic full-text search filter (search_filter_schema_generator.rb).
+  # Override per model via `activerecord.attributes.<model>.search`.
+  filters:
+    common:
+      search: "Căutare"
+
+  # Human-readable boolean labels used by the search highlighter (search_highlighter.rb) when a
+  # matched search field is a boolean column.
+  search:
+    "yes": "Da"
+    "no": "Nu"
+
+  # Validation error messages for the order_by and filter query params (controller.rb). The
+  # `order_by` notation itself is validated by eluvia-base, which ships its own translations
+  # under `eluvia.errors.ordering` (HAB-915).
+  habarico:
+    errors:
+      order_by:
+        unknown_field: "Nume de câmp necunoscut."
+      filter:
+        unknown_term: "Termen de filtrare necunoscut."

@@ -1,0 +1,28 @@
+{
+	# caddy-jwt is a handler directive; give it an explicit place in the order so it
+	# can run inside handle blocks (before the upstream is contacted).
+	order jwtauth before reverse_proxy
+}
+
+:8080 {
+	# CORS preflight requests (OPTIONS) carry no Authorization header, so they must not
+	# be rejected by the JWT check. Pass them straight to tusd, which emits the CORS headers.
+	@preflight method OPTIONS
+	handle @preflight {
+		reverse_proxy {$TUS_UPSTREAM:tusd:8080}
+	}
+
+	# Every other request must carry a valid auth service access token. The frontend (Uppy
+	# tus plugin) already sends it as `Authorization: Bearer <jwt>` on every request, so no
+	# frontend change is needed. The token is an HS256 JWT signed with the shared
+	# PRIVATE_API_KEY; caddy-jwt verifies the signature and the `exp` claim.
+	handle {
+		jwtauth {
+			# Base64 of PRIVATE_API_KEY, derived at startup by entrypoint.sh.
+			sign_key {$TUS_SIGN_KEY}
+			sign_alg HS256
+			from_header Authorization
+		}
+		reverse_proxy {$TUS_UPSTREAM:tusd:8080}
+	}
+}

@@ -1,0 +1,77 @@
+---
+title: DateField
+sidebar_position: 5
+storybook: admin-fields-datefield--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Displays a date or a datetime in the admin locale.
+
+<StorybookPreview />
+
+`showTime` decides whether the time part is rendered; the schema turns it on for
+`format: "date-time"`. For a time-only value the dispatcher picks `TimeField` instead.
+
+## Example
+
+```tsx
+<DateField source="created_at" showTime />
+```
+
+## Props
+
+On top of `locales` and `showTime` the component accepts the shared
+[field props](./index.md#common-props).
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field on the record |
+| `showTime` | `boolean` | `false` | Appends the time part |
+| `locales` | `string` | admin locale | Locale used to format the value |
+| `emptyText` | `string` | — | Text shown when the value is empty |
+
+The value never wraps — the component forces `white-space: nowrap` so a list column keeps one row
+per record. `options` is not forwarded to the underlying React Admin field.
+
+## Schema mapping
+
+`type: "string"` with `format: "date"` or `format: "date-time"`:
+
+```json
+{"name": "created_at", "type": "string", "format": "date-time", "sortable": true}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+DRF's `DateField` / `DateTimeField` — that is, any `models.DateField` or `models.DateTimeField` —
+map to the two formats:
+
+```python
+class Order(models.Model):
+    placed_at = models.DateTimeField(auto_now_add=True)
+    delivery_on = models.DateField(null=True, blank=True)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+`t.date` maps to `date`, `t.datetime` to `date-time`:
+
+```ruby
+create_table :orders do |t|
+  t.datetime :placed_at
+  t.date :delivery_on
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [DateInput and DateTimeInput](../input-components/date-input-and-date-time-input) — the form counterparts
+- [DateRangeInput](../input-components/date-range-input) — filtering a list by a date range

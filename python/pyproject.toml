@@ -1,0 +1,68 @@
+[project]
+name = "habarico"
+version = "6.0.0"
+description = "Habarico REST admin Django library"
+keywords = [
+    "package",
+    "django",
+    "admin",
+    "eluvia",
+    "habarico",
+]
+dependencies = [
+    "eluvia-base>=2.0.0",
+    "eluvia-base-django>=2.3.2",
+    "djangorestframework>=3.14",
+    "django>=3.0.0",
+    "django-filter>=23.1",
+    "django-phonenumber-field[phonenumbers]>=7.1.0",
+    "python-dateutil>=2.9.0",
+    "drf-extra-fields>=3.4.0",
+    "jsonschema>=4.0.0",
+    "pydantic>=2,<3",
+]
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3 :: Only",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+[[project.authors]]
+name = "Luboš Mátl"
+email = "lubos.matl@eluvia.com"
+
+[project.optional-dependencies]
+export-xlsx = [
+    "openpyxl>=3.1",
+]
+
+[project.license]
+file = "LICENSE"
+
+[project.urls]
+Documentation = "https://gitlab.eluvia.dev/libraries/python/habarico"
+"Source Code" = "https://gitlab.eluvia.dev/libraries/python/habarico"
+
+[tool.black]
+line-length = 120
+target-version = [
+    "py310",
+]
+
+[tool.flake8]
+max-line-length = 120
+ignore = "E203,W503"
+
+[tool.isort]
+profile = "black"
+line_length = 120
+known_third_party = [
+    "habarico",
+]

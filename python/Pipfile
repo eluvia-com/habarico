@@ -1,0 +1,38 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[[source]]
+url = "https://${PYPI_REGISTRY_USERNAME}:${PYPI_REGISTRY_TOKEN}@gitlab.eluvia.dev/api/v4/projects/631/packages/pypi/simple/"
+verify_ssl = true
+name = "eluvia-base"
+
+[[source]]
+url = "https://${PYPI_REGISTRY_USERNAME}:${PYPI_REGISTRY_TOKEN}@gitlab.eluvia.dev/api/v4/projects/646/packages/pypi/simple/"
+verify_ssl = true
+name = "eluvia-base-django"
+
+[packages]
+typing-extensions = "*"
+pytz = "*"
+django = "==5.2.17"  # BSD License (BSD-3-Clause)
+djangorestframework = "==3.17.2"  # BSD License (BSD)
+drf-extra-fields = "==3.7.0"  # BSD License (BSD)
+django-filter = "=25.2"  # Apache Software License (Apache)
+eluvia-base = {version = "==2.0.1", index = "eluvia-base"}
+eluvia-base-django = {version = "==2.3.2", index = "eluvia-base-django"}
+habarico = {path = ".", editable = true}
+jsonschema = "*"
+pydantic = ">=2,<3"
+
+[dev-packages]
+pylint = "*"
+pytest = "*"
+pytest-django = "*"
+autopep8 = "*"
+build = "*"
+twine = "*"
+exceptiongroup = "*"
+tomli = "*"
+openpyxl = ">=3.1"  # required by the habarico.export xlsx renderer tests

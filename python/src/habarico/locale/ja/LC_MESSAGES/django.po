@@ -1,0 +1,113 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-29 16:23+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Japanese <ja@li.org>\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "list"
+msgstr "リスト"
+
+msgid "user"
+msgstr "ユーザー"
+
+msgid "key"
+msgstr "キー"
+
+msgid "value"
+msgstr "値"
+
+msgid "updated at"
+msgstr "更新日時"
+
+msgid "user preference"
+msgstr "ユーザー設定"
+
+msgid "user preferences"
+msgstr "ユーザー設定"
+
+msgid "Invalid value for preference."
+msgstr "設定の値が無効です。"
+
+msgid "Preference value is too large."
+msgstr "設定の値が大きすぎます。"
+
+msgid "Too many preferences are stored for this user."
+msgstr "このユーザーに保存されている設定が多すぎます。"
+
+msgid "Yes"
+msgstr "はい"
+
+msgid "No"
+msgstr "いいえ"
+
+msgid "Search"
+msgstr "検索"
+
+msgid "Invalid value of the filter {name}."
+msgstr "フィルター {name} の値が無効です。"
+
+msgid "Value must be a dict with 'lower' or 'upper' keys."
+msgstr "値は 'lower' または 'upper' キーを持つ辞書でなければなりません。"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Upload images"
+msgstr "画像をアップロード"
+
+msgid "Delete"
+msgstr "削除"
+
+msgid "Delete item"
+msgstr "項目を削除"
+
+msgid "Do you want to delete the item?"
+msgstr "この項目を削除しますか？"
+
+msgid "Edit"
+msgstr "編集"
+
+msgid "Detail"
+msgstr "詳細"
+
+msgid "Create"
+msgstr "作成"
+
+msgid "This field may not be null."
+msgstr "このフィールドはnullにできません。"
+
+msgid "Export"
+msgstr "エクスポート"
+
+msgctxt "spreadsheet sheet title"
+msgid "Export"
+msgstr "エクスポート"
+
+#, python-format
+msgid ""
+"The export has %(count)d rows, which is over the limit of %(limit)d. Narrow "
+"the filter down."
+msgstr ""
+"エクスポート対象が %(count)d 行あり、上限の %(limit)d 行を超えています。フィ"
+"ルターで絞り込んでください。"
+
+#, python-format
+msgid "Fields not available for export: %(fields)s."
+msgstr "エクスポートできない項目です: %(fields)s"
+
+msgid "Invalid record identifiers."
+msgstr "レコードの識別子が不正です。"

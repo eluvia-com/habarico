@@ -1,0 +1,92 @@
+---
+title: ChoicesInput
+sidebar_position: 9
+storybook: admin-inputs-choicesinput--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Collects one value of an enum from a dropdown, with an optional icon per option.
+
+<StorybookPreview />
+
+Use it for a fixed set of values that comes with the schema. To pick a *record* of another
+resource use [SchemaReferenceInput](./reference-input.mdx), which loads its options
+from the backend.
+
+## Example
+
+```tsx
+const statusChoices = [
+  {value: 'draft', label: 'Draft', color: 'default'},
+  {value: 'published', label: 'Published', color: 'success'},
+  {value: 'archived', label: 'Archived', color: 'error'},
+];
+
+<ChoicesInput source="status" choices={statusChoices} />
+```
+
+## Props
+
+On top of `choices` the component accepts the shared [input props](./index.md#common-props) and
+React Admin's `SelectInput` props.
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field in the form record |
+| `choices` (required) | `Choices` | — | Enum values: `{value, label, color?, icon?}` |
+| `label` | `string \| ReactElement \| false` | label from the schema | `false` hides the label |
+| `validate` | `Validator \| Validator[]` | from the schema | React Admin validators |
+| `iconsKey` | `string` | — | Key into the `iconsMap` on [SchemaAdmin](../base-components/schema-admin.md), used to give each option an icon |
+
+The schema layer renders this component directly: `choices` comes from the field's `enum` and
+`iconsKey` from `options.choices.iconsKey`.
+
+:::caution
+Unlike [ChoicesField](../field-components/choices-field.mdx), the input ignores the `color` of an
+enum entry — the dropdown shows an icon and a label, not a colored chip.
+:::
+
+An array of enum values renders as a multi-select instead — see [SchemaArrayInput](./array-input.mdx).
+
+## Schema mapping
+
+A field with `format: "choices"` and an `enum`:
+
+```json
+{"name": "status", "type": "string", "format": "choices",
+ "enum": [{"value": "draft", "label": "Draft"}, {"value": "published", "label": "Published"}]}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+class ProductStatus(models.TextChoices):
+    DRAFT = "draft", _("Draft")
+    PUBLISHED = "published", _("Published")
+    ARCHIVED = "archived", _("Archived")
+
+
+class Product(models.Model):
+    status = models.CharField(max_length=16, choices=ProductStatus.choices, default=ProductStatus.DRAFT)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+class Product < ApplicationRecord
+  enum :status, {draft: 0, published: 1, archived: 2}
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [ChoicesField](../field-components/choices-field.mdx) — the display counterpart
+- [SchemaArrayInput](./array-input.mdx) — selecting several enum values at once

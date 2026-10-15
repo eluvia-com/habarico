@@ -1,0 +1,74 @@
+---
+title: BooleanField
+sidebar_position: 7
+storybook: admin-fields-booleanfield--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Displays a boolean as a yes/no chip.
+
+<StorybookPreview />
+
+The chip label comes from the translation catalogue (`ra.message.yes` / `ra.message.no`), so it
+follows the admin locale.
+
+## Example
+
+```tsx
+<BooleanField source="is_available" color />
+```
+
+## Props
+
+The component wraps React Admin's `BooleanField`, driving its `TrueIcon` / `FalseIcon` with a chip
+of its own. On top of these it accepts the shared [field props](./index.md#common-props).
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field on the record |
+| `color` | `boolean` | `false` | `true` colors the chip green for true and red for false; otherwise both are neutral |
+| `chipVariant` | `'text' \| 'filled' \| 'outlined' \| 'soft'` | `'soft'` | MUI chip variant |
+| `label` | `string \| ReactElement \| false` | label from the schema | `false` hides the label |
+
+The chip labels are the `ra.message.yes` / `ra.message.no` translations of the active locale — they
+are not props.
+
+:::caution
+`color` is a `boolean` here, not an MUI color name — passing `"success"` enables coloring but does
+not select a palette entry.
+:::
+
+## Schema mapping
+
+Any field with `type: "boolean"`, regardless of `format`:
+
+```json
+{"name": "is_available", "type": "boolean", "defaultValue": true}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+class Product(models.Model):
+    is_available = models.BooleanField(default=True)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+create_table :products do |t|
+  t.boolean :is_available, default: true, null: false
+end
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [BooleanInput](../input-components/boolean-input) — the form counterpart, including the tri-state variant

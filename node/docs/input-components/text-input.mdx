@@ -1,0 +1,81 @@
+---
+title: TextInput
+sidebar_position: 3
+storybook: admin-inputs-textinput--playground
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import StorybookPreview from "@site/src/components/StorybookPreview";
+
+Collects a string, optionally framed by prefix and postfix adornments.
+
+<StorybookPreview />
+
+It is the fallback for every `string` field without a more specific format, and also backs the
+`email`, `url` and `password` formats through the `type` prop.
+
+## Example
+
+```tsx
+<TextInput source="sku" prefix="#" />
+<TextInput source="description" multiline />
+<TextInput source="contact_email" type="email" />
+```
+
+## Props
+
+On top of these the component accepts the shared [input props](./index.md#common-props) and
+React Admin's `TextInput` props.
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `source` (required) | `string` | — | Name of the field in the form record |
+| `multiline` | `boolean` | `false` | Renders a growing textarea instead of a single line |
+| `type` | `string` | `'text'` | HTML input type — `'email'`, `'url'`, `'password'` are set by the dispatcher |
+| `disabled` | `boolean` | `false` | Disables the input |
+| `readOnly` | `boolean` | `false` | Renders the value without allowing edits |
+| `prefix` | `string` | — | Adornment before the value |
+| `postfix` | `string` | — | Adornment after the value |
+
+## Schema mapping
+
+Any `string` field without a recognised format; `format: "text"` turns `multiline` on, and
+`email` / `url` / `password` set the HTML input type.
+
+```json
+{"name": "description", "type": "string", "format": "text", "helpText": "Shown on the product page"}
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+from habarico.serializers import AdminModelSerializer, TextField
+
+
+class ProductSerializer(AdminModelSerializer):
+    description = TextField(required=False)
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "description"]
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+fields [
+  :name,
+  Habarico::FieldReference.new(name: :description, format: 'text'),
+]
+```
+
+</TabItem>
+</Tabs>
+
+## See also
+
+- [TextField](../field-components/text-field.mdx) — the display counterpart
+- [SchemaPredictiveTextInput](./predictive-text-input.mdx) — the same input with AI suggestions

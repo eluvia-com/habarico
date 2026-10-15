@@ -1,0 +1,114 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-29 16:23+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Romanian <ro@li.org>\n"
+"Language: ro\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
+"20)) ? 1 : 2);\n"
+
+msgid "list"
+msgstr "listă"
+
+msgid "user"
+msgstr "utilizator"
+
+msgid "key"
+msgstr "cheie"
+
+msgid "value"
+msgstr "valoare"
+
+msgid "updated at"
+msgstr "actualizat la"
+
+msgid "user preference"
+msgstr "preferință utilizator"
+
+msgid "user preferences"
+msgstr "preferințe utilizator"
+
+msgid "Invalid value for preference."
+msgstr "Valoare invalidă pentru preferință."
+
+msgid "Preference value is too large."
+msgstr "Valoarea preferinței este prea mare."
+
+msgid "Too many preferences are stored for this user."
+msgstr "Sunt stocate prea multe preferințe pentru acest utilizator."
+
+msgid "Yes"
+msgstr "Da"
+
+msgid "No"
+msgstr "Nu"
+
+msgid "Search"
+msgstr "Căutare"
+
+msgid "Invalid value of the filter {name}."
+msgstr "Valoare invalidă a filtrului {name}."
+
+msgid "Value must be a dict with 'lower' or 'upper' keys."
+msgstr "Valoarea trebuie să fie un dicționar cu cheile 'lower' sau 'upper'."
+
+msgid "Save"
+msgstr "Salvare"
+
+msgid "Upload images"
+msgstr "Încarcă imagini"
+
+msgid "Delete"
+msgstr "Ștergere"
+
+msgid "Delete item"
+msgstr "Ștergere element"
+
+msgid "Do you want to delete the item?"
+msgstr "Doriți să ștergeți elementul?"
+
+msgid "Edit"
+msgstr "Editare"
+
+msgid "Detail"
+msgstr "Detaliu"
+
+msgid "Create"
+msgstr "Creare"
+
+msgid "This field may not be null."
+msgstr "Acest câmp nu poate fi nul."
+
+msgid "Export"
+msgstr "Exportare"
+
+msgctxt "spreadsheet sheet title"
+msgid "Export"
+msgstr "Export"
+
+#, python-format
+msgid ""
+"The export has %(count)d rows, which is over the limit of %(limit)d. Narrow "
+"the filter down."
+msgstr ""
+"Exportul are %(count)d rânduri, peste limita de %(limit)d. Restrângeți "
+"filtrul."
+
+#, python-format
+msgid "Fields not available for export: %(fields)s."
+msgstr "Aceste câmpuri nu pot fi exportate: %(fields)s."
+
+msgid "Invalid record identifiers."
+msgstr "Identificatori de înregistrări invalizi."

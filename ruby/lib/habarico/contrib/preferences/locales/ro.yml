@@ -1,0 +1,8 @@
+ro:
+  habarico:
+    contrib:
+      preferences:
+        not_found: "Preferința nu a fost găsită."
+        invalid_value: "Valoare invalidă pentru preferință."
+        value_too_large: "Valoarea preferinței este prea mare."
+        too_many_preferences: "Sunt stocate prea multe preferințe pentru acest utilizator."

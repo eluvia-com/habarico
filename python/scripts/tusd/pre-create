@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# tusd pre-create hook for Habarico chunked uploads (TusUploadProvider).
+#
+# tusd assigns a random upload ID by default. Habarico's finalize step, however,
+# requires the upload key (which the frontend derives from the tus upload URL) to
+#   1. start with the configured tmp_prefix - otherwise validate_upload_key raises
+#      InvalidUploadKey, and
+#   2. end with the original filename - otherwise the finalized file loses its name
+#      and extension (finalize uses upload_key.rsplit("/", 1)[-1]).
+#
+# This hook rewrites the upload ID (and the storage path) to:
+#   <tmp_prefix><uuid>/<original_filename>      e.g. tmp/uploads/9f3a.../photo.jpg
+#
+# tusd passes the hook event as JSON on stdin and reads a JSON response from stdout.
+# A non-zero exit is treated as an internal error (HTTP 500), so we always exit 0 and
+# signal rejection via RejectUpload instead.
+#
+# Configuration:
+#   HABARICO_TUS_TMP_PREFIX  Temp prefix for upload keys (default: "tmp/uploads/").
+#                            MUST match HABARICO_UPLOADS["TUS"]["TMP_PREFIX"] in Django.
+
+set -eu
+
+prefix="${HABARICO_TUS_TMP_PREFIX:-tmp/uploads/}"
+
+# tusd delivers the hook request as a single JSON document on stdin.
+event="$(cat)"
+
+# Extract filename from MetaData — the value is always a plain string set by the
+# frontend uploader (e.g. Uppy), so grep/sed is sufficient without jq.
+filename="$(printf '%s' "$event" | grep -o '"filename":"[^"]*"' | head -1 | sed 's/"filename":"//;s/"//')"
+
+# Strip any directory components a client might smuggle in (e.g. "../" or "a/b").
+filename="$(basename -- "$filename")"
+
+# Without a usable filename the finalized object would lose its name and extension,
+# so reject the upload up front with a clear error instead of storing it nameless.
+if [ -z "$filename" ] || [ "$filename" = "." ] || [ "$filename" = ".." ]; then
+    printf '{"RejectUpload":true,"HTTPResponse":{"StatusCode":400,"Body":"Missing \\"filename\\" upload metadata.","Header":{"Content-Type":"text/plain"}}}\n'
+    exit 0
+fi
+
+# Linux-only but dependency-free; tusd images are Linux. Fall back to uuidgen if present.
+uuid="$(cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen)"
+
+key="${prefix}${uuid}/${filename}"
+
+# ID becomes the upload key the frontend sends back; Storage.Path pins the object to
+# the same key so finalize can default_storage.open(upload_key) it.
+printf '{"ChangeFileInfo":{"ID":"%s","Storage":{"Path":"%s"}}}\n' "$key" "$key"

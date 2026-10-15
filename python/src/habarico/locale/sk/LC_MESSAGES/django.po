@@ -1,0 +1,113 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-29 16:23+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Slovak <sk@li.org>\n"
+"Language: sk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n "
+"<= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;\n"
+
+msgid "list"
+msgstr "zoznam"
+
+msgid "user"
+msgstr "používateľ"
+
+msgid "key"
+msgstr "kľúč"
+
+msgid "value"
+msgstr "hodnota"
+
+msgid "updated at"
+msgstr "upravené"
+
+msgid "user preference"
+msgstr "používateľské nastavenie"
+
+msgid "user preferences"
+msgstr "používateľské nastavenia"
+
+msgid "Invalid value for preference."
+msgstr "Neplatná hodnota nastavenia."
+
+msgid "Preference value is too large."
+msgstr "Hodnota nastavenia je príliš veľká."
+
+msgid "Too many preferences are stored for this user."
+msgstr "Pre tohto používateľa je uložených príliš veľa nastavení."
+
+msgid "Yes"
+msgstr "Áno"
+
+msgid "No"
+msgstr "Nie"
+
+msgid "Search"
+msgstr "Hľadať"
+
+msgid "Invalid value of the filter {name}."
+msgstr "Neplatná hodnota filtra {name}."
+
+msgid "Value must be a dict with 'lower' or 'upper' keys."
+msgstr "Hodnota musí byť slovník s kľúčmi 'lower' alebo 'upper'."
+
+msgid "Save"
+msgstr "Uložiť"
+
+msgid "Upload images"
+msgstr "Nahrať obrázky"
+
+msgid "Delete"
+msgstr "Zmazať"
+
+msgid "Delete item"
+msgstr "Zmazať položku"
+
+msgid "Do you want to delete the item?"
+msgstr "Chcete zmazať položku?"
+
+msgid "Edit"
+msgstr "Upraviť"
+
+msgid "Detail"
+msgstr "Detail"
+
+msgid "Create"
+msgstr "Vytvoriť"
+
+msgid "This field may not be null."
+msgstr "Toto pole nemôže byť prázdne."
+
+msgid "Export"
+msgstr "Exportovať"
+
+msgctxt "spreadsheet sheet title"
+msgid "Export"
+msgstr "Export"
+
+#, python-format
+msgid ""
+"The export has %(count)d rows, which is over the limit of %(limit)d. Narrow "
+"the filter down."
+msgstr ""
+"Export má %(count)d riadkov, čo je nad limitom %(limit)d. Zúžte filter."
+
+#, python-format
+msgid "Fields not available for export: %(fields)s."
+msgstr "Tieto polia nie je možné exportovať: %(fields)s."
+
+msgid "Invalid record identifiers."
+msgstr "Neplatné identifikátory záznamov."

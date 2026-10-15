@@ -1,0 +1,8 @@
+cs:
+  habarico:
+    contrib:
+      preferences:
+        not_found: "Předvolba nenalezena."
+        invalid_value: "Neplatná hodnota předvolby."
+        value_too_large: "Hodnota předvolby je příliš velká."
+        too_many_preferences: "Pro tohoto uživatele je uloženo příliš mnoho předvoleb."
