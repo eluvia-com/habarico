@@ -61,7 +61,7 @@ A premium page shows a screenshot of its story and no link.
 | Python     | GitLab PyPI / internal PyPI  | `habarico`          |
 | Ruby       | `https://geminabox.eluvia.dev` (internal — **not** rubygems.org) | `habarico` |
 
-Every directory with its own child CI file is a **versioned unit** of the monorepo — the three libraries: `release-next-auto` bumps each changed one to a beta, `release-next-final` releases them together and tags them `<dir>@X.Y.Z`. A new unit therefore needs its own pydev config with the version files set (`.pydev/base.yml` with a `version.files` key, or the older `.pydev/base.conf` with `VERSION_FILES`), or the repo-level release jobs fail on it.
+Every directory with its own child CI file is a **versioned unit** of the monorepo — the three libraries. They share major.minor (`SHARED_MINOR_MAJOR`): a new cycle in `release-next-auto` moves all of them to the next minor beta, later betas only the changed ones, `release-next-major` starts a major for all, `release-next-final` releases them together and tags them `<dir>@X.Y.Z`; only patches are per library. Version files must stay on one major.minor or the release jobs fail. A new unit therefore needs its own pydev config with the version files set (`.pydev/base.yml` with a `version.files` key, or the older `.pydev/base.conf` with `VERSION_FILES`), or the repo-level release jobs fail on it.
 
 `<pkg>/docs/` is part of its package for that purpose too: a change to a page alone bumps the package's beta, starts its child pipeline and ships with its next release. That is the point — the page is published from the release tag it belongs to.
 

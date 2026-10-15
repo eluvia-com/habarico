@@ -21,7 +21,7 @@ id **784**): Settings → Repository → Deploy tokens → Add token, with scope
 registry. Copy both halves — the username (`gitlab+deploy-token-<n>` unless you name it) and the
 token itself, which is shown once.
 
-**3. The GitHub App for `release.yml` and `beta-bump.yml`.** `GITHUB_TOKEN` cannot be used: pushes
+**3. The GitHub App for `release.yml`, `beta-bump.yml` and `major.yml`.** `GITHUB_TOKEN` cannot be used: pushes
 made with it deliberately do not start further workflow runs, so neither the release tags nor a
 bump commit would ever trigger `publish.yml`. Create an App with the `contents: write` repository
 permission, install it on this repository, and give it a **ruleset bypass on both `next` and
@@ -58,7 +58,7 @@ Every check has a local equivalent — run it before pushing rather than waiting
 | ruby `code-quality` | `cd ruby && gem install rubocop && rubocop` |
 | ruby `unit-tests` | `cd ruby && bundle install && bundle exec rake test` |
 
-A change that touches only `publish.yml`, `release.yml` or `beta-bump.yml` starts **no** checks,
+A change that touches only `publish.yml`, `release.yml`, `beta-bump.yml` or `major.yml` starts **no** checks,
 because the path filters cover each library's own workflow file and nothing else. Use
 `workflow_dispatch` to exercise a library workflow after editing one of the release workflows.
 
@@ -89,15 +89,17 @@ directly.
 ## Cutting a release
 
 Releasing is a single button that releases **every** library whose directory has moved since its
-last stable tag, together. That is deliberate: because they all go at once, the tree on `next`
+last stable tag, together — with `SHARED_MINOR_MAJOR` (the default) every library, once any of
+them has moved. That is deliberate: because they all go at once, the tree on `next`
 holds only released code afterwards, which is what makes fast-forwarding `master` to it correct.
 
 1. Make sure each library's `## [Unreleased]` changelog section says what you want the release
    notes to say. The finalize rewrites that heading in place; it does not write content.
 2. Check the version files name the versions you intend to release. On `next` a version file
    names the version being *worked towards*, not the last one released — so `node/package.json`
-   saying `6.9.0` means the next release is `6.9.0`. Changing it is an ordinary reviewed pull
-   request, per library; that is how you take node to a major while python stays on minors.
+   saying `6.9.0` means the next release is `6.9.0`. With `SHARED_MINOR_MAJOR` all of them must
+   be on one major.minor; a major is started with `major.yml` (see below). Without it, changing a
+   version is an ordinary reviewed pull request, per library.
 3. Run `release.yml` with **`dry_run` checked** and read the output.
 4. Run it again without `dry_run`.
 
@@ -114,7 +116,19 @@ Afterwards, check that `publish.yml` ran for each tag and that the versions appe
 registries. There is no patch-release button yet — a patch off a maintenance branch has to be
 versioned, committed and tagged by hand.
 
+## Starting a major
+
+With `SHARED_MINOR_MAJOR`, run `major.yml` from the Actions tab — first with **`dry_run`
+checked**. It moves every library onto `X+1.0.0-beta.1` in one bump commit on `next`, and that
+commit publishes the first beta of each. A second press while the cycle is already on a new major
+fails. Release it with `release.yml` as usual.
+
 ## Troubleshooting
+
+**`ERROR: SHARED_MINOR_MAJOR is on, but the libraries are on different major.minor versions`** (or
+**`only some libraries are on a pre-release`**) — `beta-bump.yml`, `release.yml` and `major.yml`
+refuse to run on drifted version files, because `pydev` can only bump, not set a version. Put all
+version files on one major.minor, and all or none on a beta, in a pull request to `next`.
 
 **`ERROR: master is not an ancestor of next`** — someone committed directly to `master`, so it can
 no longer be fast-forwarded. The finalize refuses before writing anything, so nothing is half

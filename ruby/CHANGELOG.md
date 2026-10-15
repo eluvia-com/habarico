@@ -9,6 +9,16 @@ Releases are cut through the CI `next` flow: merges to `next` publish beta
 pre-releases, and the `## [0.56.0] — 2026-08-03` section below is stamped with the
 version and date when a release is finalized.
 
+## [Unreleased]
+
+### Fixed
+
+- `meta.schema` of a record (list, detail, create and update responses) is emitted in snake_case
+  like the rest of the response and the schema endpoints, instead of camelCase. The keys inside it
+  that the host declares itself, such as an action's `view_parameters`, now reach the client
+  exactly as declared (`object_id`, not `objectId`). `@eluvia/habarico` reads both forms.
+  (HAB-1022)
+
 ## [1.0.0] — 2026-10-10
 
 ### Added

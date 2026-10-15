@@ -34,6 +34,9 @@ jobs:
       # release.yml and publish.yml already read - if this disagreed, a beta would be numbered
       # off a target that never ships.
       RELEASE_LEVEL: ${{ vars.RELEASE_LEVEL || 'minor' }}
+      # "true" keeps major.minor identical across the libraries: a new cycle bumps all of them.
+      # Same variable release.yml and major.yml read.
+      SHARED_MINOR_MAJOR: ${{ vars.SHARED_MINOR_MAJOR || 'true' }}
     steps:
       # A GitHub App token, not GITHUB_TOKEN: this push has to itself trigger publish.yml, and
       # pushes made with GITHUB_TOKEN deliberately do not start further workflow runs. Same App as
@@ -61,18 +64,11 @@ jobs:
         run: |
           set -eu
 
-          # A library is a top-level directory that is a versioned unit, which is what having its
-          # own pydev config means - same convention publish.yml and release.yml use.
-          LIBS=""
-          for dir in */; do
-            dir="${dir%/}"
-            if [ -f "$dir/.pydev/base.yml" ] || [ -f "$dir/.pydev/base.conf" ]; then
-              LIBS="$LIBS $dir"
-            fi
-          done
-          [ -n "$LIBS" ] || { echo "ERROR: no libraries found (no <dir>/.pydev config)"; exit 1; }
+          . .github/scripts/libraries.sh
+          list_libs
+          check_shared_minor_major
 
-          : > /tmp/bumped
+          : > /tmp/to_bump
           for lib in $LIBS; do
             # The last commit - of any kind, beta or finalize - that touched this library's
             # version. None found means no cycle has ever run for it; treat that as "start one".
@@ -82,7 +78,21 @@ jobs:
               echo "  $lib: unchanged since ${BASE}, skipping"
               continue
             fi
+            echo "$lib" >> /tmp/to_bump
+          done
 
+          [ -s /tmp/to_bump ] || { echo "nothing changed since the last version bump - nothing to bump"; exit 0; }
+
+          # With SHARED_MINOR_MAJOR a new cycle moves every library, changed or not, so they stay on
+          # one major.minor and release.yml then releases all of them. Within a running cycle only
+          # the changed ones get a new pre-release.
+          if [ "$SHARED_MINOR_MAJOR" = "true" ] && [ -z "$PRE_LIBS" ]; then
+            echo "new $RELEASE_LEVEL cycle with SHARED_MINOR_MAJOR - bumping every library"
+            echo $LIBS | tr ' ' '\n' > /tmp/to_bump
+          fi
+
+          : > /tmp/bumped
+          while read -r lib; do
             # A prerelease marker already on the version file means a cycle is open - advance its
             # counter alone. No marker means the last bump was a finalize (or there was none):
             # start a fresh cycle at RELEASE_LEVEL.
@@ -97,7 +107,7 @@ jobs:
             echo "  $lib: ${CURRENT} -> ${VERSION}"
             git add "$lib"
             echo "$lib $VERSION" >> /tmp/bumped
-          done
+          done < /tmp/to_bump
 
       - name: Commit and push
         run: |

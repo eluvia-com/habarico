@@ -14,7 +14,7 @@ info:
     `/admin/user` and `/admin/user/{record_pk}` endpoints. `/admin/user/schema` returns only actions and views 
     that are supported in `/admin/user` endpoint and `/admin/user/{record_pk}/schema` returns only actions and views 
     that are supported in `/admin/user/{record_pk}` endpoint but with higher detail.
-  version: 3.3.4
+  version: 3.4.0
   contact:
     email: lubos.matl@eluvia.com
 servers:
@@ -3203,6 +3203,19 @@ components:
           nullable: true
         type:
           $ref: '#/components/schemas/FieldType'
+        format:
+          allOf:
+            - $ref: '#/components/schemas/FieldFormatType'
+          description: |
+            Format of the field, from the values `FieldSchema.format` uses. Derived from the
+            model column, so it carries what the column type tells: `date`, `date-time`,
+            `time`, `text` (an unbounded text column) and `uuid`. Absent when the column type
+            has no format – a short string, a number, a boolean. A format set on the
+            resource's admin field (`email`, `phone`, `rich-text`, …) is not reflected here.
+            A client treats an absent `format` as unknown rather than as plain text, and
+            ignores a format it does not handle. A `min` / `max` over a `date` / `date-time`
+            field returns an ISO 8601 string (see `AggregateBucket.value`).
+          example: date-time
         aggregations:
           type: array
           items:
@@ -3703,7 +3716,8 @@ components:
         * `simple-aggregate` – renders a single computed scalar value over the standard
           list endpoint, without requiring the aggregate endpoint. Supports only `count`
           (the list `total`), `min` and `max` (the `field` value of the first row when
-          sorted asc / desc, so `field` must be `sortable`). Available on any resource
+          sorted asc / desc, so `field` must be `sortable` – and a number or a date, see
+          `AggregateFunctionType`). Available on any resource
           with a list view.
         * `aggregate` – renders a single computed scalar value via the resource aggregate
           endpoint (`/{api_prefix}/{service_name}/admin/{resource_name}/aggregate`), using
@@ -3801,9 +3815,18 @@ components:
         `aggregate` dashboard widget.
 
         * `count` – number of records matching the (filtered) query; `field` is ignored.
-        * `min` / `max` – minimum / maximum value of `field`. The widget computes these on
-          the frontend by sorting, so it does not require `field` to be `aggregable` – only
-          `sortable`. The backend aggregate endpoint requires `field` to be `aggregable`.
+        * `min` / `max` – minimum / maximum value of `field`, over numbers and dates. A
+          numeric field yields a number, a field with `format` `date` / `date-time` an
+          ISO 8601 string (see `AggregateBucket.value`). The widgets offer these functions
+          only for such fields: `aggregate` and `simple-aggregate` for a numeric field
+          without `enum` / `reference` and for a `date` / `date-time` field, the `bar` /
+          `line` / `pie` charts for a numeric field only. The backend does not restrict the
+          field type – any field with `min` / `max` in its `aggregations` whitelist is
+          accepted – but text, boolean, `time`, reference and enum fields are not a
+          supported target and yield the raw stored value. `simple-aggregate` computes
+          these on the frontend by sorting the list endpoint, so there `field` must be
+          `sortable` rather than `aggregable`. The backend aggregate endpoint requires
+          `field` to be `aggregable`.
         * `sum` / `avg` – numeric aggregations computed by the backend aggregate endpoint.
           `field` must be `aggregable` and reference a numeric column.
     WidgetLayout:
@@ -3947,12 +3970,25 @@ components:
             created_at: "2026-01-01T00:00:00+00:00"
             price: 100
         value:
-          type: number
-          nullable: true
+          oneOf:
+            - type: number
+              nullable: true
+            - type: string
           description: |
-            Aggregated value. `null` only for `avg` / `min` / `max` when the bucket
-            contains no rows (e.g. due to row-level permissions filtering). `count`
-            and `sum` always return a number.
+            Aggregated value. Its type follows the function and the target field:
+              * `count` and `sum` always return a number, `avg` a number or `null`.
+              * `min` / `max` over a numeric field return a number.
+              * `min` / `max` over a field whose `AggregateFieldSchema.format` is `date` or
+                `date-time` return an ISO 8601 string – a calendar date for `date`
+                (`"2026-01-01"`), a date and time with a UTC offset for `date-time`
+                (`"2026-01-01T00:00:00Z"`). Fraction digits and the offset notation
+                (`Z`, `.000Z`, `+01:00`) differ between the backends, so a client parses
+                the value rather than comparing it as text.
+              * `min` / `max` over any other field return the raw stored value – a text, the
+                primary key of a reference, the stored code of an enum. Such a field is not a
+                supported target (see `AggregateFunctionType`).
+            `null` only for `avg` / `min` / `max` when the bucket contains no rows (e.g.
+            due to row-level permissions filtering).
           example: 42
     AggregateResult:
       type: object

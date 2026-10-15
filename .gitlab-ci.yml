@@ -3,6 +3,9 @@ variables:
   # versions on its own. It is a variable rather than an input because the bump is one repo-level
   # job, not one per library.
   AUTO_BETA_RELEASE: "minor"
+  # Keeps major.minor identical across node, python and ruby: a new cycle moves all three at once,
+  # a major starts from the `release-next-major` button, only patches stay per library.
+  SHARED_MINOR_MAJOR: "true"
 
   # Hangs a GitLab Release object on every stable release tag, so "what is released" is readable
   # on the Releases page (and in GET /groups/:id/releases) instead of being a list of prefixed

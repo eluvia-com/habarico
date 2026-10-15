@@ -1,5 +1,6 @@
-# The finalize button. Releases every library whose directory has moved since its last stable tag,
-# all of them together, and pushes the tags that start publish.yml. It publishes nothing itself.
+# The finalize button. Releases every library whose directory has moved since its last stable tag -
+# with SHARED_MINOR_MAJOR every library once any of them moved - all of them together, and pushes
+# the tags that start publish.yml. It publishes nothing itself.
 #
 # Port of release-next-final from ci-toolbox/monorepo-library@2. The ordering below is not
 # cosmetic - each step is where it is for a reason, kept from the original.
@@ -37,6 +38,9 @@ jobs:
       # The level the version files are advanced by after a release. publish.yml reads the same
       # value; if they disagreed, betas would be published under a version that never ships.
       RELEASE_LEVEL: ${{ vars.RELEASE_LEVEL || 'minor' }}
+      # "true" releases every library together whenever one of them moved. Same variable
+      # beta-bump.yml and major.yml read.
+      SHARED_MINOR_MAJOR: ${{ vars.SHARED_MINOR_MAJOR || 'true' }}
       CHANGELOG_PATH: CHANGELOG.md
       DRY_RUN: ${{ inputs.dry_run }}
     steps:
@@ -81,19 +85,13 @@ jobs:
         run: |
           set -eu
 
-          # A library is a top-level directory that is a versioned unit, which is what having its
-          # own pydev config means. Derived rather than listed, so it cannot drift.
-          LIBS=""
-          for dir in */; do
-            dir="${dir%/}"
-            if [ -f "$dir/.pydev/base.yml" ] || [ -f "$dir/.pydev/base.conf" ]; then
-              LIBS="$LIBS $dir"
-            fi
-          done
-          [ -n "$LIBS" ] || { echo "ERROR: no libraries found (no <dir>/.pydev config)"; exit 1; }
-          echo "libraries:$LIBS"
+          . .github/scripts/libraries.sh
+          list_libs
+          check_shared_minor_major
 
           : > /tmp/to_release
+          : > /tmp/aligned
+          CHANGED=""
           for lib in $LIBS; do
             # `print-next -r release` is "the version this file is heading for": it strips a
             # pre-release suffix and is a no-op on a version that has none. A suffix here is left
@@ -110,6 +108,22 @@ jobs:
             fi
 
             BASE=$(git tag -l "${lib}@*" --sort=-v:refname | grep -vE -- '-(alpha|beta|rc)\.' | head -1 || true)
+
+            # With SHARED_MINOR_MAJOR every library is released whenever one of them moved, so
+            # "unchanged" here only decides the changelog: no commit under <lib>/ since its last
+            # tag other than version bumps.
+            if [ "$SHARED_MINOR_MAJOR" = "true" ]; then
+              echo "$lib $VERSION" >> /tmp/to_release
+              if [ -n "$BASE" ] && [ -z "$(git log --format=%H --invert-grep --grep '^Bump version to' "$BASE..HEAD" -- "$lib/")" ]; then
+                echo "  $lib: -> $VERSION (no changes since $BASE, aligned with the other libraries)"
+                echo "$lib" >> /tmp/aligned
+              else
+                echo "  $lib: -> $VERSION"
+                CHANGED="$CHANGED $lib"
+              fi
+              continue
+            fi
+
             if [ -n "$BASE" ] && git diff --quiet "$BASE" HEAD -- "$lib/"; then
               echo "  $lib: unchanged since $BASE, skipping"
               continue
@@ -118,6 +132,10 @@ jobs:
             echo "  $lib: -> $VERSION"
             echo "$lib $VERSION" >> /tmp/to_release
           done
+
+          if [ "$SHARED_MINOR_MAJOR" = "true" ] && [ -z "$CHANGED" ]; then
+            : > /tmp/to_release
+          fi
 
           if [ ! -s /tmp/to_release ]; then
             echo "nothing to release - no library has moved since its last stable tag"
@@ -138,7 +156,21 @@ jobs:
             git add "$lib"
 
             if [ -f "$lib/$CHANGELOG_PATH" ]; then
-              sed -i "s/## \[Unreleased\]/## [${version}] — $(date +%Y-%m-%d)/" "$lib/$CHANGELOG_PATH"
+              TODAY=$(date +%Y-%m-%d)
+              if grep -qx "$lib" /tmp/aligned; then
+                # A library released only to follow the shared version gets a section saying so.
+                # An empty "## [Unreleased]" heading is dropped, the new section goes above the first one.
+                awk -v section="## [${version}] — ${TODAY}\n\n### Changed\n- No changes. Version aligned with the other libraries in the repository.\n" '
+                  /^## \[Unreleased\]/ { skip = 1; next }
+                  skip && /^[[:space:]]*$/ { next }
+                  { skip = 0 }
+                  !done && /^## / { print section; done = 1 }
+                  { print }
+                  END { if (!done) { print ""; print section } }
+                ' "$lib/$CHANGELOG_PATH" > /tmp/changelog && mv /tmp/changelog "$lib/$CHANGELOG_PATH"
+              else
+                sed -i "s/## \[Unreleased\]/## [${version}] — ${TODAY}/" "$lib/$CHANGELOG_PATH"
+              fi
               git add "$lib/$CHANGELOG_PATH"
             fi
             SUMMARY="${SUMMARY}${SUMMARY:+, }${lib}@${version}"

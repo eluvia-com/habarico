@@ -90,17 +90,8 @@ jobs:
             exit 0
           fi
 
-          # A library is a top-level directory that is a versioned unit of the monorepo, which is
-          # exactly what having its own pydev config means. Deriving the list keeps it from drifting
-          # away from what is actually in the repository.
-          LIBS=""
-          for dir in */; do
-            dir="${dir%/}"
-            if [ -f "$dir/.pydev/base.yml" ] || [ -f "$dir/.pydev/base.conf" ]; then
-              LIBS="$LIBS $dir"
-            fi
-          done
-          [ -n "$LIBS" ] || { echo "ERROR: no libraries found (no <dir>/.pydev config)"; exit 1; }
+          . .github/scripts/libraries.sh
+          list_libs
 
           # A branch push only reaches this point when it is beta-bump.yml's own commit (the `if:`
           # above filtered everything else out), so this exact commit named which libraries it

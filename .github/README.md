@@ -22,6 +22,7 @@ does not start the Node pipeline:
 | `python.yml` | `code-quality` (flake8 + black), `unit-tests` (pipenv + pytest) | `ci-toolbox/python-library@2` |
 | `ruby.yml` | `code-quality` (rubocop), `unit-tests` (`rake test`) | `ci-toolbox/ruby-library@2` |
 | `beta-bump.yml` | `beta-bump` | the beta half of `release-next-auto` |
+| `major.yml` | `major` (the major button) | `release-next-major` |
 | `publish.yml` | `detect`, then one job per changed library | `publish` |
 | `release.yml` | `release` (the finalize button) | `release-next-final` |
 
@@ -40,8 +41,19 @@ changelogs, commits, tags, pushes `next`, fast-forwards `master`, creates `relea
 maintenance branches, and finally advances the version files to the next cycle in a second commit.
 It publishes nothing — the tags it pushes are what start `publish.yml`.
 
-Choosing a different next version is an ordinary edit of the version file in a reviewed pull
-request, per library. See `.github/RELEASE-DESIGN.md` for why each step is where it is.
+`major.yml` is the major button (`workflow_dispatch`, with a `dry_run` input). It moves every
+library onto the first beta of the next major in one bump commit on `next`, which `publish.yml`
+then publishes. It refuses a second press while a major cycle is already running.
+
+With `SHARED_MINOR_MAJOR` (on by default) the libraries keep one major.minor: a new cycle in
+`beta-bump.yml` bumps every library, changed or not, later betas only the changed ones, and
+`release.yml` releases all of them once any has moved. A library without commits since its last
+tag other than bumps gets the changelog section `No changes. Version aligned with the other
+libraries in the repository.` All three workflows fail when the version files are not on one
+major.minor, or when only some are on a beta.
+
+Without `SHARED_MINOR_MAJOR`, choosing a different next version is an ordinary edit of the
+version file in a reviewed pull request, per library. See `.github/RELEASE-DESIGN.md` for why each step is where it is.
 
 ## Where packages go
 
@@ -89,9 +101,10 @@ it declares is already on npmjs.
 |----------|---------|---------|
 | `TOOLBOX_IMAGE` | `ghcr.io/druids/developers-chamber:1` | The image carrying `pydev`; `release.yml`, `beta-bump.yml` and `publish.yml`'s `detect` job all run in it. The default is the upstream public image, so this needs no setting — override it only to try a different build. |
 | `RELEASE_LEVEL` | `minor` | The level `release.yml`'s finalize advances version files by, and the level `beta-bump.yml` starts a new prerelease cycle at when none is open. **Both must read the same value** — if they disagreed, a beta could be numbered off a target that never ships. |
+| `SHARED_MINOR_MAJOR` | `true` | Keeps major.minor identical across the libraries, read by `beta-bump.yml`, `release.yml` and `major.yml`; `major.yml` does not run without it. Mirrors the variable of the same name in `.gitlab-ci.yml`. |
 | `NEXT_BRANCH` | `next` | Trunk. Hard-coded in `publish.yml`'s and `beta-bump.yml`'s triggers as well, because `on:` has no contexts — all three must agree. |
 | `STABLE_BRANCH` | `master` | Fast-forwarded by the finalize. |
-| `RELEASE_APP_ID` | — (required) | GitHub App used by `release.yml`'s finalize and by `beta-bump.yml`'s bump commit to write to the repository. |
+| `RELEASE_APP_ID` | — (required) | GitHub App used by `release.yml`'s finalize and by the bump commits of `beta-bump.yml` and `major.yml` to write to the repository. |
 | `GITLAB_PACKAGES_USER` | — (required) | Username half of the GitLab deploy token, used by twine. A deploy token's default username is `gitlab+deploy-token-<n>`. |
 | `GEMINABOX_USER` | — (required) | Basic-auth user for geminabox. |
 | `PUBLISH_PUBLIC` | unset | `true` also publishes stable versions to npmjs / PyPI / rubygems.org. See "Going public". |
@@ -103,7 +116,7 @@ credentials out of the pull-request workflows, and gives somewhere to hang prote
 
 | Secret | Used by | Needed because |
 |--------|---------|----------------|
-| `RELEASE_APP_PRIVATE_KEY` | `release.yml`, `beta-bump.yml` | Private key of the GitHub App above. `GITHUB_TOKEN` will not do: pushes made with it deliberately do not start further workflow runs, so neither the release tags nor a bump commit would ever trigger `publish.yml`. The App needs `contents: write` and a ruleset bypass on both branches. |
+| `RELEASE_APP_PRIVATE_KEY` | `release.yml`, `beta-bump.yml`, `major.yml` | Private key of the GitHub App above. `GITHUB_TOKEN` will not do: pushes made with it deliberately do not start further workflow runs, so neither the release tags nor a bump commit would ever trigger `publish.yml`. The App needs `contents: write` and a ruleset bypass on both branches. |
 | `GITLAB_PACKAGES_TOKEN` | `publish.yml` | A GitLab **deploy token on project 784 with `write_package_registry`** (a personal or group access token with `api` also works). One token serves both the npm and the PyPI registry. |
 | `GEMINABOX_PASSWORD` | `publish.yml` | Basic-auth password for geminabox; `gem push` carries it in the host URL. |
 | `GITLAB_TOKEN` | `node.yml` | `node/.npmrc` points the `@eluvia` scope at the GitLab npm registry and interpolates the variable. Deliberately a **separate, read-only** token from `GITLAB_PACKAGES_TOKEN` — the pull-request workflows never need write access to a registry. npm accepts an empty value, so an unset secret still installs cleanly today: no `@eluvia` package is currently a dependency. |

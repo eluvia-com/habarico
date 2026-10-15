@@ -1,0 +1,89 @@
+# The major button, only with SHARED_MINOR_MAJOR: moves every library onto the first beta of the
+# next major in one bump commit on next. That push starts publish.yml, which publishes all of them;
+# beta-bump.yml skips it. Without SHARED_MINOR_MAJOR a major is started by editing the version file.
+#
+# Port of release-next-major from ci-toolbox/monorepo-library@2.
+name: Major
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Bump and print the versions, but push nothing"
+        type: boolean
+        default: false
+
+# Shares the queue with beta-bump.yml: both push bump commits to next.
+concurrency:
+  group: beta-bump-next
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  major:
+    name: major
+    runs-on: ubuntu-latest
+    if: (vars.SHARED_MINOR_MAJOR || 'true') == 'true'
+    # Carries pydev; see publish.yml for the note on the image.
+    container: ${{ vars.TOOLBOX_IMAGE || 'ghcr.io/druids/developers-chamber:1' }}
+    env:
+      NEXT_BRANCH: ${{ vars.NEXT_BRANCH || 'next' }}
+      SHARED_MINOR_MAJOR: "true"
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      # A GitHub App token, not GITHUB_TOKEN: the bump commit has to start publish.yml. Same App as
+      # release.yml and beta-bump.yml.
+      - id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Prepare git
+        run: |
+          set -eu
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          # The real tip of the trunk, not the dispatched SHA - beta-bump.yml may have pushed since.
+          git fetch origin "$NEXT_BRANCH"
+          git switch -C "$NEXT_BRANCH" "origin/$NEXT_BRANCH"
+
+      - name: Bump every library to the next major
+        run: |
+          set -eu
+
+          . .github/scripts/libraries.sh
+          list_libs
+          check_shared_minor_major
+
+          # A second press would skip a whole major (3.0.0-beta.2 -> 4.0.0-beta.1).
+          FIRST=$(echo $LIBS | cut -d' ' -f1)
+          CURRENT=$(cd "$FIRST" && pydev version print)
+          if [ -n "$PRE_LIBS" ] && echo "$CURRENT" | grep -qE '^[0-9]+\.0\.0-'; then
+            echo "ERROR: already on a pre-release of a new major ($CURRENT) - nothing to do."
+            exit 1
+          fi
+
+          SUMMARY=""
+          for lib in $LIBS; do
+            NEW=$(cd "$lib" && pydev version bump-to-next -r major -p beta)
+            echo "  $lib: -> $NEW"
+            git add "$lib"
+            SUMMARY="${SUMMARY}${SUMMARY:+, }${lib}@${NEW}"
+          done
+          # Names a prerelease, so publish.yml publishes every library off this commit.
+          git commit -m "Bump version to ${SUMMARY}"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "dry run - would push to $NEXT_BRANCH: $SUMMARY"
+          else
+            git push origin "$NEXT_BRANCH"
+            echo "bumped:$SUMMARY"
+          fi

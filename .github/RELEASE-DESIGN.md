@@ -21,6 +21,7 @@ and that push is what triggers `publish.yml`.
 |----------|---------|------|
 | `beta-bump.yml` | push to `next` | Finds libraries whose directory moved since their last bump commit, bumps each to the next beta via `pydev` (continuing an open prerelease cycle, or starting one), one `Bump version to …` commit, no tag, pushes `next`. Publishes nothing — its own push is what starts `publish.yml`. |
 | `publish.yml` | push to `next`, and tag `<lib>@X.Y.Z` | The **only** workflow that publishes. On `next` it reads the version straight off the bump commit that triggered its run (nothing derived — see "Version derivation" below); on a tag it publishes the stable artifact and creates a GitHub Release from the changelog section. Writes nothing to git. |
+| `major.yml` | `workflow_dispatch` | The major button, only with `SHARED_MINOR_MAJOR`. Moves every library onto the first beta of the next major, one `Bump version to …` commit, pushes `next`; that push starts `publish.yml`. |
 | `release.yml` | `workflow_dispatch` | The finalize button. Stamps the changelog, one commit, one tag per library, pushes `next`, fast-forwards `master`, creates maintenance branches, then advances the version files to the next target. Publishes nothing — the tags it pushes are what start `publish.yml`. |
 
 **One publishing workflow, not several, and no reusable `workflow_call` split.** Every registry
@@ -78,7 +79,12 @@ The finalize's write is unchanged by any of this:
 So `master` always holds exactly the released state, and `next` runs one bump commit ahead of it —
 either the finalize's advance, or the open end of a beta cycle.
 
-Choosing a different next version is then an ordinary edit of the version file in a normal, reviewed
+`SHARED_MINOR_MAJOR` (default `true`, as in `.gitlab-ci.yml`) keeps major.minor identical across
+the libraries: when no cycle is open, `beta-bump.yml` bumps every library rather than only the
+changed ones, and `release.yml` releases every library once any has moved. The shared check in
+`.github/scripts/libraries.sh` fails all three release workflows on drifted version files.
+
+Without it, choosing a different next version is an ordinary edit of the version file in a normal, reviewed
 pull request — per library, human-authored, no bot involved, since `beta-bump.yml` only starts a new
 cycle when none is open; it never overrides a version someone set by hand.
 

@@ -156,10 +156,7 @@ module Habarico
       return result unless result.key?('meta')
 
       meta = result['meta']
-      if meta['schema']
-        meta['schema'] = meta['schema'].deep_compact(compactable: [nil, {}].freeze)
-                                       .deep_transform_keys { |k| k.to_s.camelize(:lower) }
-      end
+      meta['schema'] = meta['schema'].deep_compact(compactable: [nil, {}].freeze) if meta['schema']
 
       # Search highlights sidecar: present only on list responses when a search is active and at
       # least one `search_fields` path matched. Full (untrimmed) field value, mirroring the Python

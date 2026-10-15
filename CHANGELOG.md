@@ -73,6 +73,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- The aggregate endpoint describes `min` / `max` over a date. `AggregateFieldSchema` gains an
+  optional `format` (`FieldFormatType`) derived from the model column - `date`, `date-time`,
+  `time`, `text` or `uuid`, absent when the column type has none - so a client can tell a date
+  from a text field that is `type: string` too. `AggregateBucket.value` is a
+  number or a string: `min` / `max` over a `date` / `date-time` field returns an ISO 8601 value
+  (`"2026-01-01"`, `"2026-01-01T00:00:00Z"`), whose fraction digits and offset notation differ
+  between the backends. `AggregateFunctionType` and `WidgetType` say which fields the widgets
+  offer `min` / `max` for - numbers and dates in `aggregate` / `simple-aggregate`, numbers only in
+  the charts - and that the backend keeps accepting any whitelisted field, other types being an
+  unsupported target. `info.version` 3.3.4 -> 3.4.0; additive, the paid implementation ships in
+  `habarico-enterprise`.
+  (HAB-1012)
 - Resource export endpoint `GET /{api_prefix}/{service_name}/admin/{resource_name}/export`
   returning the resource rows in a downloadable file (CSV/XLSX), signalled to the frontend through
   the `export` action in the list view `list_actions` slot. The endpoint is free but off by

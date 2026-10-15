@@ -308,4 +308,46 @@ module Habarico
     end
 
   end
+
+  # *****************************************************************************
+  # finalize_meta - HAB-1022: meta.schema is snake_case like the rest of the response
+  # *****************************************************************************
+
+  class FinalizeMetaTest < Minitest::Test
+
+    class MetaController < ActionController::Base
+      include Habarico::Controller
+    end
+
+    def finalize(schema)
+      result = { 'id' => 1, 'final_variable_symbol' => '123', 'meta' => { 'repr' => 'Record', 'schema' => schema } }
+      MetaController.new.send(:finalize_meta, result, :detail, nil)['meta']['schema']
+    end
+
+    def test_schema_keys_stay_snake_case
+      schema = finalize(
+        'name' => 'bank_transactions',
+        'pk_field_name' => 'id',
+        'actions' => [{ 'name' => 'detail', 'is_detail' => true, 'show_in_list' => true, 'show_in_detail' => true }]
+      )
+
+      assert_equal 'id', schema['pk_field_name']
+      assert_equal({ 'name' => 'detail', 'is_detail' => true, 'show_in_list' => true, 'show_in_detail' => true }, schema['actions'].first)
+    end
+
+    def test_declared_view_parameters_reach_the_client_as_declared
+      schema = finalize(
+        'actions' => [{ 'name' => 'remind', 'view' => { 'dialog_width' => 'md', 'parameters' => { 'kind' => 'reminder', 'object_id' => 7 } } }]
+      )
+
+      assert_equal({ 'dialog_width' => 'md', 'parameters' => { 'kind' => 'reminder', 'object_id' => 7 } }, schema['actions'].first['view'])
+    end
+
+    def test_nil_and_empty_hash_values_are_dropped
+      schema = finalize('name' => 'orders', 'label' => nil, 'actions' => [{ 'name' => 'detail', 'confirm_dialog' => {} }])
+
+      assert_equal({ 'name' => 'orders', 'actions' => [{ 'name' => 'detail' }] }, schema)
+    end
+
+  end
 end
