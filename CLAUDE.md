@@ -9,7 +9,7 @@ Habarico is a **schema-driven admin library** available in three independent lan
 ## Monorepo Structure
 
 ```
-node/         # @eluvia/habarico — React/TypeScript UI library (React Admin + MUI v7)
+node/         # habarico — React/TypeScript UI library (React Admin + MUI v7)
 python/       # habarico — Django REST Framework admin library
 ruby/         # habarico gem — Rails engine
 <pkg>/docs/   # the documentation pages of that package, rendered by docs.habarico.com
@@ -57,7 +57,7 @@ A premium page shows a screenshot of its story and no link.
 
 | Language   | Registry                     | Scope / Name        |
 |------------|------------------------------|---------------------|
-| JavaScript | GitLab NPM registry          | `@eluvia/habarico`  |
+| JavaScript | npmjs.com (betas under the `beta` dist-tag) | `habarico` — unscoped: `@eluvia` maps to the private registry `habarico-enterprise` comes from |
 | Python     | GitLab PyPI / internal PyPI  | `habarico`          |
 | Ruby       | `https://geminabox.eluvia.dev` (internal — **not** rubygems.org) | `habarico` |
 

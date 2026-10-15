@@ -12,7 +12,7 @@ registrant sits, so it can read and write the form's fields. No portal is involv
 ## useFormExtensions
 
 ```typescript
-import {useFormExtensions} from '@eluvia/habarico';
+import {useFormExtensions} from 'habarico';
 
 const {formExtensions, registerFormExtension, unregisterFormExtension} = useFormExtensions();
 ```

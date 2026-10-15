@@ -47,7 +47,7 @@ combined = "[icon:Warning:#f57c00] [highlight]Check required[/highlight] — see
 ## Direct component use
 
 ```typescript
-import {RichText} from '@eluvia/habarico';
+import {RichText} from 'habarico';
 
 <RichText text = "[icon:Star:#f57f17] Featured" / >
 // Highlight colour adapts automatically to the active MUI theme mode.
@@ -56,7 +56,7 @@ import {RichText} from '@eluvia/habarico';
 ## Parser API
 
 ```typescript
-import {parseRichText, hasRichText} from '@eluvia/habarico';
+import {parseRichText, hasRichText} from 'habarico';
 
 parseRichText('[icon:Home] Hello [bold]world[/bold]');
 // → [{type:'icon',name:'Home'}, {type:'text',value:' Hello '}, {type:'bold',value:'world'}]

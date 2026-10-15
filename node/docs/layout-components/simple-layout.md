@@ -11,7 +11,7 @@ confirmation, a maintenance notice.
 ## Example
 
 ```tsx
-import {SimpleLayout} from '@eluvia/habarico';
+import {SimpleLayout} from 'habarico';
 
 <SimpleLayout logo={{Component: Logo}} compact>
   <NotFoundMessage />

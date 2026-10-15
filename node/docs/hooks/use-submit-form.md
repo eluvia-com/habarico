@@ -11,7 +11,7 @@ messages look like the rest of the admin and its field errors land on the right 
 ## Signature
 
 ```typescript
-import {useSubmitForm} from '@eluvia/habarico';
+import {useSubmitForm} from 'habarico';
 
 const {handleSubmit, isLoading} = useSubmitForm(
   onSubmit,

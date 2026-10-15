@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- **BREAKING:** the package is renamed from `@eluvia/habarico` to `habarico` and published to
+  npmjs.com, betas under the `beta` dist-tag. Replace the dependency with `habarico` and every
+  `from '@eluvia/habarico'` import with `from 'habarico'`; no `.npmrc` entry or `GITLAB_TOKEN` is
+  needed to install it.
+
 ## [7.1.0] — 2026-10-12
 
 ### Added

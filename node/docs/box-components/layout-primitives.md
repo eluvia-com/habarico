@@ -15,7 +15,7 @@ They are compound components: a `Panel` owns the surface and the collapse state,
 The card every section, nested list and dashboard widget is built from.
 
 ```tsx
-import {Panel, PanelHeader, PanelContent} from '@eluvia/habarico';
+import {Panel, PanelHeader, PanelContent} from 'habarico';
 
 <Panel collapsible defaultCollapsed={false}>
   <PanelHeader label="Pricing" icon="Wallet" actions={<SaveButton />} />
@@ -79,7 +79,7 @@ the rounded edges instead of floating inside a gutter.
 Lays panels out on a 12-column MUI grid, computing the spans when you do not.
 
 ```tsx
-import {PanelGrid, Panel, PanelHeader, PanelContent} from '@eluvia/habarico';
+import {PanelGrid, Panel, PanelHeader, PanelContent} from 'habarico';
 
 <PanelGrid maxColumns={{xs: 1, sm: 1, md: 2, lg: 3, xl: 4}}>
   <Panel><PanelHeader label="Product" /><PanelContent>…</PanelContent></Panel>

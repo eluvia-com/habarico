@@ -6,7 +6,7 @@ This repository is a monorepo containing the three library implementations:
 
 | Directory | Package | Licence | Description |
 |-----------|---------|---------|-------------|
-| [`node/`](node/README.md) | `@eluvia/habarico` (npm) | MIT | React/TypeScript UI library built on React Admin and MUI v7 |
+| [`node/`](node/README.md) | `habarico` (npm) | MIT | React/TypeScript UI library built on React Admin and MUI v7 |
 | [`python/`](python/README.md) | `habarico` (PyPI) | MIT | Django REST Framework admin library |
 | [`ruby/`](ruby/README.md) | `habarico` (gem) | MIT | Rails engine |
 
@@ -41,7 +41,7 @@ The documentation website **[docs.habarico.com](https://docs.habarico.com)** is 
 truth — installation, configuration and usage for all three libraries, the REST reference generated
 from `contract/openapi.yaml`, and the shared concepts:
 
-- [JavaScript — `@eluvia/habarico`](https://docs.habarico.com/node/intro)
+- [JavaScript — `habarico`](https://docs.habarico.com/node/intro)
 - [Python — `habarico`](https://docs.habarico.com/python/intro)
 - [Ruby — `habarico`](https://docs.habarico.com/ruby/intro)
 - [API reference](https://docs.habarico.com/api) — the contract between backend and frontend
@@ -67,7 +67,7 @@ Each package is **versioned independently** — a change in one package does not
 
 | Package | File |
 |---------|------|
-| `@eluvia/habarico` (JS) | `node/package.json` → `"version"` |
+| `habarico` (JS) | `node/package.json` → `"version"` |
 | `habarico` (Python) | `python/pyproject.toml` → `version` |
 | `habarico` (Ruby) | `ruby/version.json` → `"version"` |
 
@@ -82,7 +82,7 @@ Changes are tracked at two levels:
 | Changelog | Covers |
 |-----------|--------|
 | [`CHANGELOG.md`](CHANGELOG.md) | OpenAPI schema changes (versioned `[schema X.Y.Z]`) and project-level documentation (date-only entries) |
-| `node/CHANGELOG.md` | `@eluvia/habarico` releases |
+| `node/CHANGELOG.md` | `habarico` releases |
 | `python/CHANGELOG.md` | `habarico` (Python) releases |
 | `ruby/CHANGELOG.md` | `habarico` (Ruby gem) releases |
 

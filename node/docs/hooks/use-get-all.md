@@ -12,7 +12,7 @@ until the resource is exhausted.
 ## Signature
 
 ```typescript
-import {useGetAll} from '@eluvia/habarico';
+import {useGetAll} from 'habarico';
 
 const {data, total, isLoading, isError, refetch} = useGetAll<Product>('eshop/product', {
   sort: {field: 'name', order: 'ASC'},

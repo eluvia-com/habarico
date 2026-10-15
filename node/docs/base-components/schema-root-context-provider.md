@@ -49,7 +49,7 @@ import {
   useResourceElements,
   useSchemaRootContext,
   withRaDefaults,
-} from '@eluvia/habarico';
+} from 'habarico';
 
 const queryClient = new QueryClient();
 const serviceConfigMap = {

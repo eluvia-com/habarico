@@ -25,7 +25,7 @@ type SchemaProvider = {
 ```
 
 ```typescript
-import {getSchemaProvider} from '@eluvia/habarico';
+import {getSchemaProvider} from 'habarico';
 
 const schemaProvider = getSchemaProvider(() => ({
   Authorization: `Bearer ${getAccessToken()}`,

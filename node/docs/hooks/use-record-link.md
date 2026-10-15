@@ -13,7 +13,7 @@ inside a dialog, and docking into the side panel.
 ## Signature
 
 ```typescript
-import { useRecordLink } from "@eluvia/habarico";
+import { useRecordLink } from "habarico";
 
 const { handleClick, dialog } = useRecordLink({
   viewType: "show",
@@ -71,7 +71,7 @@ supplies the schema's own view router as `renderContent`, plus `changeView` and 
 from the surrounding view.
 
 ```typescript
-import { useRecordLink, useSchemaRecordLinkOptions } from "@eluvia/habarico";
+import { useRecordLink, useSchemaRecordLinkOptions } from "habarico";
 
 const { handleClick, dialog } = useRecordLink({
   ...useSchemaRecordLinkOptions({ link: "show" }),

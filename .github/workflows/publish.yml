@@ -3,10 +3,10 @@
 # file also keeps the trusted-publisher configuration in all three registries identical - they
 # match on the workflow filename. See .github/RELEASE-DESIGN.md.
 #
-# Every job publishes to the GitLab registries, which stay where they are - internal projects
-# resolve Habarico from them during deployment, and betas are what they deploy. The public
-# registries are wired into the same jobs but switched off until the private dependencies
-# (eluvia-base, eluvia-base-django) are public; see "Going public" in .github/README.md.
+# The python and ruby jobs publish to the GitLab registries, which internal projects resolve
+# Habarico from during deployment; their public registries stay off until PUBLISH_PUBLIC is set.
+# node publishes betas and stable releases to npmjs.com only, once PUBLISH_NPM is set. See "Going
+# public" in .github/README.md.
 name: Publish
 
 on:
@@ -34,12 +34,10 @@ permissions:
   contents: read
 
 env:
-  # All three libraries publish into the one GitLab project registry - the monorepo project
+  # python publishes into the one GitLab project registry - the monorepo project
   # (eluvia/habarico/libraries/habarico, id 784). That is what the GitLab pipeline did too: its
   # templates addressed the registry through $CI_PROJECT_ID, which in a monorepo is the same
-  # project for every library. Consumers read npm through the group-level virtual registry
-  # (groups/50, "eluvia"), which serves anything published here - so node/.npmrc needs no change.
-  GITLAB_NPM_REGISTRY: "https://gitlab.eluvia.dev/api/v4/projects/784/packages/npm/"
+  # project for every library.
   GITLAB_PYPI_REGISTRY: "https://gitlab.eluvia.dev/api/v4/projects/784/packages/pypi"
   # Ruby has never used the GitLab registry - the gem goes to geminabox, and habarico.gemspec
   # pins exactly this host in allowed_push_host.
@@ -135,16 +133,14 @@ jobs:
     permissions:
       contents: read
       # Required for OIDC trusted publishing on npmjs.com; also what makes npm attach provenance.
-      # Unused while the public half is switched off.
       id-token: write
     defaults:
       run:
         working-directory: node
     env:
       VERSION: ${{ fromJSON(needs.detect.outputs.versions).node }}
-      # node/.npmrc points the @eluvia scope at the GitLab group registry and interpolates this
-      # variable, so `npm ci` needs it defined. The same token authenticates the publish below.
-      GITLAB_TOKEN: ${{ secrets.GITLAB_PACKAGES_TOKEN }}
+      # node/.npmrc interpolates this variable, so `npm ci` needs it defined.
+      GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
     steps:
       - uses: actions/checkout@v5
 
@@ -167,17 +163,12 @@ jobs:
 
       - run: npm run build
 
-      # Betas and stable releases both land here - this is the registry the Eluvia projects
-      # resolve @eluvia/habarico from, and betas are what they deploy.
-      - name: Publish to the GitLab registry
-        env:
-          GITLAB_PACKAGES_TOKEN: ${{ secrets.GITLAB_PACKAGES_TOKEN }}
+      # Betas and stable releases both go to npmjs.com, betas under the `beta` dist-tag. Only once
+      # PUBLISH_NPM is set: an upload to npmjs.com cannot be undone.
+      - name: Publish to npmjs.com
+        if: ${{ vars.PUBLISH_NPM == 'true' }}
         run: |
           set -eu
-          # npm resolves auth per registry URL by longest prefix, so appending this leaves the
-          # @eluvia scope mapping already committed in .npmrc alone - `npm ci` above needed it.
-          printf '\n%s:_authToken=%s\n' "${GITLAB_NPM_REGISTRY#https:}" "$GITLAB_PACKAGES_TOKEN" >> .npmrc
-
           # npm refuses to publish a pre-release without an explicit --tag: it would otherwise move
           # the "latest" dist-tag onto a beta.
           case "$VERSION" in
@@ -185,35 +176,18 @@ jobs:
             *) DIST_TAG=latest ;;
           esac
 
-          # npm's pickRegistry() honours `@scope:registry` over both --registry and
-          # publishConfig.registry, so the scoped flag is the only thing that redirects this
-          # publish - and it applies to this command alone, leaving .npmrc untouched.
-          if OUTPUT=$(npm publish --@eluvia:registry="$GITLAB_NPM_REGISTRY" --tag "$DIST_TAG" 2>&1); then
+          if OUTPUT=$(npm publish --registry=https://registry.npmjs.org/ --provenance --access public --tag "$DIST_TAG" 2>&1); then
             echo "$OUTPUT"
           else
             echo "$OUTPUT"
-            # Re-publishing a version is not an error: a retried job lands here, and so does a beta
-            # whose counter went backwards after a force push to the trunk.
+            # Re-publishing a version is not an error: a retried job lands here.
             case "$(echo "$OUTPUT" | tr '[:upper:]' '[:lower:]')" in
-              *epublishconflict*|*"cannot publish over"*|*"already exist"*|*"already been taken"*)
-                echo "this version is already in the GitLab registry - continuing" ;;
+              *epublishconflict*|*"cannot publish over"*)
+                echo "this version is already on npmjs.com - continuing" ;;
               *)
                 exit 1 ;;
             esac
           fi
-
-      # Stable only, and only once PUBLISH_PUBLIC is set: an upload to npmjs.com cannot be undone.
-      # node is the one library that could go public today - every dependency and peer dependency
-      # it declares is already on npmjs.
-      - name: Publish to npmjs.com
-        if: ${{ vars.PUBLISH_PUBLIC == 'true' && !contains(env.VERSION, '-') }}
-        run: |
-          set -eu
-          npm publish \
-            --@eluvia:registry=https://registry.npmjs.org/ \
-            --provenance \
-            --access public \
-            --tag latest
 
   python:
     name: python

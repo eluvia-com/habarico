@@ -58,7 +58,7 @@ reaches its endpoints exactly the way the built-in methods reach theirs — same
 ## Example
 
 ```tsx
-import {getDataProviderFactory, SchemaAdmin} from '@eluvia/habarico';
+import {getDataProviderFactory, SchemaAdmin} from 'habarico';
 
 <SchemaAdmin
   dataProviderFactory={getDataProviderFactory}
@@ -105,7 +105,7 @@ List and detail requests carry a field selection, so a list fetches the columns 
 than whole records. Pass it through `meta.fields`:
 
 ```tsx
-import {FIELD_DEFAULT} from '@eluvia/habarico';
+import {FIELD_DEFAULT} from 'habarico';
 
 const {data} = useGetList('eshop/product', {
   meta: {fields: {id: FIELD_DEFAULT, name: FIELD_DEFAULT, category: {meta: {repr: FIELD_DEFAULT}}}},

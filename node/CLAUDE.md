@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`@eluvia/habarico` is a React UI library for building schema-driven admin dashboards. It auto-generates admin interfaces based on backend-provided schemas, built on top of React Admin (~5.14), MUI v7 and MUI X Data Grid v9 (React 18/19). Published as an NPM package to the Eluvia GitLab registry.
+`habarico` is a React UI library for building schema-driven admin dashboards. It auto-generates admin interfaces based on backend-provided schemas, built on top of React Admin (~5.14), MUI v7 and MUI X Data Grid v9 (React 18/19). Published to npmjs.com as the unscoped `habarico`; never move it under `@eluvia`, which maps to the private registry `habarico-enterprise` is installed from.
 
 ## Commands
 

@@ -16,7 +16,7 @@ The generated views do this for you. In a view of your own, pass the trail to
 [view shells](../layout-components/index.md#view-shells), which forward it:
 
 ```tsx
-import {ViewContent, PortalBreadcrumbItem} from '@eluvia/habarico';
+import {ViewContent, PortalBreadcrumbItem} from 'habarico';
 
 const SalesReportView = () => (
   <ViewContent

@@ -1,5 +1,5 @@
 {
-  "name": "@eluvia/habarico",
+  "name": "habarico",
   "version": "7.2.0-beta.3",
   "description": "With this library you can connect to BE schemas and automatically or semi-automatically generate an admin dashboard.",
   "type": "module",
@@ -26,7 +26,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@gitlab.eluvia.dev:libraries/javascript/habarico.git"
+    "url": "git+https://github.com/eluvia-com/habarico.git",
+    "directory": "node"
   },
   "author": "Eluvia",
   "license": "MIT",

@@ -12,7 +12,7 @@ list, [SchemaList](../view-components/schema-list-component.md) does this and re
 ## Example
 
 ```tsx
-import {ListShell, SearchInput, ChoicesInput} from '@eluvia/habarico';
+import {ListShell, SearchInput, ChoicesInput} from 'habarico';
 
 const SORT = {field: 'placed_at', order: 'DESC'} as const;
 

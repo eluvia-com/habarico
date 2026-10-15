@@ -20,7 +20,7 @@
 
 ## What this layer is
 
-The **schema layer is the schema-driven core of `@eluvia/habarico`.** Its input is a Habarico
+The **schema layer is the schema-driven core of `habarico`.** Its input is a Habarico
 _schema_ (a top-level `ServiceSchema` plus a per-resource `ResourceSchema`) and its output is a
 whole admin UI — menu, list / show / edit / create / action views, fields, inputs, boxes and
 actions — **generated**, not hand-written.

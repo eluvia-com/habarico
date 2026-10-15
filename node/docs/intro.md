@@ -3,7 +3,7 @@ title: Habarico for React
 sidebar_position: 1
 ---
 
-`@eluvia/habarico` is the React frontend of Habarico. It fetches the JSON schemas a Habarico
+`habarico` is the React frontend of Habarico. It fetches the JSON schemas a Habarico
 backend exposes and renders a complete admin interface from them at runtime — lists, detail pages,
 forms, actions and menus — without hand-written screens per resource. It is built on
 [React Admin](https://marmelab.com/react-admin/) 5.14, MUI v7 and MUI X v9, and runs on React 18

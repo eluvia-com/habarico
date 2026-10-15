@@ -11,7 +11,7 @@ into the result.
 ## Example
 
 ```tsx
-import {SchemaAdmin, ResetPasswordPage} from '@eluvia/habarico';
+import {SchemaAdmin, ResetPasswordPage} from 'habarico';
 
 <SchemaAdmin
   resetPasswordPage={<ResetPasswordPage onSuccess={() => redirect('/login')} />}

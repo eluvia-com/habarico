@@ -1,4 +1,4 @@
-# @eluvia/habarico
+# habarico
 
 Habarico is a schema-driven admin library for React. It fetches the JSON schemas a Habarico backend
 exposes and renders a complete admin interface from them at runtime — lists, detail pages, forms,
@@ -10,12 +10,8 @@ or 19.
 
 ## Installation
 
-The package lives in the Eluvia GitLab NPM registry, so `GITLAB_TOKEN` has to be set in your
-environment before installing:
-
 ```bash
-export GITLAB_TOKEN=your_personal_token
-pnpm add @eluvia/habarico
+pnpm add habarico
 ```
 
 Peer dependencies (React, React Admin, MUI) are not bundled — install them in the project at the
@@ -37,7 +33,7 @@ pydev link-library <path-to-libs>/habarico-base/node <path-to-libs>/habarico-ent
 `<path-to-libs>` is the directory holding your library checkouts — the same placeholder the Ruby services use in their compose files. Relative or absolute, both work.
 
 Link only what you develop; either package works on its own. When you link both, the order matters —
-`habarico-enterprise` resolves its own `@eluvia/habarico` through the project, so the free library
+`habarico-enterprise` resolves its own `habarico` through the project, so the free library
 has to be linked first or both end up with their own copy of React.
 
 ```bash
@@ -50,7 +46,7 @@ See [Installation](https://docs.habarico.com/node/installation) for the details.
 ## Quick start
 
 ```tsx
-import {SchemaAdmin, SchemaResource} from '@eluvia/habarico';
+import {SchemaAdmin, SchemaResource} from 'habarico';
 
 const SERVICES = {
   eshop: {
@@ -101,7 +97,4 @@ The architecture of the library itself — its four layers and what belongs wher
 
 ## License
 
-This software is proprietary and confidential.
-It is licensed for internal use only within Eluvia s.r.o.
-Unauthorized copying, distribution, or use outside the company
-is strictly prohibited.
+[MIT](LICENSE)

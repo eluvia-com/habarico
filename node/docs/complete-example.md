@@ -10,7 +10,7 @@ Python and Ruby [complete examples](/python/complete-example), against the same 
 
 ```tsx
 // App.tsx
-import {SchemaAdmin, SchemaResource} from '@eluvia/habarico';
+import {SchemaAdmin, SchemaResource} from 'habarico';
 
 import {ColorField} from './fields/ColorField';
 import {ColorInput} from './inputs/ColorInput';
@@ -121,7 +121,7 @@ export const ColorInput = ({source, label, helperText, validate}: ColorInputProp
 ```tsx
 // buttons/PublishButton.tsx
 import {Button, useNotify} from 'react-admin';
-import {useCallAction} from '@eluvia/habarico';
+import {useCallAction} from 'habarico';
 
 export const PublishButton = ({recordId, label, ...rest}) => {
   const notify = useNotify();
@@ -153,7 +153,7 @@ Custom screens live next to the generated ones and use the same shell:
 
 ```tsx
 // pages/SalesReport.tsx
-import {DashboardContent, ViewContent, PortalBreadcrumbItem, useGetAll} from '@eluvia/habarico';
+import {DashboardContent, ViewContent, PortalBreadcrumbItem, useGetAll} from 'habarico';
 
 export const SalesReport = () => {
   const {data: orders = [], isLoading} = useGetAll('eshop/order', {

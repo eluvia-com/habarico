@@ -11,7 +11,7 @@ same tab state — including nested tabs, which are addressed by a dotted path (
 ## Signature
 
 ```typescript
-import {useTabsLocation} from '@eluvia/habarico';
+import {useTabsLocation} from 'habarico';
 
 const {tabs, setTab, removeTab, getActiveTab} = useTabsLocation();
 ```

@@ -12,7 +12,7 @@ There is exactly one of these per application. Everything below it —
 ## Example
 
 ```tsx
-import {SchemaAdmin, SchemaResource} from '@eluvia/habarico';
+import {SchemaAdmin, SchemaResource} from 'habarico';
 
 const SERVICES = {
   eshop: {
@@ -114,7 +114,7 @@ Each entry is one backend. The key is the service name used in resource names
 (`eshop/product`); `label` promotes the service to a top-level menu group.
 
 ```typescript
-import {ServiceConfigMap} from '@eluvia/habarico';
+import {ServiceConfigMap} from 'habarico';
 
 const SERVICES: Readonly<ServiceConfigMap> = {
   eshop: {

@@ -13,7 +13,7 @@ screen comes up blank.
 ## Example
 
 ```tsx
-import {ShowShell, PropertyShowLayout, TextField, NumberField} from '@eluvia/habarico';
+import {ShowShell, PropertyShowLayout, TextField, NumberField} from 'habarico';
 
 <ShowShell
   title="Order detail"
