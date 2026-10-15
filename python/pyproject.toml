@@ -1,6 +1,6 @@
 [project]
 name = "habarico"
-version = "7.2.0-beta.2"
+version = "7.2.0-beta.3"
 description = "Habarico REST admin Django library"
 keywords = [
     "package",

@@ -1,6 +1,6 @@
 {
   "name": "@eluvia/habarico",
-  "version": "7.2.0-beta.2",
+  "version": "7.2.0-beta.3",
   "description": "With this library you can connect to BE schemas and automatically or semi-automatically generate an admin dashboard.",
   "type": "module",
   "main": "lib/index.cjs",
