@@ -9,7 +9,7 @@ Releases are cut through the CI `next` flow: merges to `next` publish beta
 pre-releases, and the `## [0.56.0] — 2026-08-03` section below is stamped with the
 version and date when a release is finalized.
 
-## [Unreleased]
+## [7.2.0] — 2026-10-19
 
 ### Changed
 
