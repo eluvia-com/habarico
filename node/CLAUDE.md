@@ -34,7 +34,9 @@ npm run build-storybook
 
 On merge requests CI runs `code-quality` (lint + typecheck), the component's `unit-tests`
 job (`npm test`), and `storybook-tests` (`npm run test:storybook` + `npm run build-storybook`,
-defined in `.gitlab-ci.yml`). Story tests need a browser and more memory than the default
+defined in `.gitlab-ci.yml`). GitHub Actions runs the same checks on every pull request as
+`node-code-quality`, `node-unit-tests` and `node-storybook-tests` (`.github/workflows/node.yml`).
+Story tests need a browser and more memory than the default
 runner pool allows, which is why they have their own job.
 
 The Storybook is published to its bucket from a `node@X.Y.0` tag (`publish-storybook`, root and

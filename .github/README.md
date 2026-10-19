@@ -12,14 +12,15 @@ documentation jobs listed under "What deliberately does not run".
 
 ## What runs
 
-One workflow per versioned unit of the monorepo, each scoped by `paths` so a change in `ruby/`
-does not start the Node pipeline:
+One workflow per versioned unit of the monorepo. Each runs on every pull request, whatever it
+changes, so its jobs can be required checks in the `next` ruleset; job names carry the library
+because the ruleset matches checks by name alone:
 
 | Workflow | Jobs | Mirrors |
 |----------|------|---------|
-| `node.yml` | `code-quality` (lint + typecheck), `unit-tests`, `storybook-tests` | `ci-toolbox/node-library@2` + the hand-written `storybook-tests` job in `node/.gitlab-ci.yml` |
-| `python.yml` | `code-quality` (flake8 + black), `unit-tests` (pipenv + pytest) | `ci-toolbox/python-library@2` |
-| `ruby.yml` | `code-quality` (rubocop), `unit-tests` (`rake test`) | `ci-toolbox/ruby-library@2` |
+| `node.yml` | `node-code-quality` (lint + typecheck), `node-unit-tests`, `node-storybook-tests` | `ci-toolbox/node-library@2` + the hand-written `storybook-tests` job in `node/.gitlab-ci.yml` |
+| `python.yml` | `python-code-quality` (flake8 + black), `python-unit-tests` (pipenv + pytest) | `ci-toolbox/python-library@2` |
+| `ruby.yml` | `ruby-code-quality` (rubocop), `ruby-unit-tests` (`rake test`) | `ci-toolbox/ruby-library@2` |
 | `beta-bump.yml` | `beta-bump` | the beta half of `release-next-auto` |
 | `major.yml` | `major` (the major button) | `release-next-major` |
 | `publish.yml` | `detect`, then one job per changed library | `publish` |
