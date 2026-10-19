@@ -32,17 +32,12 @@ npm run storybook      # Dev server on port 6006
 npm run build-storybook
 ```
 
-On merge requests CI runs `code-quality` (lint + typecheck), the component's `unit-tests`
-job (`npm test`), and `storybook-tests` (`npm run test:storybook` + `npm run build-storybook`,
-defined in `.gitlab-ci.yml`). GitHub Actions runs the same checks on every pull request as
-`node-code-quality`, `node-unit-tests` and `node-storybook-tests` (`.github/workflows/node.yml`).
-Story tests need a browser and more memory than the default
-runner pool allows, which is why they have their own job.
+On every pull request GitHub Actions runs `node-code-quality` (lint + typecheck),
+`node-unit-tests` (`npm test`) and `node-storybook-tests` (`npm run test:storybook` +
+`npm run build-storybook`), defined in `.github/workflows/node.yml`.
 
-The Storybook is published to its bucket from a `node@X.Y.0` tag (`publish-storybook`, root and
-`<series>/`) and by hand from a `next` pipeline (`publish-storybook-next`, under `next/`, which only
-storybook.habarico.test.eluvia.dev serves). Never prune the root of that bucket: the series and
-`next/` live beside it.
+The Storybook bucket holds the root build, one `<series>/` copy per minor series and `next/`.
+Never prune its root: the series and `next/` live beside it.
 
 ## Test Setup
 
@@ -74,8 +69,8 @@ screenshot to `src/**/__screenshots__/`, which CI uploads as a job artifact.
 
 Commands: `npm run storybook` (dev server, port 6006) / `npm run build-storybook`.
 
-Published at [storybook.habarico.com](https://storybook.habarico.com) by the `publish-storybook`
-job on every final `node@X.Y.0` tag, at the root and under `/<minor series>/`. The manager UI
+Served at [storybook.habarico.com](https://storybook.habarico.com), at the root and under
+`/<minor series>/`; no workflow publishes it. The manager UI
 carries the habarico.com branding (`.storybook/manager.ts`, `manager-head.html`,
 `.storybook/brand/`); the canvas itself is left alone. **Everything the manager loads must be
 addressed relatively** — the same build is served from the bucket root and from a series prefix,
@@ -408,12 +403,12 @@ here:
 ```bash
 cd <hab-docs>
 HABARICO_PATH=<this monorepo> npm start   # dev server on :3000, or
-HABARICO_PATH=<this monorepo> npm run build   # what CI runs - fails on a broken link
+HABARICO_PATH=<this monorepo> npm run build   # fails on a broken link
 ```
 
 `onBrokenLinks: throw` covers the whole site, free and premium pages together, so a renamed heading
-or a moved page fails here rather than at publish time. The `docs-check` job runs the same build on
-every merge request that touches `*/docs/**`.
+or a moved page fails here rather than at publish time. The `docs-check` workflow runs the same build on
+every pull request that touches `*/docs/**`.
 
 ## Local Development
 

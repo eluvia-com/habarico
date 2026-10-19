@@ -1,0 +1,57 @@
+# Reads the changelogs the way docs.habarico.com generates its changelog pages from them, so a
+# release heading without a date or an `[Unreleased]` below a release fails here rather than at
+# publish time. hab-docs' own generator in check mode: seconds, and nothing but Node.
+name: Changelog check
+
+on:
+  pull_request:
+    paths:
+      - "CHANGELOG.md"
+      - "*/CHANGELOG.md"
+      - ".github/workflows/changelog-check.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: changelog-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changelog-check:
+    name: changelog-check
+    runs-on: ubuntu-latest
+    # A pull request from a fork gets no secrets, so it could not clone hab-docs.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Clone hab-docs
+        env:
+          GITLAB_DOCS_TOKEN_USER: ${{ vars.GITLAB_DOCS_TOKEN_USER }}
+          GITLAB_DOCS_TOKEN: ${{ secrets.GITLAB_DOCS_TOKEN }}
+          REF: ${{ github.head_ref || github.ref_name }}
+        run: |
+          set -eu
+          if [ -z "${GITLAB_DOCS_TOKEN_USER:-}" ] || [ -z "${GITLAB_DOCS_TOKEN:-}" ]; then
+            echo "ERROR: the GITLAB_DOCS_TOKEN_USER variable or the GITLAB_DOCS_TOKEN secret is not set - see .github/OPERATIONS.md"
+            exit 1
+          fi
+          # The token in the URL is a secret, which the runner masks in git's error output.
+          url="https://${GITLAB_DOCS_TOKEN_USER}:${GITLAB_DOCS_TOKEN}@gitlab.eluvia.dev/eluvia/habarico/hab-docs.git"
+          ref="$REF"
+          # Exit code 2 is "no such branch"; anything else is a failure to reach or read the repository.
+          status=0
+          git ls-remote --exit-code --heads "$url" "$ref" >/dev/null || status=$?
+          [ "$status" -eq 0 ] || [ "$status" -eq 2 ] || exit "$status"
+          [ "$status" -eq 0 ] || ref="master"
+          echo "checking with hab-docs at $ref"
+          git clone --quiet --depth 1 --branch "$ref" "$url" "$RUNNER_TEMP/hab-docs"
+
+      - run: node "$RUNNER_TEMP/hab-docs/scripts/gen-changelogs.mjs" --check --root "$GITHUB_WORKSPACE"

@@ -7,7 +7,7 @@ Decided so far: betas are published on every merge to `next`. They are **never t
 beta lands in one `Bump version to ...` commit on `next` — `beta-bump.yml` writes it, via `pydev`,
 and that push is what triggers `publish.yml`.
 
-## What exists today (GitLab)
+## The GitLab jobs it ports
 
 | Job | Trigger | Does |
 |-----|---------|------|
@@ -44,9 +44,7 @@ until `beta-bump.yml` has actually committed something.
 
 ## What identifies a library
 
-Today: a top-level directory with its own `.gitlab-ci.yml`. That marker dies with GitLab.
-
-Replacement: a top-level directory with its own **pydev config** (`.pydev/base.yml` carrying
+A top-level directory with its own **pydev config** (`.pydev/base.yml` carrying
 `version.files`, or the older `.pydev/base.conf` with `VERSION_FILES`). That is the more honest
 marker anyway — it is what makes a directory a versioned unit, and the repository already treats
 it that way.
@@ -79,7 +77,7 @@ The finalize's write is unchanged by any of this:
 So `master` always holds exactly the released state, and `next` runs one bump commit ahead of it —
 either the finalize's advance, or the open end of a beta cycle.
 
-`SHARED_MINOR_MAJOR` (default `true`, as in `.gitlab-ci.yml`) keeps major.minor identical across
+`SHARED_MINOR_MAJOR` (default `true`) keeps major.minor identical across
 the libraries: when no cycle is open, `beta-bump.yml` bumps every library rather than only the
 changed ones, and `release.yml` releases every library once any has moved. The shared check in
 `.github/scripts/libraries.sh` fails all three release workflows on drifted version files.
@@ -204,7 +202,7 @@ trusted-publisher push does not.
   itself is an ordinary reviewed PR, same as before — `beta-bump.yml` only starts a new cycle when
   none is open, so it never overwrites a hand-edited target.
 - **`RELEASE_LEVEL` is `minor`** — the value the finalize advances the version file by after a
-  release, matching today's `AUTO_BETA_RELEASE`.
+  release.
 - **Ruby publishes to rubygems.org** publicly, not to geminabox.
 - **Private dependencies are out of scope.** `eluvia-base` and friends are being made public
   separately; the source configuration is switched over later and is not this design's problem.

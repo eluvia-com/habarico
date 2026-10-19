@@ -99,12 +99,14 @@ jobs:
             # counter alone. No marker means the last bump was a finalize (or there was none):
             # start a fresh cycle at RELEASE_LEVEL.
             CURRENT=$(cd "$lib" && pydev version print)
+            # bump-to-next prints "Bumped version to X", not the bare version - read it back instead.
             case "$CURRENT" in
               *-alpha.*|*-beta.*|*-rc.*)
-                VERSION=$(cd "$lib" && pydev version bump-to-next -p beta) ;;
+                (cd "$lib" && pydev version bump-to-next -p beta) ;;
               *)
-                VERSION=$(cd "$lib" && pydev version bump-to-next -r "$RELEASE_LEVEL" -p beta) ;;
+                (cd "$lib" && pydev version bump-to-next -r "$RELEASE_LEVEL" -p beta) ;;
             esac
+            VERSION=$(cd "$lib" && pydev version print)
 
             echo "  $lib: ${CURRENT} -> ${VERSION}"
             git add "$lib"

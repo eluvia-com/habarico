@@ -1,5 +1,4 @@
-# Mirror of node/.gitlab-ci.yml (ci-toolbox/node-library@2 + the repo's storybook-tests job).
-# This workflow only runs checks; publishing lives in publish.yml - see .github/README.md.
+# Checks of the Node library (ci-toolbox/node-library@2 plus storybook-tests). This workflow only runs checks; publishing lives in publish.yml - see .github/README.md.
 name: Node
 
 # Every pull request runs every library's checks, so each job reports a status the `next` ruleset
@@ -8,8 +7,7 @@ on:
   pull_request:
   workflow_dispatch:
 
-# GitLab runs these jobs on merge requests only (`$CI_MERGE_REQUEST_ID` in every rule), so a new
-# push to the same branch supersedes the previous run rather than queueing behind it.
+# A new push to the same branch supersedes the previous run rather than queueing behind it.
 concurrency:
   group: node-${{ github.ref }}
   cancel-in-progress: true

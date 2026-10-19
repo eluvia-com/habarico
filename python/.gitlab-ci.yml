@@ -1,7 +1,0 @@
-include:
- - component: $CI_SERVER_FQDN/gitlab-ci/ci-toolbox/python-library@2
-
-
-workflow:
-  name: "Habarico - Python Library"
-
