@@ -25,6 +25,8 @@ jobs:
   major:
     name: major
     runs-on: ubuntu-latest
+    # A hung run would block every beta bump queued behind it in `beta-bump-next` for six hours.
+    timeout-minutes: 15
     if: (vars.SHARED_MINOR_MAJOR || 'true') == 'true'
     # Carries pydev; see publish.yml for the note on the image.
     container: ${{ vars.TOOLBOX_IMAGE || 'ghcr.io/druids/developers-chamber:1' }}

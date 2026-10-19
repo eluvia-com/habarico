@@ -13,6 +13,9 @@ concurrency:
   group: python-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 defaults:
   run:
     working-directory: python

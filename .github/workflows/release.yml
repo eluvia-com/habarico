@@ -26,6 +26,8 @@ jobs:
   release:
     name: release
     runs-on: ubuntu-latest
+    # A hung run would hold the `release` concurrency group for the default six hours.
+    timeout-minutes: 15
     # Carries pydev, which reads each library's version file through its .pydev/base.yml.
     # Public upstream image; set TOOLBOX_IMAGE only to override it. See publish.yml for the note
     # on it being Alpine-based.

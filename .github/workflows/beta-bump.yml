@@ -24,6 +24,8 @@ jobs:
   beta-bump:
     name: beta-bump
     runs-on: ubuntu-latest
+    # A hung run would block every bump queued behind it in `beta-bump-next` for six hours.
+    timeout-minutes: 15
     # Carries pydev; see publish.yml/release.yml for the note on the image.
     container: ${{ vars.TOOLBOX_IMAGE || 'ghcr.io/druids/developers-chamber:1' }}
     # Skip its own commits (infinite loop) and release.yml's finalize/advance commits - neither
