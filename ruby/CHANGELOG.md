@@ -11,6 +11,12 @@ version and date when a release is finalized.
 
 ## [Unreleased]
 
+### Changed
+
+- The gem is published to rubygems.org, betas as pre-release versions, and no longer to
+  geminabox.eluvia.dev; `eluvia-base` is resolved from rubygems.org too. Drop the geminabox
+  `source` block for `habarico` from your `Gemfile`.
+
 ### Fixed
 
 - `meta.schema` of a record (list, detail, create and update responses) is emitted in snake_case

@@ -46,9 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # bundler-cache handles `bundle install` plus caching of the resolved gems. eluvia-base
-      # comes from geminabox.eluvia.dev, which serves reads without credentials, so no secret
-      # is needed here.
+      # bundler-cache handles `bundle install` plus caching of the resolved gems.
       - uses: ruby/setup-ruby@v1
         with:
           working-directory: ruby

@@ -26,7 +26,3 @@ group :development, :test do
   # app would.
   gem "active_storage_validations"
 end
-
-source 'https://geminabox.eluvia.dev' do
-  gem 'eluvia-base'
-end

@@ -15,12 +15,7 @@ publish job runs in it, which is what keeps the registry write credentials out o
 pull-request workflows. Leave it without protection rules unless you want a manual approval
 gate on publishing.
 
-**2. The GitLab deploy token.** On the monorepo project (`eluvia/habarico/libraries/habarico`,
-id **784**): Settings → Repository → Deploy tokens → Add token, with scopes
-`read_package_registry` and `write_package_registry`, for the PyPI registry. Copy both halves — the username (`gitlab+deploy-token-<n>` unless you name it) and the
-token itself, which is shown once.
-
-**3. The GitHub App for `release.yml`, `beta-bump.yml` and `major.yml`.** `GITHUB_TOKEN` cannot be used: pushes
+**2. The GitHub App for `release.yml`, `beta-bump.yml` and `major.yml`.** `GITHUB_TOKEN` cannot be used: pushes
 made with it deliberately do not start further workflow runs, so neither the release tags nor a
 bump commit would ever trigger `publish.yml`. Create an App with the `contents: write` repository
 permission, install it on this repository, and give it a **ruleset bypass on both `next` and
@@ -28,17 +23,17 @@ permission, install it on this repository, and give it a **ruleset bypass on bot
 goes in the `RELEASE_APP_ID` variable, its private key in the `RELEASE_APP_PRIVATE_KEY` secret,
 shared by both workflows.
 
-**4. The variables and secrets.** See the two tables in `README.md`. Two of them need no action:
-`TOOLBOX_IMAGE` defaults to the public upstream `pydev` image
-(`ghcr.io/druids/developers-chamber:1`), and `PUBLISH_PUBLIC` stays unset — PyPI and rubygems.org
-are blocked on work that has not happened yet, listed under "Going public". `PUBLISH_NPM` turns on
-the node publish to npmjs.com once the first version is out (see `RELEASE-DESIGN.md`).
+**3. The variables and secrets.** See the two tables in `README.md`. `TOOLBOX_IMAGE` needs no
+action: it defaults to the public upstream `pydev` image (`ghcr.io/druids/developers-chamber:1`).
+python and ruby publish to PyPI and rubygems.org through a trusted publisher, configured there once
+before the first publish (see `RELEASE-DESIGN.md`). `PUBLISH_NPM` turns on the node publish to
+npmjs.com once the first version is out.
 
-**5. Branch rules.** `next` is the trunk and the default branch; `master` records the last
+**4. Branch rules.** `next` is the trunk and the default branch; `master` records the last
 released state and is only ever fast-forwarded. Neither should accept a force push — the beta
 counter is derived from commit history, so rewriting the trunk makes it go backwards.
 
-**6. Verify without publishing.** Run `release.yml` from the Actions tab with `dry_run` checked.
+**5. Verify without publishing.** Run `release.yml` from the Actions tab with `dry_run` checked.
 It performs every read and every check and prints what it would release; it still commits and
 tags locally, on the throwaway runner, but pushes nothing. If it prints a sensible list of
 libraries and versions, the App token and the checkout are working.
@@ -66,8 +61,8 @@ because the path filters cover each library's own workflow file and nothing else
 
 Every merge to `next` triggers `beta-bump.yml`, which bumps and commits a new beta for each library
 whose directory has moved since its last bump commit; that commit's own push is what makes
-`publish.yml` actually publish it. node betas go to npmjs.com; python and ruby betas go to the
-internal registries the Eluvia projects already point at.
+`publish.yml` actually publish it. node betas go to npmjs.com, python betas to PyPI and ruby betas
+to rubygems.org.
 
 | | Install a beta | Note |
 |---|---|---|
@@ -134,7 +129,7 @@ version files on one major.minor, and all or none on a beta, in a pull request t
 no longer be fast-forwarded. The finalize refuses before writing anything, so nothing is half
 done. Fix it once by merging `origin/master` into `next` and pushing, then run the release again.
 
-**`this version is already in the GitLab registry - continuing`** — not an error. A retried job
+**`this version is already on rubygems.org - continuing`** (or PyPI's `Skipping … already exists`) — not an error. A retried job
 lands here, and so does a beta whose counter collided. The publish carries on to the next step.
 
 **A library was not published.** `beta-bump.yml` compares the directory against the library's
@@ -158,10 +153,6 @@ push — see the Race note in `RELEASE-DESIGN.md`. Nothing is lost: the failed r
 answer is still true, so the next merge to `next` bumps and publishes it — or re-run the rejected
 `beta-bump.yml` job from the Actions tab, which re-evaluates the same commit and pushes cleanly
 once the trunk has stopped moving.
-
-**`gem push` refused: not allowed by the gemspec** — `habarico.gemspec` pins
-`allowed_push_host` to geminabox. That is correct for the current setup and is one of the things
-that has to change before `PUBLISH_PUBLIC` can be turned on.
 
 **A publish job did not start at all.** `publish.yml`'s `detect` job only runs on `next` when the
 commit message both starts with `Bump version to` *and* names a prerelease

@@ -413,9 +413,7 @@ HABARICO_PATH=<this monorepo> npm run build   # what CI runs - fails on a broken
 or a moved page fails here rather than at publish time. The `docs-check` job runs the same build on
 every merge request that touches `*/docs/**`.
 
-## Registry & Local Development
-
-Packages under `@eluvia` scope are fetched from the GitLab NPM registry. The `.npmrc` uses `GITLAB_TOKEN` env var for auth.
+## Local Development
 
 For local development against a checkout of this library, use `pnpm link` — the steps are in the
 [installation page](https://docs.habarico.com/node/installation) of the documentation site.

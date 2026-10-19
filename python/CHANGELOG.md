@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- The package is published to PyPI, betas as pre-release versions, and no longer to the GitLab
+  PyPI registry; `eluvia-base` and `eluvia-base-django` are resolved from PyPI too. Drop the
+  GitLab index for `habarico` from your `Pipfile`.
+
 ## [6.0.0] — 2026-10-10
 
 ### Added

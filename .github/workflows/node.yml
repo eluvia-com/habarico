@@ -22,10 +22,6 @@ defaults:
 env:
   # NODE_VERSION from ci-toolbox/node-library@2. The repo pins nothing of its own.
   NODE_VERSION: "24"
-  # node/.npmrc points the @eluvia scope at the GitLab npm registry and interpolates this
-  # variable. npm rejects an *undefined* variable, not an empty one, so an unset secret still
-  # installs cleanly as long as no @eluvia package is actually fetched - and today none is.
-  GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
 
 jobs:
   code-quality:

@@ -192,10 +192,6 @@ Style/HashFetchChain:
 Style/SoleNestedConditional:
   Enabled: false
 
-# Internal gem — not published to rubygems.org, MFA requirement is irrelevant.
-Gemspec/RequireMFA:
-  Enabled: false
-
 # Nice to have eventually but not a quality issue right now.
 Gemspec/RequiredRubyVersion:
   Enabled: false

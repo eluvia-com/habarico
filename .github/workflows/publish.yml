@@ -3,10 +3,9 @@
 # file also keeps the trusted-publisher configuration in all three registries identical - they
 # match on the workflow filename. See .github/RELEASE-DESIGN.md.
 #
-# The python and ruby jobs publish to the GitLab registries, which internal projects resolve
-# Habarico from during deployment; their public registries stay off until PUBLISH_PUBLIC is set.
-# node publishes betas and stable releases to npmjs.com only, once PUBLISH_NPM is set. See "Going
-# public" in .github/README.md.
+# Betas and stable releases go to the public registries only: python to PyPI, ruby to
+# rubygems.org, node to npmjs.com once PUBLISH_NPM is set. See "Going public" in
+# .github/README.md.
 name: Publish
 
 on:
@@ -32,16 +31,6 @@ concurrency:
 
 permissions:
   contents: read
-
-env:
-  # python publishes into the one GitLab project registry - the monorepo project
-  # (eluvia/habarico/libraries/habarico, id 784). That is what the GitLab pipeline did too: its
-  # templates addressed the registry through $CI_PROJECT_ID, which in a monorepo is the same
-  # project for every library.
-  GITLAB_PYPI_REGISTRY: "https://gitlab.eluvia.dev/api/v4/projects/784/packages/pypi"
-  # Ruby has never used the GitLab registry - the gem goes to geminabox, and habarico.gemspec
-  # pins exactly this host in allowed_push_host.
-  GEMINABOX_HOST: "https://geminabox.eluvia.dev"
 
 jobs:
   detect:
@@ -139,8 +128,6 @@ jobs:
         working-directory: node
     env:
       VERSION: ${{ fromJSON(needs.detect.outputs.versions).node }}
-      # node/.npmrc interpolates this variable, so `npm ci` needs it defined.
-      GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
     steps:
       - uses: actions/checkout@v5
 
@@ -217,54 +204,19 @@ jobs:
           sed -i "0,/^version = .*/s//version = \"$VERSION\"/" pyproject.toml
           grep -m1 '^version = ' pyproject.toml
 
-      - run: pip install build twine
+      - run: pip install build
 
-      # One build, both registries: the same dist/* is uploaded everywhere, so nobody ends up with
-      # a wheel that differs from the one that was tested.
+      # Note the version PyPI ends up carrying is PEP 440 normalised - "5.11.0-beta.13" is stored
+      # and installed as "5.11.0b13".
       - run: python -m build
 
-      # Note the version the registry ends up carrying is PEP 440 normalised - "5.11.0-beta.13"
-      # is stored and installed as "5.11.0b13".
-      - name: Publish to the GitLab registry
-        env:
-          TWINE_REPOSITORY_URL: ${{ env.GITLAB_PYPI_REGISTRY }}
-          TWINE_USERNAME: ${{ vars.GITLAB_PACKAGES_USER }}
-          TWINE_PASSWORD: ${{ secrets.GITLAB_PACKAGES_TOKEN }}
-          TWINE_NON_INTERACTIVE: "1"
-        run: |
-          set -eu
-          # The upload has to be paired with && / || right here: under `set -e` a bare
-          # `OUTPUT=$(...); STATUS=$?` aborts the script before STATUS is even assigned.
-          OUTPUT=$(python -m twine upload --skip-existing dist/* 2>&1) && STATUS=0 || STATUS=$?
-
-          # GitLab does not implement the file-listing API --skip-existing needs, and twine refuses
-          # to attempt the upload at all rather than falling back. Retry without it; a genuine
-          # duplicate is still caught by the registry's own error below.
-          if [ "$STATUS" -ne 0 ] && echo "$OUTPUT" | grep -qi "unsupportedconfiguration"; then
-            echo "--skip-existing unsupported here, retrying without it"
-            OUTPUT=$(python -m twine upload dist/* 2>&1) && STATUS=0 || STATUS=$?
-          fi
-
-          echo "$OUTPUT"
-          if [ "$STATUS" -ne 0 ]; then
-            case "$(echo "$OUTPUT" | tr '[:upper:]' '[:lower:]')" in
-              *"already exist"*|*"already been taken"*)
-                echo "this version is already in the GitLab registry - continuing" ;;
-              *)
-                exit 1 ;;
-            esac
-          fi
-
-      # Stable only, and only once PUBLISH_PUBLIC is set. Note this is still blocked on
-      # eluvia-base / eluvia-base-django reaching public PyPI: until they do, a public habarico
-      # release declares dependencies nobody outside the company can resolve.
-      #
+      # Betas and stable releases both; `pip install` skips a pre-release unless asked with --pre.
       # Authenticates over OIDC against the trusted publisher configured on PyPI. No token exists.
       - name: Publish to PyPI
-        if: ${{ vars.PUBLISH_PUBLIC == 'true' && !contains(env.VERSION, '-') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: python/dist
+          skip-existing: true
 
   ruby:
     name: ruby
@@ -305,45 +257,22 @@ jobs:
           echo "GEM_FILE=$GEM_FILE" >> "$GITHUB_ENV"
           echo "built $GEM_FILE"
 
-      # Betas and stable releases both land here - geminabox is where the Rails projects resolve
-      # the gem from, and habarico.gemspec's allowed_push_host names exactly this host.
-      - name: Publish to geminabox
-        env:
-          GEMINABOX_USER: ${{ vars.GEMINABOX_USER }}
-          GEMINABOX_PASSWORD: ${{ secrets.GEMINABOX_PASSWORD }}
+      # Exchanges the OIDC token for a short-lived RubyGems API key. No long-lived key exists.
+      - name: Configure RubyGems credentials
+        uses: rubygems/configure-rubygems-credentials@v1
+
+      # Betas and stable releases both. `gem install` skips a pre-release unless asked with --pre.
+      - name: Publish to rubygems.org
         run: |
           set -eu
-          # geminabox authenticates with HTTP basic auth carried in the URL. `gem push` compares
-          # only scheme and host against allowed_push_host, so the userinfo does not trip it.
-          # Built with parameter expansion rather than sed: a password containing "|", "&" or "/"
-          # would otherwise corrupt the substitution. It still has to be URL-safe - a literal "@"
-          # or ":" in it would break the URL itself, so percent-encode those when setting it.
-          PUSH_HOST="https://${GEMINABOX_USER}:${GEMINABOX_PASSWORD}@${GEMINABOX_HOST#https://}"
-
-          # Never echo PUSH_HOST - it carries the password.
-          echo "publishing $GEM_FILE to $GEMINABOX_HOST"
-
-          if OUTPUT=$(gem push "$GEM_FILE" --host "$PUSH_HOST" 2>&1); then
+          if OUTPUT=$(gem push "$GEM_FILE" 2>&1); then
             echo "$OUTPUT"
           else
             echo "$OUTPUT"
             case "$(echo "$OUTPUT" | tr '[:upper:]' '[:lower:]')" in
-              *"repushing of gem versions is not allowed"*|*"already exist"*|*"already been taken"*|*"updating an existing gem is not permitted"*)
-                echo "this version is already in geminabox - continuing" ;;
+              *"repushing of gem versions is not allowed"*)
+                echo "this version is already on rubygems.org - continuing" ;;
               *)
                 exit 1 ;;
             esac
           fi
-
-      # Stable only, and only once PUBLISH_PUBLIC is set. Two things still block this:
-      # habarico.gemspec pins allowed_push_host to geminabox, which makes a push to rubygems.org
-      # refuse outright, and the gem depends on eluvia-base, which is not on rubygems.org.
-      #
-      # Exchanges the OIDC token for a short-lived RubyGems API key. No long-lived key exists.
-      - name: Configure RubyGems credentials
-        if: ${{ vars.PUBLISH_PUBLIC == 'true' && !contains(env.VERSION, '-') }}
-        uses: rubygems/configure-rubygems-credentials@v1
-
-      - name: Publish to rubygems.org
-        if: ${{ vars.PUBLISH_PUBLIC == 'true' && !contains(env.VERSION, '-') }}
-        run: gem push "$GEM_FILE"

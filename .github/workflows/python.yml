@@ -44,12 +44,6 @@ jobs:
   unit-tests:
     name: unit-tests
     runs-on: ubuntu-latest
-    env:
-      # python/Pipfile resolves eluvia-base and eluvia-base-django from the GitLab PyPI registry
-      # and interpolates these two into the source URLs. Both are required until the Pipfile is
-      # switched over to the public indexes.
-      PYPI_REGISTRY_USERNAME: ${{ secrets.PYPI_REGISTRY_USERNAME }}
-      PYPI_REGISTRY_TOKEN: ${{ secrets.PYPI_REGISTRY_TOKEN }}
     steps:
       - uses: actions/checkout@v5
 

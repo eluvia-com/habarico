@@ -1,9 +1,8 @@
 # GitHub Actions
 
-These workflows run the checks and own publishing. The GitLab pipeline is on its way out; what
-stays behind on GitLab is the **package registries**, because the Eluvia projects resolve Habarico
-from them during deployment — and, until they are ported, the three documentation jobs listed
-under "What deliberately does not run".
+These workflows run the checks and own publishing, to the public registries only. The GitLab
+pipeline is on its way out; what stays behind on GitLab, until they are ported, is the three
+documentation jobs listed under "What deliberately does not run".
 
 | Document | What it is for |
 |----------|----------------|
@@ -60,13 +59,10 @@ version file in a reviewed pull request, per library. See `.github/RELEASE-DESIG
 | Library | Registry | Addressed as |
 |---------|----------|--------------|
 | node | npmjs.com | `habarico`, betas under the `beta` dist-tag; on only with `PUBLISH_NPM` |
-| python | GitLab project registry, project **784** | `…/projects/784/packages/pypi` — note PEP 440 normalises `5.11.0-beta.13` to `5.11.0b13` |
-| ruby | geminabox | `https://geminabox.eluvia.dev`, the host `habarico.gemspec` pins in `allowed_push_host` |
+| python | PyPI | `habarico` — note PEP 440 normalises `5.11.0-beta.13` to `5.11.0b13` |
+| ruby | rubygems.org | `habarico`, betas as pre-release versions (`7.2.0.pre.beta.4`) |
 
-python and ruby publish betas and stable releases to the internal registries the consuming
-projects are configured for — `python/Pipfile` and `ruby/Gemfile` need no change. node has no
-internal registry: the package is unscoped, so no `.npmrc` scope mapping can route it to GitLab,
-and the `@eluvia` scope stays with `habarico-enterprise`.
+No library has an internal registry; the `@eluvia` npm scope stays with `habarico-enterprise`.
 
 Betas use npm's `beta` dist-tag, so `npm install habarico` still resolves the last stable
 version; `pip` and `gem` skip pre-releases unless asked with `--pre`.
@@ -75,15 +71,6 @@ version; `pip` and `gem` skip pre-releases unless asked with `--pre`.
 
 `PUBLISH_NPM` set to `true` turns on the node publish to npmjs.com, for betas and stable
 versions alike. A version on npmjs.com cannot be unpublished after 72 hours.
-
-The python and ruby jobs carry a second, gated step for PyPI and rubygems.org. Setting
-`PUBLISH_PUBLIC` to `true` turns them on for **stable versions only**. It is off because:
-
-- `python/pyproject.toml` depends on `eluvia-base` and `eluvia-base-django`, and
-  `ruby/habarico.gemspec` on `eluvia-base`. None of them are on public PyPI or rubygems.org, so a
-  public release would declare dependencies nobody outside the company can resolve.
-- `habarico.gemspec` pins `allowed_push_host` to geminabox, which makes `gem push` to
-  rubygems.org refuse outright.
 
 `node/package.json` `repository` must stay `github.com/eluvia-com/habarico`: npm provenance
 rejects a publish whose repository does not match the GitHub repository it runs in.
@@ -100,10 +87,7 @@ rejects a publish whose repository does not match the GitHub repository it runs 
 | `NEXT_BRANCH` | `next` | Trunk. Hard-coded in `publish.yml`'s and `beta-bump.yml`'s triggers as well, because `on:` has no contexts — all three must agree. |
 | `STABLE_BRANCH` | `master` | Fast-forwarded by the finalize. |
 | `RELEASE_APP_ID` | — (required) | GitHub App used by `release.yml`'s finalize and by the bump commits of `beta-bump.yml` and `major.yml` to write to the repository. |
-| `GITLAB_PACKAGES_USER` | — (required) | Username half of the GitLab deploy token, used by twine. A deploy token's default username is `gitlab+deploy-token-<n>`. |
-| `GEMINABOX_USER` | — (required) | Basic-auth user for geminabox. |
 | `PUBLISH_NPM` | unset | `true` publishes node betas and stable versions to npmjs.com. See "Going public". |
-| `PUBLISH_PUBLIC` | unset | `true` also publishes stable python and ruby versions to PyPI / rubygems.org. See "Going public". |
 
 **Environment `release`** wraps every publish job, which is what keeps the write-scoped
 credentials out of the pull-request workflows, and gives somewhere to hang protection rules later.
@@ -113,14 +97,8 @@ credentials out of the pull-request workflows, and gives somewhere to hang prote
 | Secret | Used by | Needed because |
 |--------|---------|----------------|
 | `RELEASE_APP_PRIVATE_KEY` | `release.yml`, `beta-bump.yml`, `major.yml` | Private key of the GitHub App above. `GITHUB_TOKEN` will not do: pushes made with it deliberately do not start further workflow runs, so neither the release tags nor a bump commit would ever trigger `publish.yml`. The App needs `contents: write` and a ruleset bypass on both branches. |
-| `GITLAB_PACKAGES_TOKEN` | `publish.yml` | A GitLab **deploy token on project 784 with `write_package_registry`** (a personal or group access token with `api` also works), for the PyPI registry. |
-| `GEMINABOX_PASSWORD` | `publish.yml` | Basic-auth password for geminabox; `gem push` carries it in the host URL. |
-| `GITLAB_TOKEN` | `node.yml`, `publish.yml` | `node/.npmrc` points the `@eluvia` scope at the GitLab npm registry and interpolates the variable. Deliberately a **separate, read-only** token from `GITLAB_PACKAGES_TOKEN` — the pull-request workflows never need write access to a registry. npm accepts an empty value, so an unset secret still installs cleanly today: no `@eluvia` package is currently a dependency. |
-| `PYPI_REGISTRY_USERNAME`, `PYPI_REGISTRY_TOKEN` | `python.yml` | `python/Pipfile` resolves `eluvia-base` and `eluvia-base-django` from the GitLab PyPI registry. Both are required until the Pipfile points at the public indexes. |
 
-Because these secrets are involved, `pull_request` runs from forks will not have them. Once the
-libraries resolve their dependencies from public sources, the Python job loses its secret
-requirement and fork PRs work unchanged.
+The pull-request workflows read no secrets, so `pull_request` runs from forks work unchanged.
 
 ## What deliberately does not run
 
