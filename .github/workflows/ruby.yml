@@ -1,6 +1,5 @@
-# Mirror of ruby/.gitlab-ci.yml (ci-toolbox/ruby-library@2, with UNIT_TESTS enabled in the root
-# .gitlab-ci.yml). This workflow only runs checks; publishing lives in publish.yml -
-# see .github/README.md.
+# Checks of the Ruby library (ci-toolbox/ruby-library@2 with its unit tests on). This workflow
+# only runs checks; publishing lives in publish.yml - see .github/README.md.
 name: Ruby
 
 # Every pull request runs every library's checks, so each job reports a status the `next` ruleset
@@ -28,8 +27,7 @@ jobs:
       - uses: actions/checkout@v5
 
       # `ruby-version` is left unset on purpose: the action then reads .ruby-version from
-      # `working-directory`, i.e. ruby/.ruby-version (3.2.10) - the same pin that overrides the
-      # template's ruby:3.0 default in ruby/.gitlab-ci.yml.
+      # `working-directory`, i.e. ruby/.ruby-version (3.2.10).
       - uses: ruby/setup-ruby@v1
         with:
           working-directory: ruby

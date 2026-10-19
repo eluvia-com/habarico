@@ -223,12 +223,12 @@ here:
 ```bash
 cd <hab-docs>
 HABARICO_PATH=<this monorepo> npm start   # dev server on :3000, or
-HABARICO_PATH=<this monorepo> npm run build   # what CI runs - fails on a broken link
+HABARICO_PATH=<this monorepo> npm run build   # fails on a broken link
 ```
 
 `onBrokenLinks: throw` covers the whole site, free and premium pages together, so a renamed heading
-or a moved page fails here rather than at publish time. The `docs-check` job runs the same build on
-every merge request that touches `*/docs/**`.
+or a moved page fails here rather than at publish time. The `docs-check` workflow runs the same build on
+every pull request that touches `*/docs/**`.
 
 ## Changelog
 

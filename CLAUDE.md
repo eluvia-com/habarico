@@ -35,7 +35,7 @@ The `contract/openapi.yaml` is the authoritative contract between backend and fr
 The paid extensions — dashboard and widgets, AI assistant, global search, change history,
 aggregations, chunked uploads and CZ localflavor — live in a **separate repository** and are
 released as `habarico-enterprise` (npm, PyPI, gem). Nothing here builds, tests or publishes them:
-they have no directory, no child CI file and no trigger in the root one. The free packages never
+they have no directory and no workflow here. The free packages never
 import them either — a paid package registers itself through runtime extension points resolved by
 name (`habarico.settings.EXTENSION_PACKAGE`, `Config.search_highlighter_class`, `Types.register`).
 
@@ -61,11 +61,11 @@ A premium page shows a screenshot of its story and no link.
 | Python     | PyPI (betas as pre-release versions) | `habarico` |
 | Ruby       | rubygems.org (betas as pre-release versions) | `habarico` |
 
-Every directory with its own child CI file is a **versioned unit** of the monorepo — the three libraries. They share major.minor (`SHARED_MINOR_MAJOR`): a new cycle in `release-next-auto` moves all of them to the next minor beta, later betas only the changed ones, `release-next-major` starts a major for all, `release-next-final` releases them together and tags them `<dir>@X.Y.Z`; only patches are per library. Version files must stay on one major.minor or the release jobs fail. A new unit therefore needs its own pydev config with the version files set (`.pydev/base.yml` with a `version.files` key, or the older `.pydev/base.conf` with `VERSION_FILES`), or the repo-level release jobs fail on it.
+Every top-level directory with its own pydev config (`.pydev/base.yml` with a `version.files` key, or the older `.pydev/base.conf` with `VERSION_FILES`) is a **versioned unit** of the monorepo — the three libraries. They share major.minor (`SHARED_MINOR_MAJOR`): a new cycle in `beta-bump.yml` moves all of them to the next minor beta, later betas only the changed ones, `major.yml` starts a major for all, `release.yml` releases them together and tags them `<dir>@X.Y.Z`; only patches are per library. Version files must stay on one major.minor or the release workflows fail.
 
-`<pkg>/docs/` is part of its package for that purpose too: a change to a page alone bumps the package's beta, starts its child pipeline and ships with its next release. That is the point — the page is published from the release tag it belongs to.
+`<pkg>/docs/` is part of its package for that purpose too: a change to a page alone bumps the package's beta and ships with its next release. That is the point — the page is published from the release tag it belongs to.
 
-The same units are built, released and published from GitHub Actions — see `.github/README.md`
+The units are built, released and published from GitHub Actions — see `.github/README.md`
 for what runs and `.github/OPERATIONS.md` for how to release and how to consume a beta.
 
 ## Branch Naming
@@ -127,7 +127,7 @@ A test-only change gets no changelog entry (see below).
 
 **An image belongs beside its page** (`<pkg>/docs/<section>/img/`), referenced relatively. It is then content-hashed into the build and travels with the page into the release tag.
 
-**Verify with `npm run build` in a checkout of `hab-docs`** (`HABARICO_PATH=/path/to/this npm run build`) — `onBrokenLinks: throw` is what catches a renamed heading or a moved page. The `docs-check` job does the same on every merge request that touches `*/docs/**`, building against the branch of the same name in `habarico-enterprise` where there is one. To see the pages of a merge request rendered, run its manual `docs-preview` job (Maintainers of `hab-docs` only): it publishes them to docs.habarico.test.eluvia.dev.
+**Verify with `npm run build` in a checkout of `hab-docs`** (`HABARICO_PATH=/path/to/this npm run build`) — `onBrokenLinks: throw` is what catches a renamed heading or a moved page. The `docs-check` workflow does the same on every pull request that touches `*/docs/**`, building against the branch of the same name in `hab-docs` and `habarico-enterprise` where there is one.
 
 **Exception — internal developer documentation stays in the repository:** `node/src/*/README.md` (the four architectural layers) and the `CLAUDE.md` files. These describe how the library is built, not how it is used, and have no place on the public site.
 

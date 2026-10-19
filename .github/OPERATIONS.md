@@ -29,14 +29,18 @@ python and ruby publish to PyPI and rubygems.org through a trusted publisher, co
 before the first publish (see `RELEASE-DESIGN.md`). `PUBLISH_NPM` turns on the node publish to
 npmjs.com once the first version is out.
 
-**4. Branch rules.** `next` is the trunk and the default branch; `master` records the last
+**4. The deploy token for the documentation checks.** In GitLab, on the `eluvia/habarico` group:
+Settings → Repository → Deploy tokens → add one with the `read_repository` scope only. Its username
+goes in the `GITLAB_DOCS_TOKEN_USER` variable, the token in the `GITLAB_DOCS_TOKEN` secret.
+
+**5. Branch rules.** `next` is the trunk and the default branch; `master` records the last
 released state and is only ever fast-forwarded. Neither should accept a force push — the beta
 counter is derived from commit history, so rewriting the trunk makes it go backwards. On `next`,
 also require a pull request and require these status checks to pass: `node-code-quality`,
 `node-unit-tests`, `node-storybook-tests`, `python-code-quality`, `python-unit-tests`,
 `ruby-code-quality`, `ruby-unit-tests`. A renamed or added job has to be changed here too.
 
-**5. Verify without publishing.** Run `release.yml` from the Actions tab with `dry_run` checked.
+**6. Verify without publishing.** Run `release.yml` from the Actions tab with `dry_run` checked.
 It performs every read and every check and prints what it would release; it still commits and
 tags locally, on the throwaway runner, but pushes nothing. If it prints a sensible list of
 libraries and versions, the App token and the checkout are working.

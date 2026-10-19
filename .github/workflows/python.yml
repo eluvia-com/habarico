@@ -1,4 +1,4 @@
-# Mirror of python/.gitlab-ci.yml (ci-toolbox/python-library@2).
+# Checks of the Python library (ci-toolbox/python-library@2).
 # This workflow only runs checks; publishing lives in publish.yml - see .github/README.md.
 name: Python
 

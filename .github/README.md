@@ -1,8 +1,7 @@
 # GitHub Actions
 
-These workflows run the checks and own publishing, to the public registries only. The GitLab
-pipeline is on its way out; what stays behind on GitLab, until they are ported, is the three
-documentation jobs listed under "What deliberately does not run".
+These workflows are the repository's only CI: they run the checks and own publishing, to the
+public registries only.
 
 | Document | What it is for |
 |----------|----------------|
@@ -16,15 +15,20 @@ One workflow per versioned unit of the monorepo. Each runs on every pull request
 changes, so its jobs can be required checks in the `next` ruleset; job names carry the library
 because the ruleset matches checks by name alone:
 
-| Workflow | Jobs | Mirrors |
-|----------|------|---------|
-| `node.yml` | `node-code-quality` (lint + typecheck), `node-unit-tests`, `node-storybook-tests` | `ci-toolbox/node-library@2` + the hand-written `storybook-tests` job in `node/.gitlab-ci.yml` |
-| `python.yml` | `python-code-quality` (flake8 + black), `python-unit-tests` (pipenv + pytest) | `ci-toolbox/python-library@2` |
-| `ruby.yml` | `ruby-code-quality` (rubocop), `ruby-unit-tests` (`rake test`) | `ci-toolbox/ruby-library@2` |
-| `beta-bump.yml` | `beta-bump` | the beta half of `release-next-auto` |
-| `major.yml` | `major` (the major button) | `release-next-major` |
-| `publish.yml` | `detect`, then one job per changed library | `publish` |
-| `release.yml` | `release` (the finalize button) | `release-next-final` |
+| Workflow | Jobs |
+|----------|------|
+| `node.yml` | `node-code-quality` (lint + typecheck), `node-unit-tests`, `node-storybook-tests` |
+| `python.yml` | `python-code-quality` (flake8 + black), `python-unit-tests` (pipenv + pytest) |
+| `ruby.yml` | `ruby-code-quality` (rubocop), `ruby-unit-tests` (`rake test`) |
+| `beta-bump.yml` | `beta-bump` |
+| `major.yml` | `major` (the major button) |
+| `publish.yml` | `detect`, then one job per changed library |
+| `release.yml` | `release` (the finalize button) |
+| `docs-check.yml` | `docs-check`: builds the documentation site on a pull request touching `*/docs/**` or the contract |
+| `changelog-check.yml` | `changelog-check`: reads the changelogs the way the site does, on a pull request touching one |
+
+Both documentation checks clone `hab-docs` from GitLab, and `docs-check` also `habarico-enterprise`,
+with a read-only deploy token; a pull request from a fork gets no secrets and skips them.
 
 ## Releasing
 
@@ -88,11 +92,12 @@ rejects a publish whose repository does not match the GitHub repository it runs 
 |----------|---------|---------|
 | `TOOLBOX_IMAGE` | `ghcr.io/druids/developers-chamber:1` | The image carrying `pydev`; `release.yml`, `beta-bump.yml` and `publish.yml`'s `detect` job all run in it. The default is the upstream public image, so this needs no setting — override it only to try a different build. |
 | `RELEASE_LEVEL` | `minor` | The level `release.yml`'s finalize advances version files by, and the level `beta-bump.yml` starts a new prerelease cycle at when none is open. **Both must read the same value** — if they disagreed, a beta could be numbered off a target that never ships. |
-| `SHARED_MINOR_MAJOR` | `true` | Keeps major.minor identical across the libraries, read by `beta-bump.yml`, `release.yml` and `major.yml`; `major.yml` does not run without it. Mirrors the variable of the same name in `.gitlab-ci.yml`. |
+| `SHARED_MINOR_MAJOR` | `true` | Keeps major.minor identical across the libraries, read by `beta-bump.yml`, `release.yml` and `major.yml`; `major.yml` does not run without it. |
 | `NEXT_BRANCH` | `next` | Trunk. Hard-coded in `publish.yml`'s and `beta-bump.yml`'s triggers as well, because `on:` has no contexts — all three must agree. |
 | `STABLE_BRANCH` | `master` | Fast-forwarded by the finalize. |
 | `RELEASE_APP_ID` | — (required) | GitHub App used by `release.yml`'s finalize and by the bump commits of `beta-bump.yml` and `major.yml` to write to the repository. |
 | `PUBLISH_NPM` | unset | `true` publishes node betas and stable versions to npmjs.com. See "Going public". |
+| `GITLAB_DOCS_TOKEN_USER` | — (required) | Username of the GitLab deploy token `docs-check.yml` and `changelog-check.yml` clone with. |
 
 **Environment `release`** wraps every publish job, which is what keeps the write-scoped
 credentials out of the pull-request workflows, and gives somewhere to hang protection rules later.
@@ -103,7 +108,9 @@ credentials out of the pull-request workflows, and gives somewhere to hang prote
 |--------|---------|----------------|
 | `RELEASE_APP_PRIVATE_KEY` | `release.yml`, `beta-bump.yml`, `major.yml` | Private key of the GitHub App above. `GITHUB_TOKEN` will not do: pushes made with it deliberately do not start further workflow runs, so neither the release tags nor a bump commit would ever trigger `publish.yml`. The App needs `contents: write` and a ruleset bypass on both branches. |
 
-The pull-request workflows read no secrets, so `pull_request` runs from forks work unchanged.
+| `GITLAB_DOCS_TOKEN` | `docs-check.yml`, `changelog-check.yml` | The GitLab deploy token itself: `read_repository` on the `eluvia/habarico` group, which covers `hab-docs` and `habarico-enterprise`. |
+
+The library checks read no secrets, so `pull_request` runs from forks work unchanged.
 
 ## What deliberately does not run
 
@@ -111,18 +118,11 @@ The pull-request workflows read no secrets, so `pull_request` runs from forks wo
   repository (`hab-docs`), which clones the pages out of `<lib>/docs/` and publishes them. Nothing
   in this repository starts that publish on either CI — since HAB-872 it is started by a stable tag
   of `habarico-enterprise`, the release that closes every cycle.
-- **The two documentation checks** `docs-check` and `docs-changelog-check` (`.gitlab-ci.yml`),
-  which build the whole site and read the changelogs on a merge request that touches a page or a
-  `CHANGELOG.md`. A pull request here gets neither, so a broken link or a malformed changelog is
-  caught only by the GitLab merge request. Nor does it get the manual `docs-preview`, which
-  publishes the pages of a merge request to the documentation test host.
-- **The Storybook publish** `publish-storybook` (`node/.gitlab-ci.yml`), which puts the built
-  Storybook on storybook.habarico.com from a `node@X.Y.0` tag. It runs only in the GitLab tag
-  pipeline — the documentation pages link that site per series, so turning the GitLab pipeline off
-  would freeze it. The same holds for `publish-storybook-next`, the manual preview of `next` on the
-  Storybook test host.
+- **No documentation preview.** The pages of a pull request are not published to the test host;
+  build them locally with `hab-docs` to see them rendered.
+- **No Storybook publish.** storybook.habarico.com is not updated from a `node@X.Y.0` tag, and
+  there is no preview of `next` on the Storybook test host.
 - **Patch releases from a maintenance branch.** `release.yml` creates `release/<lib>@vX.Y`, but
-  there is no port of GitLab's `release-patch` button yet — a patch has to be tagged by hand.
-- **A GitHub Release record.** GitLab hangs one on every stable tag (`CREATE_GITLAB_RELEASE`);
-  `RELEASE-DESIGN.md` plans the same here, but `publish.yml` does not create one yet.
-- **The AI review jobs** (`ci-toolbox/ai.yml`) — off in this repo on GitLab too.
+  there is no patch button — a patch has to be versioned, committed and tagged by hand.
+- **A GitHub Release record.** `RELEASE-DESIGN.md` plans one on every stable tag, but
+  `publish.yml` does not create one yet.
