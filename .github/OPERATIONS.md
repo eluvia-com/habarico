@@ -26,8 +26,9 @@ shared by both workflows.
 **3. The variables and secrets.** See the two tables in `README.md`. `TOOLBOX_IMAGE` needs no
 action: it defaults to the public upstream `pydev` image (`ghcr.io/druids/developers-chamber:1`).
 python and ruby publish to PyPI and rubygems.org through a trusted publisher, configured there once
-before the first publish (see `RELEASE-DESIGN.md`). `PUBLISH_NPM` turns on the node publish to
-npmjs.com once the first version is out.
+before the first publish (see `RELEASE-DESIGN.md`). node needs its first version on npmjs.com
+published by hand with a token before its trusted publisher can be configured; until then the
+node publish job fails.
 
 **4. The deploy token for the documentation checks.** In GitLab, on the `eluvia/habarico` group:
 Settings → Repository → Deploy tokens → add one with the `read_repository` scope only. Its username
@@ -96,10 +97,12 @@ holds only released code afterwards, which is what makes fast-forwarding `master
 1. Make sure each library's `## [Unreleased]` changelog section says what you want the release
    notes to say. The finalize rewrites that heading in place; it does not write content.
 2. Check the version files name the versions you intend to release. On `next` a version file
-   names the version being *worked towards*, not the last one released — so `node/package.json`
-   saying `6.9.0` means the next release is `6.9.0`. With `SHARED_MINOR_MAJOR` all of them must
+   names the beta being worked on — `node/package.json` saying `6.9.0-beta.3` means the next
+   release is `6.9.0`. A file still on its last release (no merge since) is released at
+   `RELEASE_LEVEL` above it. With `SHARED_MINOR_MAJOR` all of them must
    be on one major.minor; a major is started with `major.yml` (see below). Without it, changing a
-   version is an ordinary reviewed pull request, per library.
+   version is an ordinary reviewed pull request, per library: set the file to `X.Y.Z-beta.0`,
+   because `beta-bump.yml` refuses a bare version that was never released.
 3. Run `release.yml` with **`dry_run` checked** and read the output.
 4. Run it again without `dry_run`.
 
@@ -110,7 +113,9 @@ What it does, in this order — the order is load-bearing, see `RELEASE-DESIGN.m
 3. Pushes `next`, fast-forwards `master`, then pushes the tags. **Tags last**, because tags start
    the publishes — if anything above fails, nothing has reached a registry.
 4. Creates `release/<lib>@vX.Y` maintenance branches, never touching one that already exists.
-5. Advances the version files to the next cycle in a second commit, pushed to `next` alone.
+
+The version files stay on the released version; the next merge to `next` opens the next cycle
+at `RELEASE_LEVEL` (`7.2.0` → `7.3.0-beta.1`).
 
 Afterwards, check that `publish.yml` ran for each tag and that the versions appear in the
 registries. There is no patch-release button yet — a patch off a maintenance branch has to be
@@ -169,8 +174,8 @@ once the trunk has stopped moving.
 **A publish job did not start at all.** `publish.yml`'s `detect` job only runs on `next` when the
 commit message both starts with `Bump version to` *and* names a prerelease
 (`-alpha.`/`-beta.`/`-rc.`) — an ordinary merge fails this by design (nothing should publish until
-`beta-bump.yml` has actually committed a bump), and so do `release.yml`'s finalize and advance
-commits (neither names a prerelease). If `beta-bump.yml` ran and pushed a bump commit but
+`beta-bump.yml` has actually committed a bump), and so does `release.yml`'s finalize
+commit (it names no prerelease). If `beta-bump.yml` ran and pushed a bump commit but
 `publish.yml` still didn't fire, check that commit's message matches the pattern above and that
 `beta-bump.yml`'s push actually used the GitHub App token — a push made with `GITHUB_TOKEN` would
 not have triggered `publish.yml` at all.

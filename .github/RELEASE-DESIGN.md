@@ -22,7 +22,7 @@ and that push is what triggers `publish.yml`.
 | `beta-bump.yml` | push to `next` | Finds libraries whose directory moved since their last bump commit, bumps each to the next beta via `pydev` (continuing an open prerelease cycle, or starting one), one `Bump version to …` commit, no tag, pushes `next`. Publishes nothing — its own push is what starts `publish.yml`. |
 | `publish.yml` | push to `next`, tag `<lib>@X.Y.Z`, and `workflow_dispatch` | The **only** workflow that publishes. On `next` it reads the version straight off the bump commit that triggered its run (nothing derived — see "Version derivation" below); on a tag it publishes the stable artifact and creates a GitHub Release from the changelog section; a manual run publishes one library again at the version its file carries on the chosen ref. Writes nothing to git. |
 | `major.yml` | `workflow_dispatch` | The major button, only with `SHARED_MINOR_MAJOR`. Moves every library onto the first beta of the next major, one `Bump version to …` commit, pushes `next`; that push starts `publish.yml`. |
-| `release.yml` | `workflow_dispatch` | The finalize button. Stamps the changelog, one commit, one tag per library, pushes `next`, fast-forwards `master`, creates maintenance branches, then advances the version files to the next target. Publishes nothing — the tags it pushes are what start `publish.yml`. |
+| `release.yml` | `workflow_dispatch` | The finalize button. Stamps the changelog, one commit, one tag per library, pushes `next`, fast-forwards `master`, creates maintenance branches. Publishes nothing — the tags it pushes are what start `publish.yml`. |
 
 **One publishing workflow, not several, and no reusable `workflow_call` split.** Every registry
 matches a trusted publisher on the *workflow filename*, and RubyGems needs extra `Workflow
@@ -37,8 +37,8 @@ trusted publisher configuration and which gives somewhere to hang protection rul
 `beta-bump.yml` and `release.yml` both push `Bump version to ...` commits to `next`, and only the
 former should ever publish a beta. `publish.yml`'s `detect` job guards against both at once by
 requiring the commit message to *also* name a prerelease (`-alpha.`/`-beta.`/`-rc.`) — a stable
-release's changelog-stamp commit and its version-file advance commit never do, so both are
-correctly ignored without a separate check. An ordinary merge to `next` fails the same guard
+release's changelog-stamp commit never does, so it is correctly ignored without a separate
+check. An ordinary merge to `next` fails the same guard
 (its message never starts with `Bump version to` at all) and is ignored too — nothing publishes
 until `beta-bump.yml` has actually committed something.
 
@@ -57,25 +57,25 @@ it that way.
 current = pydev version print                 # whatever the file says right now
 if current has a -alpha./-beta./-rc. suffix:   # a cycle is already open
     version = pydev version bump-to-next -p beta
-else:                                           # last bump was a finalize, or none ever ran
+else:                                           # the file names the last release
     version = pydev version bump-to-next -r $RELEASE_LEVEL -p beta
 ```
 
 `pydev` writes the result back to the file itself — there is no separate counter to compute or
-target to derive. `RELEASE_LEVEL` (default `minor`) is only consulted when starting a *new* cycle,
-matching what the finalize below advances by, so a beta is never numbered off a target that never
-ships.
+target to derive. `RELEASE_LEVEL` (default `minor`) is only consulted when starting a *new* cycle.
 
-The finalize's write is unchanged by any of this:
+The finalize strips the suffix (`6.9.0-beta.3` → `6.9.0`), stamps the changelog, commits, tags
+`<lib>@6.9.0` on that commit, pushes `next`, fast-forwards `master` and pushes the tag. It writes
+nothing after that: the file stays on `6.9.0`, which is exactly what `beta-bump.yml` reads as "no
+cycle open, start one" — `6.10.0-beta.1` on the next merge.
 
-1. Stamp the changelog, commit, tag `<lib>@6.9.0` on that commit, push `next`, fast-forward
-   `master`, push the tag.
-2. A second commit advances the file to the next target (`RELEASE_LEVEL`, default `minor`), pushed
-   to `next` alone — which is exactly the state `beta-bump.yml` reads as "no cycle open, start one"
-   the next time that library's directory moves.
+The finalize must not advance the file to the next target. `pydev` cannot put a pre-release on a
+stable version without bumping it, so `beta-bump.yml` would turn an advanced `6.10.0` into
+`6.11.0-beta.1` and skip the series. For the same reason `beta-bump.yml` refuses a bare version
+that has no tag; a hand-chosen target is written as `X.Y.Z-beta.0`.
 
-So `master` always holds exactly the released state, and `next` runs one bump commit ahead of it —
-either the finalize's advance, or the open end of a beta cycle.
+So `master` always holds exactly the released state, and `next` holds it too until the next merge
+opens a beta cycle.
 
 `SHARED_MINOR_MAJOR` (default `true`) keeps major.minor identical across
 the libraries: when no cycle is open, `beta-bump.yml` bumps every library rather than only the
@@ -126,14 +126,12 @@ Kept exactly as it is today, because every step of it is load-bearing:
 1. Refuse to run if `master` is not an ancestor of `next` — otherwise the push would be rejected
    halfway through and leave a partial release.
 2. Everything up to this point only reads. A rejected release leaves the repository untouched.
-3. Stamp the changelogs, one commit. The version files are already correct — see above.
+3. Strip the pre-release suffix and stamp the changelogs, one commit. A file still on its last
+   release (no merge since) is released at `RELEASE_LEVEL` above it.
 4. Push `next`, then fast-forward `master`, then the tags — **tags last**, because tags start the
    publishes. If anything above fails, nothing has reached a registry yet.
 5. Maintenance branches, never force-updated: an existing branch may already carry cherry-picked
    fixes.
-6. Advance the version files to the next target, in a second commit pushed to `next` alone. Last
-   because it is the least critical step, and because the fallback in the derivation above makes a
-   failure here self-correcting rather than fatal.
 
 ## Race
 
@@ -196,13 +194,12 @@ trusted-publisher push does not.
 - **Betas are never tagged, but every beta lands in one bump commit on `next`.** `beta-bump.yml`
   writes it via `pydev`; `publish.yml` reads the version back from that commit rather than
   deriving one.
-- **The version file on `next` names the target version, or the current beta working towards it.**
-  Right after a finalize's advance it's the bare target (e.g. `6.9.0`); once `beta-bump.yml` opens
-  a cycle it carries that target's prerelease (`6.9.0-beta.1`, then `.2`, …). Changing the target
-  itself is an ordinary reviewed PR, same as before — `beta-bump.yml` only starts a new cycle when
-  none is open, so it never overwrites a hand-edited target.
-- **`RELEASE_LEVEL` is `minor`** — the value the finalize advances the version file by after a
-  release.
+- **The version file on `next` names the last release, or the current beta working towards the
+  next one.** Right after a finalize it's the released version (e.g. `6.9.0`); once
+  `beta-bump.yml` opens a cycle it carries the next target's prerelease (`6.10.0-beta.1`, then
+  `.2`, …). Choosing a different target is an ordinary reviewed PR setting `X.Y.Z-beta.0` —
+  `beta-bump.yml` only advances an open cycle's counter, so it never overwrites it.
+- **`RELEASE_LEVEL` is `minor`** — the level a new beta cycle starts at after a release.
 - **Ruby publishes to rubygems.org** publicly, not to geminabox.
 - **Private dependencies are out of scope.** `eluvia-base` and friends are being made public
   separately; the source configuration is switched over later and is not this design's problem.

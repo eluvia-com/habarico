@@ -37,8 +37,9 @@ jobs:
       # where expressions do work - but the two have to agree.
       NEXT_BRANCH: ${{ vars.NEXT_BRANCH || 'next' }}
       STABLE_BRANCH: ${{ vars.STABLE_BRANCH || 'master' }}
-      # The level the version files are advanced by after a release. publish.yml reads the same
-      # value; if they disagreed, betas would be published under a version that never ships.
+      # The level a version file still on a released version is released at. beta-bump.yml starts
+      # a new cycle at the same level - if they disagreed, a beta would be numbered off a target
+      # that never ships.
       RELEASE_LEVEL: ${{ vars.RELEASE_LEVEL || 'minor' }}
       # "true" releases every library together whenever one of them moved. Same variable
       # beta-bump.yml and major.yml read.
@@ -95,18 +96,16 @@ jobs:
           : > /tmp/aligned
           CHANGED=""
           for lib in $LIBS; do
-            # `print-next -r release` is "the version this file is heading for": it strips a
-            # pre-release suffix and is a no-op on a version that has none. A suffix here is left
-            # over from the GitLab flow, where betas were committed.
-            RAW=$(cd "$lib" && pydev version print)
+            # `-r release` strips the pre-release suffix of the open cycle: 7.3.0-beta.4 -> 7.3.0.
+            LEVEL=release
             VERSION=$(cd "$lib" && pydev version print-next -r release)
-            [ "$VERSION" = "$RAW" ] || echo "  $lib: version file still carries a pre-release ($RAW), releasing $VERSION"
 
-            # The advance at the end of the previous release never ran, so the file still names an
-            # already released version. Same fallback as publish.yml - the two must agree.
+            # No beta was bumped since the last release, so the file still names the released
+            # version - release the next one at RELEASE_LEVEL, as beta-bump.yml would have.
             if git rev-parse -q --verify "refs/tags/${lib}@${VERSION}" >/dev/null; then
-              VERSION=$(cd "$lib" && pydev version print-next -r "$RELEASE_LEVEL")
-              echo "  $lib: version file still on a released version, releasing $VERSION instead"
+              LEVEL=$RELEASE_LEVEL
+              VERSION=$(cd "$lib" && pydev version print-next -r "$LEVEL")
+              echo "  $lib: version file still on the released ${lib}@$(cd "$lib" && pydev version print), releasing $VERSION"
             fi
 
             BASE=$(git tag -l "${lib}@*" --sort=-v:refname | grep -vE -- '-(alpha|beta|rc)\.' | head -1 || true)
@@ -115,7 +114,7 @@ jobs:
             # "unchanged" here only decides the changelog: no commit under <lib>/ since its last
             # tag other than version bumps.
             if [ "$SHARED_MINOR_MAJOR" = "true" ]; then
-              echo "$lib $VERSION" >> /tmp/to_release
+              echo "$lib $VERSION $LEVEL" >> /tmp/to_release
               if [ -n "$BASE" ] && [ -z "$(git log --format=%H --invert-grep --grep '^Bump version to' "$BASE..HEAD" -- "$lib/")" ]; then
                 echo "  $lib: -> $VERSION (no changes since $BASE, aligned with the other libraries)"
                 echo "$lib" >> /tmp/aligned
@@ -132,7 +131,7 @@ jobs:
             fi
 
             echo "  $lib: -> $VERSION"
-            echo "$lib $VERSION" >> /tmp/to_release
+            echo "$lib $VERSION $LEVEL" >> /tmp/to_release
           done
 
           if [ "$SHARED_MINOR_MAJOR" = "true" ] && [ -z "$CHANGED" ]; then
@@ -149,12 +148,10 @@ jobs:
           [ -s /tmp/to_release ] || exit 0
 
           SUMMARY=""
-          while read -r lib version; do
-            # Write the version even though the file usually already says it. `-r release` only
-            # strips a pre-release suffix, so this is a no-op in the normal case - but it is what
-            # guarantees the tag points at a tree whose version file matches the tag, and it carries
-            # a file still left on a beta by the GitLab flow over without a separate migration step.
-            (cd "$lib" && pydev version bump-to-next -r release)
+          while read -r lib version level; do
+            # The tag has to point at a tree whose version file names the released version.
+            (cd "$lib" && pydev version bump-to-next -r "$level")
+            [ "$(cd "$lib" && pydev version print)" = "$version" ] || { echo "ERROR: $lib version file does not say $version"; exit 1; }
             git add "$lib"
 
             if [ -f "$lib/$CHANGELOG_PATH" ]; then
@@ -178,8 +175,8 @@ jobs:
             SUMMARY="${SUMMARY}${SUMMARY:+, }${lib}@${version}"
           done < /tmp/to_release
 
-          # Keep the "Bump version to" prefix: publish.yml skips commits that start with it, so
-          # without it this commit would immediately publish a beta of the next cycle.
+          # The "Bump version to" prefix keeps beta-bump.yml from bumping on this commit, and it is
+          # the last bump commit beta-bump.yml diffs against when the next cycle starts.
           git commit -m "Bump version to ${SUMMARY}"
           echo "release commit: $(git rev-parse --short HEAD)"
 
@@ -189,7 +186,7 @@ jobs:
           [ -s /tmp/to_release ] || exit 0
 
           TAGS=""
-          while read -r lib version; do
+          while read -r lib version _; do
             git tag "${lib}@${version}"
             TAGS="$TAGS ${lib}@${version}"
           done < /tmp/to_release
@@ -217,7 +214,7 @@ jobs:
           # it by hand while something is burning. An existing branch is left strictly alone - it may
           # already carry cherry-picked fixes, and moving it would throw them away.
           NEW=""
-          while read -r lib version; do
+          while read -r lib version _; do
             BRANCH="release/${lib}@v$(echo "$version" | cut -d. -f1,2)"
             if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
               echo "  $BRANCH already exists, leaving it as it is"
@@ -235,30 +232,4 @@ jobs:
             # shellcheck disable=SC2086
             git push origin $NEW
             echo "maintenance branches:$NEW"
-          fi
-
-      - name: Advance the version files
-        run: |
-          set -eu
-          [ -s /tmp/to_release ] || exit 0
-
-          # Last, and in its own commit: the released tag has to point at a tree whose version files
-          # name the released version, not the next one. Least critical step of the release - the
-          # fallback in publish.yml makes a failure here self-correcting rather than fatal.
-          SUMMARY=""
-          while read -r lib version; do
-            # bump-to-next prints "Bumped version to X", not the bare version - read it back instead.
-            (cd "$lib" && pydev version bump-to-next -r "$RELEASE_LEVEL")
-            NEXT_VERSION=$(cd "$lib" && pydev version print)
-            git add "$lib"
-            SUMMARY="${SUMMARY}${SUMMARY:+, }${lib}@${NEXT_VERSION}"
-          done < /tmp/to_release
-
-          git commit -m "Bump version to ${SUMMARY}"
-
-          if [ "$DRY_RUN" = "true" ]; then
-            echo "dry run - would push the advance to $NEXT_BRANCH: $SUMMARY"
-          else
-            git push origin "$NEXT_BRANCH"
-            echo "next cycle:$SUMMARY"
           fi
