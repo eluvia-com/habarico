@@ -2,16 +2,18 @@
 # This workflow only runs checks; publishing lives in publish.yml - see .github/README.md.
 name: Python
 
+# Every pull request runs every library's checks, so each job reports a status the `next` ruleset
+# can require; a workflow skipped by a `paths` filter would leave that check pending forever.
 on:
   pull_request:
-    paths:
-      - "python/**"
-      - ".github/workflows/python.yml"
   workflow_dispatch:
 
 concurrency:
   group: python-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 defaults:
   run:
@@ -22,8 +24,8 @@ env:
   PYTHON_VERSION: "3.10"
 
 jobs:
-  code-quality:
-    name: code-quality
+  python-code-quality:
+    name: python-code-quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -41,8 +43,8 @@ jobs:
 
       - run: black src tests --check
 
-  unit-tests:
-    name: unit-tests
+  python-unit-tests:
+    name: python-unit-tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

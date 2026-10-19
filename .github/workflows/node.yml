@@ -2,11 +2,10 @@
 # This workflow only runs checks; publishing lives in publish.yml - see .github/README.md.
 name: Node
 
+# Every pull request runs every library's checks, so each job reports a status the `next` ruleset
+# can require; a workflow skipped by a `paths` filter would leave that check pending forever.
 on:
   pull_request:
-    paths:
-      - "node/**"
-      - ".github/workflows/node.yml"
   workflow_dispatch:
 
 # GitLab runs these jobs on merge requests only (`$CI_MERGE_REQUEST_ID` in every rule), so a new
@@ -14,6 +13,9 @@ on:
 concurrency:
   group: node-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 defaults:
   run:
@@ -24,8 +26,8 @@ env:
   NODE_VERSION: "24"
 
 jobs:
-  code-quality:
-    name: code-quality
+  node-code-quality:
+    name: node-code-quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -45,8 +47,8 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-  unit-tests:
-    name: unit-tests
+  node-unit-tests:
+    name: node-unit-tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -63,8 +65,8 @@ jobs:
       # suite). The storybook project is exercised by the job below.
       - run: npm test
 
-  storybook-tests:
-    name: storybook-tests
+  node-storybook-tests:
+    name: node-storybook-tests
     runs-on: ubuntu-latest
     # A wedged Chromium produces no output at all. The suite itself takes ~2 minutes, so cap the
     # job and fail fast instead of waiting out the default 6-hour limit.

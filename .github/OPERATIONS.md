@@ -31,7 +31,10 @@ npmjs.com once the first version is out.
 
 **4. Branch rules.** `next` is the trunk and the default branch; `master` records the last
 released state and is only ever fast-forwarded. Neither should accept a force push — the beta
-counter is derived from commit history, so rewriting the trunk makes it go backwards.
+counter is derived from commit history, so rewriting the trunk makes it go backwards. On `next`,
+also require a pull request and require these status checks to pass: `node-code-quality`,
+`node-unit-tests`, `node-storybook-tests`, `python-code-quality`, `python-unit-tests`,
+`ruby-code-quality`, `ruby-unit-tests`. A renamed or added job has to be changed here too.
 
 **5. Verify without publishing.** Run `release.yml` from the Actions tab with `dry_run` checked.
 It performs every read and every check and prints what it would release; it still commits and
@@ -40,22 +43,20 @@ libraries and versions, the App token and the checkout are working.
 
 ## On a pull request
 
-Three workflows, each scoped by `paths` so a change under `ruby/` does not start the Node run.
-Every check has a local equivalent — run it before pushing rather than waiting for the runner:
+Three workflows, all of them on every pull request. Every check has a local equivalent — run it before pushing rather than waiting for the runner:
 
 | Check | Locally |
 |-------|---------|
-| node `code-quality` | `cd node && npm ci && npm run lint && npm run typecheck` |
-| node `unit-tests` | `cd node && npm test` |
-| node `storybook-tests` | `cd node && npx playwright install --with-deps chromium && npm run test:storybook && npm run build-storybook` |
-| python `code-quality` | `cd python && pip install black flake8 flake8-pyproject 'django==4.2' && flake8 && black src tests --check` |
-| python `unit-tests` | `cd python && pipenv install --dev && pipenv run pip install . && pipenv run pytest` |
-| ruby `code-quality` | `cd ruby && gem install rubocop && rubocop` |
-| ruby `unit-tests` | `cd ruby && bundle install && bundle exec rake test` |
+| `node-code-quality` | `cd node && npm ci && npm run lint && npm run typecheck` |
+| `node-unit-tests` | `cd node && npm test` |
+| `node-storybook-tests` | `cd node && npx playwright install --with-deps chromium && npm run test:storybook && npm run build-storybook` |
+| `python-code-quality` | `cd python && pip install black flake8 flake8-pyproject 'django==4.2' && flake8 && black src tests --check` |
+| `python-unit-tests` | `cd python && pipenv install --dev && pipenv run pip install . && pipenv run pytest` |
+| `ruby-code-quality` | `cd ruby && gem install rubocop && rubocop` |
+| `ruby-unit-tests` | `cd ruby && bundle install && bundle exec rake test` |
 
-A change that touches only `publish.yml`, `release.yml`, `beta-bump.yml` or `major.yml` starts **no** checks,
-because the path filters cover each library's own workflow file and nothing else. Use
-`workflow_dispatch` to exercise a library workflow after editing one of the release workflows.
+The release workflows (`publish.yml`, `release.yml`, `beta-bump.yml`, `major.yml`) do not run on a
+pull request; a change to one of them is exercised only once it is on `next`.
 
 ## Consuming a beta
 

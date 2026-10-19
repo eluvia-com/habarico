@@ -3,24 +3,26 @@
 # see .github/README.md.
 name: Ruby
 
+# Every pull request runs every library's checks, so each job reports a status the `next` ruleset
+# can require; a workflow skipped by a `paths` filter would leave that check pending forever.
 on:
   pull_request:
-    paths:
-      - "ruby/**"
-      - ".github/workflows/ruby.yml"
   workflow_dispatch:
 
 concurrency:
   group: ruby-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 defaults:
   run:
     working-directory: ruby
 
 jobs:
-  code-quality:
-    name: code-quality
+  ruby-code-quality:
+    name: ruby-code-quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -40,8 +42,8 @@ jobs:
 
       - run: rubocop
 
-  unit-tests:
-    name: unit-tests
+  ruby-unit-tests:
+    name: ruby-unit-tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
