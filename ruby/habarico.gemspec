@@ -19,6 +19,8 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = "https://github.com/eluvia-com/habarico"
   spec.metadata["changelog_uri"] = "https://github.com/eluvia-com/habarico/blob/master/ruby/CHANGELOG.md"
   spec.metadata["documentation_uri"] = "https://docs.habarico.com/ruby/intro"
+  # A trusted-publisher push from publish.yml is exempt; only owners pushing by hand need MFA.
+  spec.metadata["rubygems_mfa_required"] = "true"
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
     Dir["{app,config,db,lib}/**/*", "VERSION", "LICENSE", "Rakefile", "README.md"]

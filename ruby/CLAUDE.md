@@ -33,7 +33,7 @@ bundle exec rake build        # Build the gem (.gem file in pkg/)
 bundle exec rake install      # Build and install gem locally
 bundle exec rake test         # Run all tests
 bundle exec rake statistics   # Code statistics
-bundle exec rake release      # Release to internal gem server (geminabox.eluvia.dev)
+bundle exec rake release      # Release to rubygems.org
 ```
 
 ## Testing

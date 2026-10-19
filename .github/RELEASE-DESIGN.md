@@ -1,7 +1,7 @@
 # Release flow on GitHub Actions
 
-Design record for moving the release orchestration off GitLab. GitLab keeps, at most, the package
-registries; the GitHub repository becomes the single home for code, CI and releases.
+Design record for moving the release orchestration off GitLab. The GitHub repository becomes the
+single home for code, CI and releases, and the libraries publish to the public registries only.
 
 Decided so far: betas are published on every merge to `next`. They are **never tagged**, but every
 beta lands in one `Bump version to ...` commit on `next` — `beta-bump.yml` writes it, via `pydev`,
@@ -190,15 +190,8 @@ three before a package exists:
 ## Package metadata that becomes public
 
 Publishing to public registries puts these in front of strangers. The source, changelog and
-documentation links point at `github.com/eluvia-com/habarico` and docs.habarico.com; two things
-still assume an internal gem:
-
-- `ruby/habarico.gemspec` — `allowed_push_host` still pins geminabox.
-- `ruby/.rubocop.yml` — `Gemspec/RequireMFA` is disabled with the comment *"Internal gem — not
-  published to rubygems.org, MFA requirement is irrelevant"*. That is no longer true; re-enabling
-  it wants `spec.metadata["rubygems_mfa_required"] = "true"`.
-
-All of these need the GitHub repository path, which is not settled yet.
+documentation links point at `github.com/eluvia-com/habarico` and docs.habarico.com, and the gem sets `rubygems_mfa_required`: owners pushing by hand need MFA, a
+trusted-publisher push does not.
 
 ## Settled
 
