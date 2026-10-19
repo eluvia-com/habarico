@@ -247,7 +247,9 @@ jobs:
           # fallback in publish.yml makes a failure here self-correcting rather than fatal.
           SUMMARY=""
           while read -r lib version; do
-            NEXT_VERSION=$(cd "$lib" && pydev version bump-to-next -r "$RELEASE_LEVEL")
+            # bump-to-next prints "Bumped version to X", not the bare version - read it back instead.
+            (cd "$lib" && pydev version bump-to-next -r "$RELEASE_LEVEL")
+            NEXT_VERSION=$(cd "$lib" && pydev version print)
             git add "$lib"
             SUMMARY="${SUMMARY}${SUMMARY:+, }${lib}@${NEXT_VERSION}"
           done < /tmp/to_release

@@ -75,7 +75,9 @@ jobs:
 
           SUMMARY=""
           for lib in $LIBS; do
-            NEW=$(cd "$lib" && pydev version bump-to-next -r major -p beta)
+            # bump-to-next prints "Bumped version to X", not the bare version - read it back instead.
+            (cd "$lib" && pydev version bump-to-next -r major -p beta)
+            NEW=$(cd "$lib" && pydev version print)
             echo "  $lib: -> $NEW"
             git add "$lib"
             SUMMARY="${SUMMARY}${SUMMARY:+, }${lib}@${NEW}"
