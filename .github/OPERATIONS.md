@@ -118,8 +118,12 @@ The version files stay on the released version; the next merge to `next` opens t
 at `RELEASE_LEVEL` (`7.2.0` → `7.3.0-beta.1`).
 
 Afterwards, check that `publish.yml` ran for each tag and that the versions appear in the
-registries. There is no patch-release button yet — a patch off a maintenance branch has to be
-versioned, committed and tagged by hand.
+registries. A minor or major release also starts `storybook.yml` from the `node@X.Y.0` tag; a
+preview of `next` is published by running `storybook.yml` by hand on `next`, and a release
+again by giving that run its `node@X.Y.0` tag.
+
+There is no patch-release button yet — a patch off a maintenance branch has to be versioned,
+committed and tagged by hand.
 
 ## Starting a major
 

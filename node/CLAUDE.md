@@ -70,7 +70,7 @@ screenshot to `src/**/__screenshots__/`, which CI uploads as a job artifact.
 Commands: `npm run storybook` (dev server, port 6006) / `npm run build-storybook`.
 
 Served at [storybook.habarico.com](https://storybook.habarico.com), at the root and under
-`/<minor series>/`; no workflow publishes it. The manager UI
+`/<minor series>/`, published by `.github/workflows/storybook.yml` from `node@X.Y.0` tags. The manager UI
 carries the habarico.com branding (`.storybook/manager.ts`, `manager-head.html`,
 `.storybook/brand/`); the canvas itself is left alone. **Everything the manager loads must be
 addressed relatively** — the same build is served from the bucket root and from a series prefix,
