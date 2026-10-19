@@ -28,8 +28,8 @@ jobs:
     timeout-minutes: 15
     # Carries pydev; see publish.yml/release.yml for the note on the image.
     container: ${{ vars.TOOLBOX_IMAGE || 'ghcr.io/druids/developers-chamber:1' }}
-    # Skip its own commits (infinite loop) and release.yml's finalize/advance commits - neither
-    # starts a new beta cycle. publish.yml reads the finalize's version straight off the tag.
+    # Skip its own commits (infinite loop) and release.yml's finalize commit - neither starts a
+    # new beta cycle. publish.yml reads the finalize's version straight off the tag.
     if: "!startsWith(github.event.head_commit.message, 'Bump version to')"
     env:
       # The level a new prerelease cycle starts at when none is open yet. Same variable
@@ -96,14 +96,21 @@ jobs:
           : > /tmp/bumped
           while read -r lib; do
             # A prerelease marker already on the version file means a cycle is open - advance its
-            # counter alone. No marker means the last bump was a finalize (or there was none):
-            # start a fresh cycle at RELEASE_LEVEL.
+            # counter alone. No marker means the file names the last release: start a fresh cycle
+            # at RELEASE_LEVEL.
             CURRENT=$(cd "$lib" && pydev version print)
             # bump-to-next prints "Bumped version to X", not the bare version - read it back instead.
             case "$CURRENT" in
               *-alpha.*|*-beta.*|*-rc.*)
                 (cd "$lib" && pydev version bump-to-next -p beta) ;;
               *)
+                # pydev cannot turn 7.3.0 into 7.3.0-beta.1, only into 7.4.0-beta.1, so a bare
+                # version that was never released would be skipped over silently.
+                if [ -n "$(git tag -l "${lib}@*")" ] && ! git rev-parse -q --verify "refs/tags/${lib}@${CURRENT}" >/dev/null; then
+                  echo "ERROR: $lib is on ${CURRENT}, which is neither a beta nor a released version."
+                  echo "To start a cycle at ${CURRENT}, set the version file to ${CURRENT}-beta.0 in a pull request."
+                  exit 1
+                fi
                 (cd "$lib" && pydev version bump-to-next -r "$RELEASE_LEVEL" -p beta) ;;
             esac
             VERSION=$(cd "$lib" && pydev version print)

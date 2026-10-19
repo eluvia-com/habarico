@@ -7,8 +7,7 @@
 # workflow file of the commit it first ran on, so a fix to this file would never reach it.
 #
 # Betas and stable releases go to the public registries only: python to PyPI, ruby to
-# rubygems.org, node to npmjs.com once PUBLISH_NPM is set. See "Going public" in
-# .github/README.md.
+# rubygems.org, node to npmjs.com. See "Going public" in .github/README.md.
 name: Publish
 
 on:
@@ -56,8 +55,8 @@ jobs:
     # mounts its musl Node build for the JavaScript actions, which is why they work here.
     container: ${{ vars.TOOLBOX_IMAGE || 'ghcr.io/druids/developers-chamber:1' }}
     # A tag always names an exact release - no further check needed. A branch push only reaches
-    # here when beta-bump.yml's own commit named a prerelease; an ordinary merge, release.yml's
-    # finalize commit and its advance commit all fail this and the run does nothing. A manual run
+    # here when beta-bump.yml's own commit named a prerelease; an ordinary merge and release.yml's
+    # finalize commit fail this and the run does nothing. A manual run
     # is checked by the detect step itself.
     if: >-
       github.event_name == 'workflow_dispatch' ||
@@ -195,10 +194,8 @@ jobs:
 
       - run: npm run build
 
-      # Betas and stable releases both go to npmjs.com, betas under the `beta` dist-tag. Only once
-      # PUBLISH_NPM is set: an upload to npmjs.com cannot be undone.
+      # Betas and stable releases both go to npmjs.com, betas under the `beta` dist-tag.
       - name: Publish to npmjs.com
-        if: ${{ vars.PUBLISH_NPM == 'true' }}
         run: |
           set -eu
           # npm refuses to publish a pre-release without an explicit --tag: it would otherwise move

@@ -46,8 +46,8 @@ It refuses on `next` when the library's directory has moved since its last bump 
 
 `release.yml` is the finalize button (`workflow_dispatch`, with a `dry_run` input). It stamps the
 changelogs, commits, tags, pushes `next`, fast-forwards `master`, creates `release/<lib>@vX.Y`
-maintenance branches, and finally advances the version files to the next cycle in a second commit.
-It publishes nothing — the tags it pushes are what start `publish.yml`.
+maintenance branches. The version files stay on the released version until the next merge, when
+`beta-bump.yml` opens the next cycle. It publishes nothing — the tags it pushes are what start `publish.yml`.
 
 `major.yml` is the major button (`workflow_dispatch`, with a `dry_run` input). It moves every
 library onto the first beta of the next major in one bump commit on `next`, which `publish.yml`
@@ -67,7 +67,7 @@ version file in a reviewed pull request, per library. See `.github/RELEASE-DESIG
 
 | Library | Registry | Addressed as |
 |---------|----------|--------------|
-| node | npmjs.com | `habarico`, betas under the `beta` dist-tag; on only with `PUBLISH_NPM` |
+| node | npmjs.com | `habarico`, betas under the `beta` dist-tag |
 | python | PyPI | `habarico` — note PEP 440 normalises `5.11.0-beta.13` to `5.11.0b13` |
 | ruby | rubygems.org | `habarico`, betas as pre-release versions (`7.2.0.pre.beta.4`) |
 
@@ -78,8 +78,7 @@ version; `pip` and `gem` skip pre-releases unless asked with `--pre`.
 
 ## Going public
 
-`PUBLISH_NPM` set to `true` turns on the node publish to npmjs.com, for betas and stable
-versions alike. A version on npmjs.com cannot be unpublished after 72 hours.
+A version on npmjs.com cannot be unpublished after 72 hours.
 
 `node/package.json` `repository` must stay `github.com/eluvia-com/habarico`: npm provenance
 rejects a publish whose repository does not match the GitHub repository it runs in.
@@ -91,12 +90,11 @@ rejects a publish whose repository does not match the GitHub repository it runs 
 | Variable | Default | Used by |
 |----------|---------|---------|
 | `TOOLBOX_IMAGE` | `ghcr.io/druids/developers-chamber:1` | The image carrying `pydev`; `release.yml`, `beta-bump.yml` and `publish.yml`'s `detect` job all run in it. The default is the upstream public image, so this needs no setting — override it only to try a different build. |
-| `RELEASE_LEVEL` | `minor` | The level `release.yml`'s finalize advances version files by, and the level `beta-bump.yml` starts a new prerelease cycle at when none is open. **Both must read the same value** — if they disagreed, a beta could be numbered off a target that never ships. |
+| `RELEASE_LEVEL` | `minor` | The level `beta-bump.yml` starts a new prerelease cycle at, and the level `release.yml` releases a library at whose version file is still on its last release. **Both must read the same value** — if they disagreed, a beta could be numbered off a target that never ships. |
 | `SHARED_MINOR_MAJOR` | `true` | Keeps major.minor identical across the libraries, read by `beta-bump.yml`, `release.yml` and `major.yml`; `major.yml` does not run without it. |
 | `NEXT_BRANCH` | `next` | Trunk. Hard-coded in `publish.yml`'s and `beta-bump.yml`'s triggers as well, because `on:` has no contexts — all three must agree. |
 | `STABLE_BRANCH` | `master` | Fast-forwarded by the finalize. |
 | `RELEASE_APP_ID` | — (required) | GitHub App used by `release.yml`'s finalize and by the bump commits of `beta-bump.yml` and `major.yml` to write to the repository. |
-| `PUBLISH_NPM` | unset | `true` publishes node betas and stable versions to npmjs.com. See "Going public". |
 | `GITLAB_DOCS_TOKEN_USER` | — (required) | Username of the GitLab deploy token `docs-check.yml` and `changelog-check.yml` clone with. |
 
 **Environment `release`** wraps every publish job, which is what keeps the write-scoped
