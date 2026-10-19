@@ -11,7 +11,7 @@ supply your own forms, or replace `authPage` entirely for a different screen.
 ## Example
 
 ```tsx
-import {SchemaAdmin, AuthPage} from '@eluvia/habarico';
+import {SchemaAdmin, AuthPage} from 'habarico';
 
 <SchemaAdmin
   authPage={() => <AuthPage RegisterComponent={RegisterForm} />}

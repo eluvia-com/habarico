@@ -173,32 +173,30 @@ token exists anywhere:
 
 Each registry needs the trusted publisher configured once, against this repository and the exact
 workflow filename. npm additionally requires the package to have at least one version already
-published before a trusted publisher can be attached — which is satisfied for all three.
+published before a trusted publisher can be attached; see below.
 
 ## Bootstrapping the first public release
 
-All three names are free: `habarico` on RubyGems and PyPI, `@eluvia/habarico` and `habarico` on
-npm. Nothing has to be renamed. But trusted publishing cannot be configured the same way for all
+All three libraries publish as `habarico`: the npm package is unscoped because the `@eluvia` scope
+maps to the private registry `habarico-enterprise` is installed from. Trusted publishing cannot be configured the same way for all
 three before a package exists:
 
 | Registry | Before the first publish |
 |----------|--------------------------|
 | PyPI | A **pending publisher** can be configured against the repository and `publish.yml`; the first publish creates the project. Note it does *not* reserve the name until used. |
 | RubyGems | Same — a pending trusted publisher works for a gem that does not exist yet. |
-| npm | **Not possible.** A trusted publisher can only be attached to a package that already has at least one published version, so the very first `@eluvia/habarico` publish has to be done another way, with a token, and trusted publishing is configured afterwards. |
+| npm | **Not possible.** A trusted publisher can only be attached to a package that already has at least one published version, so the very first `habarico` publish has to be done another way, with a token, and trusted publishing is configured afterwards. |
 
 ## Package metadata that becomes public
 
-Publishing to public registries puts these in front of strangers, and they currently point at a
-GitLab instance nobody outside the company can reach:
+Publishing to public registries puts these in front of strangers. The source, changelog and
+documentation links point at `github.com/eluvia-com/habarico` and docs.habarico.com; two things
+still assume an internal gem:
 
-- `ruby/habarico.gemspec` — `allowed_push_host` still pins geminabox, and `source_code_uri` /
-  `changelog_uri` point at GitLab (`changelog_uri` also points at the README, not the changelog).
+- `ruby/habarico.gemspec` — `allowed_push_host` still pins geminabox.
 - `ruby/.rubocop.yml` — `Gemspec/RequireMFA` is disabled with the comment *"Internal gem — not
   published to rubygems.org, MFA requirement is irrelevant"*. That is no longer true; re-enabling
   it wants `spec.metadata["rubygems_mfa_required"] = "true"`.
-- `python/pyproject.toml` — `Documentation` and `Source Code` point at GitLab.
-- `node/package.json` — `repository.url` is `git@gitlab.eluvia.dev:…`.
 
 All of these need the GitHub repository path, which is not settled yet.
 

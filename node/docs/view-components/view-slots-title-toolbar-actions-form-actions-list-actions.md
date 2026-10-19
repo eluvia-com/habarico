@@ -143,7 +143,7 @@ import {
   SchemaViewToolbarActions,
   SchemaFormActions,
   SchemaListActions,
-} from '@eluvia/habarico';
+} from 'habarico';
 
 // Custom list with extra export button in the toolbar
 <SchemaList

@@ -13,7 +13,7 @@ a create has nothing to wait for.
 ## Example
 
 ```tsx
-import {EditShell, PropertyFormLayout, TextInput, NumberInput} from '@eluvia/habarico';
+import {EditShell, PropertyFormLayout, TextInput, NumberInput} from 'habarico';
 
 <EditShell
   title="Edit product"

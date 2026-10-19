@@ -12,7 +12,7 @@ already in context.
 ## Signature
 
 ```typescript
-import {useGetLocalResourceSchema} from '@eluvia/habarico';
+import {useGetLocalResourceSchema} from 'habarico';
 
 const result = useGetLocalResourceSchema({
   resource,     // string — "serviceName/resourceName"; defaults to the resource context

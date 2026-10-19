@@ -11,7 +11,7 @@ up with the generated views instead of running to the window edges.
 ## Example
 
 ```tsx
-import {DashboardContent} from '@eluvia/habarico';
+import {DashboardContent} from 'habarico';
 
 const SalesReportPage = () => (
   <DashboardContent maxWidth="lg">

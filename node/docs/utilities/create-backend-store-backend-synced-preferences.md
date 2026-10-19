@@ -8,7 +8,7 @@ API. Reads stay local; writes are debounced and pushed asynchronously. It is wha
 synchronization of user preferences (theme, locale, dashboard layout, datagrid column setups, saved queries).
 
 ```typescript
-import {createBackendStore, BackendApi} from '@eluvia/habarico';
+import {createBackendStore, BackendApi} from 'habarico';
 import {localStorageStore} from 'react-admin';
 
 const api: BackendApi = {

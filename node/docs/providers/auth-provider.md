@@ -70,7 +70,7 @@ your own component, and pass the resulting functions in.
 
 ```tsx
 import {useMemo} from 'react';
-import {buildServiceAuthProvider, SchemaAdmin} from '@eluvia/habarico';
+import {buildServiceAuthProvider, SchemaAdmin} from 'habarico';
 import {
   usePasswordLoginWithMfa, useLogout, useForgottenPassword,
   useResetPassword, useChangePassword, useCurrentUser,
@@ -161,7 +161,7 @@ it as `getSsoLoginMethods` for you. With `@eluvia/auth`'s `useGoogleLogin` (any 
 fits the shape works the same way, wrapped to close over its own config):
 
 ```tsx
-import {LoginSsoMethod, buildServiceAuthProvider, Iconify} from '@eluvia/habarico';
+import {LoginSsoMethod, buildServiceAuthProvider, Iconify} from 'habarico';
 import {useGoogleLogin} from '@eluvia/auth';
 
 const googleSsoMethod: LoginSsoMethod = {

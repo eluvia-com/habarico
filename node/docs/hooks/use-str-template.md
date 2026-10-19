@@ -11,7 +11,7 @@ schemas use the same syntax, so a label declared server-side lands here unchange
 ## Signature
 
 ```typescript
-import {useStrTemplate} from '@eluvia/habarico';
+import {useStrTemplate} from 'habarico';
 
 const title = useStrTemplate('Order %{record.number}');
 ```

@@ -14,7 +14,7 @@ generated form needs nothing from you.
 ## Signature
 
 ```tsx
-import {useRemoveArrayItem} from '@eluvia/habarico';
+import {useRemoveArrayItem} from 'habarico';
 import {useArrayInput} from 'react-admin';
 
 const {fields, remove} = useArrayInput();

@@ -12,7 +12,7 @@ trigger the same backend export.
 ## Signature
 
 ```typescript
-import {useExporter} from '@eluvia/habarico';
+import {useExporter} from 'habarico';
 
 const exporter = useExporter('eshop/product');
 ```

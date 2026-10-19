@@ -14,7 +14,7 @@ In a component, use the `usePerUserStore` hook: it resolves the signed-in user, 
 for them and a new one whenever someone else signs in.
 
 ```tsx
-import {usePerUserStore} from '@eluvia/habarico';
+import {usePerUserStore} from 'habarico';
 import {AdminContext, AdminUI} from 'react-admin';
 
 const ShopAdmin = () => {

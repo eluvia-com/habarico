@@ -3,7 +3,7 @@ title: Rich Text Syntax
 sidebar_position: 8
 ---
 
-Labels, titles, and other string values can contain special tokens that the frontend (`@eluvia/habarico`)
+Labels, titles, and other string values can contain special tokens that the frontend (`habarico`)
 interprets as icons, highlighted text, or bold text. The backend sends a plain string — no schema
 changes are required; the FE parses and renders the tokens at runtime.
 

@@ -12,7 +12,7 @@ where the same component moves the title and the actions into the dialog chrome 
 ## Example
 
 ```tsx
-import {ViewContent} from '@eluvia/habarico';
+import {ViewContent} from 'habarico';
 
 const OrderSummaryPage = () => (
   <ViewContent

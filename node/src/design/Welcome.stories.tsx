@@ -157,7 +157,7 @@ export const Overview: Story = {
               Design layer
             </Typography>
             <Typography variant={'body1'} color={'text.secondary'} sx={{mt: 1.5}}>
-              The presentation layer of <code>@eluvia/habarico</code>: purely presentational,
+              The presentation layer of <code>habarico</code>: purely presentational,
               schema-agnostic UI primitives. Components here are <strong>props-driven</strong> and
               know nothing about the backend, React Admin, or the Habarico schema — you give them
               data and callbacks, they render. The same primitives are reused by the schema-driven

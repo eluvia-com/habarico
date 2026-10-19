@@ -13,7 +13,7 @@ parameters, a settings screen. Inside a generated view the form already exists; 
 ## Example
 
 ```tsx
-import {FormShell, TextInput, NumberInput, SubmitButton} from '@eluvia/habarico';
+import {FormShell, TextInput, NumberInput, SubmitButton} from 'habarico';
 
 <FormShell onSubmit={saveSettings} onPostSubmit={() => notify('Saved')}>
   <TextInput source="name" />

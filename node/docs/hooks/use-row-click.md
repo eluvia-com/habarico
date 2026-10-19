@@ -12,7 +12,7 @@ it directly on a datagrid you assembled yourself.
 ## Signature
 
 ```typescript
-import {useRowClick} from '@eluvia/habarico';
+import {useRowClick} from 'habarico';
 
 const {handleClickStart, getRowClickWithData, handleDoubleClick} = useRowClick(
   (record, mode) => `/eshop/product/${record.id}/show`,

@@ -11,7 +11,7 @@ one row; non-element children are ignored.
 ## Example
 
 ```tsx
-import {PropertyShowLayout, TextField, NumberField} from '@eluvia/habarico';
+import {PropertyShowLayout, TextField, NumberField} from 'habarico';
 
 <PropertyShowLayout columns={2} density="standard" labelWidth={180}>
   <TextField source="number" />
@@ -20,7 +20,7 @@ import {PropertyShowLayout, TextField, NumberField} from '@eluvia/habarico';
 ```
 
 ```tsx
-import {PropertyFormLayout, TextInput, NumberInput} from '@eluvia/habarico';
+import {PropertyFormLayout, TextInput, NumberInput} from 'habarico';
 
 <PropertyFormLayout columns={1}>
   <TextInput source="name" />
@@ -37,7 +37,7 @@ their rows — and a consumer that returns nothing renders no row.
 
 ```tsx
 import {FormDataConsumer} from 'react-admin';
-import {PropertyFormLayout, NumberInput, TextInput} from '@eluvia/habarico';
+import {PropertyFormLayout, NumberInput, TextInput} from 'habarico';
 
 <PropertyFormLayout>
   <TextInput source="name" />

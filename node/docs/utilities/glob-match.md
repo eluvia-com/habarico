@@ -9,7 +9,7 @@ Small utility used by `createBackendStore`'s whitelist. Supports two wildcards:
 - `**` — matches across segments (greedy)
 
 ```typescript
-import {matchesAnyGlob} from '@eluvia/habarico';
+import {matchesAnyGlob} from 'habarico';
 
 matchesAnyGlob('preferences.users.columns', ['preferences.*.columns']);     // → true
 matchesAnyGlob('preferences.users.foo.columns', ['preferences.*.columns']); // → false (single * is one segment)

@@ -2,7 +2,7 @@ import {describe, expect, it} from 'vitest';
 import * as habarico from '../index';
 
 // The public entry point is the contract a package built on this library compiles against (HAB-813):
-// it imports from `@eluvia/habarico`, not through the `@schema`/`@admin`/`@design` aliases, so a
+// it imports from `habarico`, not through the `@schema`/`@admin`/`@design` aliases, so a
 // symbol dropped from a barrel breaks it at build time rather than here. These are the value exports
 // such a package needs; the type half is guarded by `publicApi.test-d.ts`.
 describe('public API', () => {

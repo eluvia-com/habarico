@@ -13,7 +13,7 @@ when you replace `LayoutComponent` entirely and still want this chrome.
 ## Example
 
 ```tsx
-import {DashboardLayout, LayoutProvider} from '@eluvia/habarico';
+import {DashboardLayout, LayoutProvider} from 'habarico';
 
 <LayoutProvider settings={settings} currentUser={currentUser}>
   <DashboardLayout

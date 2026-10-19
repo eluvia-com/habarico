@@ -189,7 +189,7 @@ class ProductAdmin(ModelAdmin):
 
 ### Rich Text Syntax
 
-Labels, titles, and other string values can contain special tokens that the frontend (`@eluvia/habarico`)
+Labels, titles, and other string values can contain special tokens that the frontend (`habarico`)
 interprets as icons, highlighted text, or bold text. No backend changes are required — the value is
 sent as a plain string and the FE parses it at render time.
 

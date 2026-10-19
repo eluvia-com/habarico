@@ -14,7 +14,7 @@ Use them when a component needs to know something about a resource without fetch
 Returns a lookup function into the service schemas held by [SchemaAdmin](../base-components/schema-admin.md).
 
 ```typescript
-import {useGetGlobalResourceSchema} from '@eluvia/habarico';
+import {useGetGlobalResourceSchema} from 'habarico';
 
 const getGlobalResourceSchema = useGetGlobalResourceSchema();
 const base = getGlobalResourceSchema('eshop/product');
@@ -37,7 +37,7 @@ The same lookup, already resolved for one resource and enriched with the capabil
 a request. Called with no argument it takes the resource from the surrounding resource context.
 
 ```typescript
-import {useGlobalResourceSchemaContext} from '@eluvia/habarico';
+import {useGlobalResourceSchemaContext} from 'habarico';
 
 const {schema, getGlobalViewSchema, hasEditView, hasDeleteAction} =
   useGlobalResourceSchemaContext('eshop/product');
@@ -93,7 +93,7 @@ Returns a function that invalidates every cached **resource** schema, so the nex
 fresh one.
 
 ```typescript
-import {useLocalResourceSchemaRefresh} from '@eluvia/habarico';
+import {useLocalResourceSchemaRefresh} from 'habarico';
 
 const refreshSchemas = useLocalResourceSchemaRefresh();
 

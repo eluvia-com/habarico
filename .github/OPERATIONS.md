@@ -17,8 +17,7 @@ gate on publishing.
 
 **2. The GitLab deploy token.** On the monorepo project (`eluvia/habarico/libraries/habarico`,
 id **784**): Settings → Repository → Deploy tokens → Add token, with scopes
-`read_package_registry` and `write_package_registry`. One token serves both the npm and the PyPI
-registry. Copy both halves — the username (`gitlab+deploy-token-<n>` unless you name it) and the
+`read_package_registry` and `write_package_registry`, for the PyPI registry. Copy both halves — the username (`gitlab+deploy-token-<n>` unless you name it) and the
 token itself, which is shown once.
 
 **3. The GitHub App for `release.yml`, `beta-bump.yml` and `major.yml`.** `GITHUB_TOKEN` cannot be used: pushes
@@ -31,8 +30,9 @@ shared by both workflows.
 
 **4. The variables and secrets.** See the two tables in `README.md`. Two of them need no action:
 `TOOLBOX_IMAGE` defaults to the public upstream `pydev` image
-(`ghcr.io/druids/developers-chamber:1`), and `PUBLISH_PUBLIC` stays unset — the public registries
-are blocked on work that has not happened yet, listed under "Going public".
+(`ghcr.io/druids/developers-chamber:1`), and `PUBLISH_PUBLIC` stays unset — PyPI and rubygems.org
+are blocked on work that has not happened yet, listed under "Going public". `PUBLISH_NPM` turns on
+the node publish to npmjs.com once the first version is out (see `RELEASE-DESIGN.md`).
 
 **5. Branch rules.** `next` is the trunk and the default branch; `master` records the last
 released state and is only ever fast-forwarded. Neither should accept a force push — the beta
@@ -66,12 +66,12 @@ because the path filters cover each library's own workflow file and nothing else
 
 Every merge to `next` triggers `beta-bump.yml`, which bumps and commits a new beta for each library
 whose directory has moved since its last bump commit; that commit's own push is what makes
-`publish.yml` actually publish it. They go to the GitLab registries, which is where the Eluvia
-projects already point, so nothing has to be reconfigured to use one.
+`publish.yml` actually publish it. node betas go to npmjs.com; python and ruby betas go to the
+internal registries the Eluvia projects already point at.
 
 | | Install a beta | Note |
 |---|---|---|
-| node | `npm install @eluvia/habarico@beta` | Betas carry the `beta` dist-tag, so a plain `npm install` still resolves the last stable version |
+| node | `npm install habarico@beta` | Betas carry the `beta` dist-tag, so a plain `npm install` still resolves the last stable version |
 | python | `pip install --pre 'habarico==5.11.0b26'` | PEP 440 normalises the version: `5.11.0-beta.26` is stored as `5.11.0b26` |
 | ruby | `gem 'habarico', '0.57.0.pre.beta.20'` | `Gem::Version` normalises too: `0.57.0-beta.20` becomes `0.57.0.pre.beta.20` |
 
@@ -83,7 +83,7 @@ commit:
 git log -1 --grep '^Bump version to .*node@6.9.0-beta.3' -- node/
 ```
 
-For node, npm also records a provenance attestation on public publishes, which names the commit
+For node, npm also records a provenance attestation on every publish, which names the commit
 directly.
 
 ## Cutting a release
@@ -162,11 +162,6 @@ once the trunk has stopped moving.
 **`gem push` refused: not allowed by the gemspec** — `habarico.gemspec` pins
 `allowed_push_host` to geminabox. That is correct for the current setup and is one of the things
 that has to change before `PUBLISH_PUBLIC` can be turned on.
-
-**A node publish landed in the wrong registry** — npm's `pickRegistry()` honours a
-`@scope:registry` mapping over both `--registry` and `publishConfig.registry`, and `node/.npmrc`
-maps `@eluvia` to GitLab. That is why both publish steps pass the target as `--@eluvia:registry=…`
-rather than `--registry=…`. Keep that shape if you add a registry.
 
 **A publish job did not start at all.** `publish.yml`'s `detect` job only runs on `next` when the
 commit message both starts with `Bump version to` *and* names a prerelease

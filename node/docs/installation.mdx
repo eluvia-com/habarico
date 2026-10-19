@@ -6,21 +6,6 @@ sidebar_position: 2
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
-## Install NPM packages
-
-For local development: Set your `GITLAB_TOKEN` environment variable. For example in your `~/.bashrc` or `~/.profile` file.
-There should be set your personal Gitlab token:
-
-```bash
-export GITLAB_TOKEN=your_personal_token
-```
-
-To install all dependencies, run the following command:
-
-```bash
-pnpm install
-```
-
 ## Router requirement
 
 This library uses `useBlocker` from React Router to guard against accidental navigation away from forms with unsaved changes. This feature requires a **data router** (`createBrowserRouter` or `createHashRouter`) — it does not work with the legacy `<BrowserRouter>` component.
@@ -59,7 +44,7 @@ project work, a local checkout when you develop the library and the project side
 <TabItem value="registry" label="NPM package registry" default>
 
 ```bash
-pnpm add @eluvia/habarico
+pnpm add habarico
 ```
 
 Every framework dependency is a **peer** dependency — the library bundles none of them, so install
@@ -76,7 +61,6 @@ them in the project yourself, in a version that satisfies the range:
 | `@mui/x-tree-view` | `^9.1.0` |
 | `@emotion/react`, `@emotion/styled` | `^11.0.0` |
 | `@tanstack/react-query` | `^5.0.0` |
-| `@eluvia/auth` | `^2.3.1` |
 
 :::caution
 The React Admin packages are pinned to a patch range (`~5.14.5`), not a major one. A project on a
@@ -99,7 +83,7 @@ Pass only the packages you actually develop; either one works on its own. Paths 
 the project directory and turned into absolute ones.
 
 :::caution
-The order matters when you link both. `habarico-enterprise` points its own `@eluvia/habarico` at
+The order matters when you link both. `habarico-enterprise` points its own `habarico` at
 the copy the project holds — which is the symlink the first argument creates. Link it first and
 both packages share one instance of the library, React and React Admin; link it second and you get
 two, which shows up as `Cannot read properties of null (reading 'useMemo')`.

@@ -15,7 +15,7 @@ The hook is free. It resolves the chunked path through the core's transport regi
 ## Signature
 
 ```typescript
-import {useUploadQueue, type BuildFileModifier} from '@eluvia/habarico';
+import {useUploadQueue, type BuildFileModifier} from 'habarico';
 
 const {entries, addAndUpload, removeEntry, removeAll, retryUpload, updateEntry, getUploadErrorMsg} =
   useUploadQueue({

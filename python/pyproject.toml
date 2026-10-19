@@ -47,8 +47,9 @@ export-xlsx = [
 file = "LICENSE"
 
 [project.urls]
-Documentation = "https://gitlab.eluvia.dev/libraries/python/habarico"
-"Source Code" = "https://gitlab.eluvia.dev/libraries/python/habarico"
+Documentation = "https://docs.habarico.com/python/intro"
+"Source Code" = "https://github.com/eluvia-com/habarico"
+Changelog = "https://github.com/eluvia-com/habarico/blob/master/python/CHANGELOG.md"
 
 [tool.black]
 line-length = 120

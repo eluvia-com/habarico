@@ -12,7 +12,7 @@ you replace one of those pages but want the same frame.
 ## Example
 
 ```tsx
-import {AuthLayout} from '@eluvia/habarico';
+import {AuthLayout} from 'habarico';
 
 <AuthLayout
   logo={{Component: Logo}}

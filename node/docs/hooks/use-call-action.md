@@ -12,7 +12,7 @@ calling this hook the same way.
 ## Signature
 
 ```typescript
-import {useCallAction} from '@eluvia/habarico';
+import {useCallAction} from 'habarico';
 
 const {callAction, isLoading, isRunning, isStarted, isError} = useCallAction({
   resource: 'eshop/product',

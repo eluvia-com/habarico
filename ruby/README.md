@@ -79,7 +79,4 @@ the [API reference](https://docs.habarico.com/api).
 
 ## License
 
-This software is proprietary and confidential.
-It is licensed for internal use only within Eluvia s.r.o.
-Unauthorized copying, distribution, or use outside the company
-is strictly prohibited.
+[MIT](LICENSE)

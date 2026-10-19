@@ -158,14 +158,13 @@ export const Overview: Story = {
               Schema layer
             </Typography>
             <Typography variant={'body1'} color={'text.secondary'} sx={{mt: 1.5}}>
-              <strong>The schema-driven core of @eluvia/habarico.</strong> Its input is a Habarico{' '}
-              schema (a <code>ServiceSchema</code> plus per-resource{' '}
-              <code>LocalResourceSchema</code>) and its output is a whole admin UI — menu, list /
-              show / edit / create / action views, fields, inputs, boxes and actions —{' '}
-              <strong>generated</strong>, not hand-written. Where <code>admin</code> gives you
-              resource-aware widgets you wire up by hand, this layer reads the schema and decides{' '}
-              <em>which</em> widgets to render and <em>how</em>. It sits on top of{' '}
-              <code>admin + design + foundation</code>.
+              <strong>The schema-driven core of habarico.</strong> Its input is a Habarico schema (a{' '}
+              <code>ServiceSchema</code> plus per-resource <code>LocalResourceSchema</code>) and its
+              output is a whole admin UI — menu, list / show / edit / create / action views, fields,
+              inputs, boxes and actions — <strong>generated</strong>, not hand-written. Where{' '}
+              <code>admin</code> gives you resource-aware widgets you wire up by hand, this layer
+              reads the schema and decides <em>which</em> widgets to render and <em>how</em>. It
+              sits on top of <code>admin + design + foundation</code>.
             </Typography>
           </Box>
 
