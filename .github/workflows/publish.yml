@@ -3,6 +3,9 @@
 # file also keeps the trusted-publisher configuration in all three registries identical - they
 # match on the workflow filename. See .github/RELEASE-DESIGN.md.
 #
+# A failed publish job is retried with workflow_dispatch, not with "Re-run": a re-run uses the
+# workflow file of the commit it first ran on, so a fix to this file would never reach it.
+#
 # Betas and stable releases go to the public registries only: python to PyPI, ruby to
 # rubygems.org, node to npmjs.com once PUBLISH_NPM is set. See "Going public" in
 # .github/README.md.
@@ -22,6 +25,17 @@ on:
     # Stable releases, pushed by release.yml.
     tags:
       - "*@*"
+  # Publishes one library again at the version its file carries on the chosen ref: the trunk for a
+  # beta, the `<lib>@X.Y.Z` tag for a stable release. Registries skip a version they already have.
+  workflow_dispatch:
+    inputs:
+      library:
+        description: "Library to publish"
+        type: choice
+        options:
+          - node
+          - python
+          - ruby
 
 # Never cancel a publish half-way. An interrupted upload is the one failure mode that cannot be
 # retried cleanly.
@@ -43,8 +57,10 @@ jobs:
     container: ${{ vars.TOOLBOX_IMAGE || 'ghcr.io/druids/developers-chamber:1' }}
     # A tag always names an exact release - no further check needed. A branch push only reaches
     # here when beta-bump.yml's own commit named a prerelease; an ordinary merge, release.yml's
-    # finalize commit and its advance commit all fail this and the run does nothing.
+    # finalize commit and its advance commit all fail this and the run does nothing. A manual run
+    # is checked by the detect step itself.
     if: >-
+      github.event_name == 'workflow_dispatch' ||
       github.ref_type == 'tag' ||
       (startsWith(github.event.head_commit.message, 'Bump version to') &&
        (contains(github.event.head_commit.message, '-alpha.') ||
@@ -55,15 +71,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          # The branch case only needs to diff HEAD against its own parent (see below); the tag
-          # case needs no history at all. Neither needs the full clone the old counter-based
-          # derivation did.
-          fetch-depth: 2
+          # A push to the branch only diffs HEAD against its parent and a tag needs no history; a
+          # manual run on the branch looks for the library's last bump commit in the whole log.
+          fetch-depth: ${{ github.event_name == 'workflow_dispatch' && github.ref_type == 'branch' && '0' || '2' }}
 
       - name: Trust the workspace
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - id: detect
+        env:
+          # Empty on a push.
+          LIBRARY: ${{ inputs.library }}
         run: |
           set -eu
 
@@ -71,39 +89,66 @@ jobs:
           if [ "$GITHUB_REF_TYPE" = "tag" ]; then
             LIB="${GITHUB_REF_NAME%@*}"
             VER="${GITHUB_REF_NAME##*@}"
+            if [ -n "$LIBRARY" ] && [ "$LIBRARY" != "$LIB" ]; then
+              echo "ERROR: tag $GITHUB_REF_NAME releases $LIB, not $LIBRARY"
+              exit 1
+            fi
             echo "  $LIB: $VER (from tag)"
             python3 -c "import json,sys; print('versions=' + json.dumps({sys.argv[1]: sys.argv[2]}))" \
               "$LIB" "$VER" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          . .github/scripts/libraries.sh
-          list_libs
-
-          # A branch push only reaches this point when it is beta-bump.yml's own commit (the `if:`
-          # above filtered everything else out), so this exact commit named which libraries it
-          # bumped and each one's version file already carries the version to publish - nothing to
-          # derive, just read it back per library this commit actually touched.
           : > /tmp/publish.txt
-          for lib in $LIBS; do
-            if git --no-optional-locks diff --quiet HEAD~1 HEAD -- "$lib/"; then
-              echo "  $lib: not touched by this commit, skipping"
-              continue
+          if [ -n "$LIBRARY" ]; then
+            # The version file only names what was built when nothing in the directory moved since
+            # the bump commit that wrote it - anything newer is beta-bump.yml's to number.
+            BASE=$(git log -1 --format=%H --grep '^Bump version to' -- "$LIBRARY/" || true)
+            if [ -z "$BASE" ] || ! git --no-optional-locks diff --quiet "$BASE" HEAD -- "$LIBRARY/"; then
+              echo "ERROR: $LIBRARY/ has changed since its last bump commit${BASE:+ $BASE} - its version file does not describe this code"
+              exit 1
             fi
 
-            VERSION=$(cd "$lib" && pydev version print)
+            VERSION=$(cd "$LIBRARY" && pydev version print)
             case "$VERSION" in
               *-alpha.*|*-beta.*|*-rc.*)
-                echo "  $lib: $VERSION"
-                echo "${lib} ${VERSION}" >> /tmp/publish.txt
+                echo "  $LIBRARY: $VERSION (manual run on $GITHUB_REF_NAME)"
+                echo "${LIBRARY} ${VERSION}" >> /tmp/publish.txt
                 ;;
               *)
-                # Defensive: the job-level `if:` already guarantees this commit names a prerelease
-                # somewhere, but not necessarily in every library it touched.
-                echo "  $lib: touched, but its version carries no prerelease marker ($VERSION) - skipping"
+                echo "ERROR: $LIBRARY is on $VERSION, not a prerelease - publish a stable release by running this workflow on its tag $LIBRARY@$VERSION"
+                exit 1
                 ;;
             esac
-          done
+          else
+            . .github/scripts/libraries.sh
+            list_libs
+
+            # A branch push only reaches this point when it is beta-bump.yml's own commit (the `if:`
+            # above filtered everything else out), so this exact commit named which libraries it
+            # bumped and each one's version file already carries the version to publish - nothing to
+            # derive, just read it back per library this commit actually touched.
+            for lib in $LIBS; do
+              if git --no-optional-locks diff --quiet HEAD~1 HEAD -- "$lib/"; then
+                echo "  $lib: not touched by this commit, skipping"
+                continue
+              fi
+
+              VERSION=$(cd "$lib" && pydev version print)
+              case "$VERSION" in
+                *-alpha.*|*-beta.*|*-rc.*)
+                  echo "  $lib: $VERSION"
+                  echo "${lib} ${VERSION}" >> /tmp/publish.txt
+                  ;;
+                *)
+                  # Defensive: the job-level `if:` already guarantees this commit names a prerelease
+                  # somewhere, but not necessarily in every library it touched.
+                  echo "  $lib: touched, but its version carries no prerelease marker ($VERSION) - skipping"
+                  ;;
+              esac
+            done
+
+          fi
 
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
           import json

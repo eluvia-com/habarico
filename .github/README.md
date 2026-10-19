@@ -35,6 +35,10 @@ directory has moved since its last bump commit, bumps each to its next beta vers
 nothing derived. A `<lib>@X.Y.Z` tag, pushed by `release.yml`, publishes the stable artifact the
 same way it always has.
 
+`publish.yml` also has a `workflow_dispatch` with a `library` input, which publishes that one
+library again: on `next` the beta its version file carries, on a `<lib>@X.Y.Z` tag that release.
+It refuses on `next` when the library's directory has moved since its last bump commit.
+
 `release.yml` is the finalize button (`workflow_dispatch`, with a `dry_run` input). It stamps the
 changelogs, commits, tags, pushes `next`, fast-forwards `master`, creates `release/<lib>@vX.Y`
 maintenance branches, and finally advances the version files to the next cycle in a second commit.

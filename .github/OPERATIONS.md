@@ -142,6 +142,13 @@ BASE=$(git log -1 --format=%H --grep '^Bump version to' -- node/)
 git --no-optional-locks diff --stat "$BASE" HEAD -- node/
 ```
 
+**A publish job failed.** Fix the cause in a pull request to `next`, then run `publish.yml` from
+the Actions tab on `next` with the failed `library` — or on its `<lib>@X.Y.Z` tag for a stable
+release. "Re-run failed jobs" does not pick the fix up: a re-run uses the workflow file of the
+commit it first ran on. The manual run publishes the version in the library's file, and refuses
+when the library has changed since its last bump commit; that change gets a new beta from the next
+merge instead. Versions already in a registry are skipped.
+
 **`version file still on a released version, advancing to …`** in the log — the second commit of
 the previous release (the one advancing the version files) never landed. The workflow heals
 itself by advancing to the next version, which is why this is a note and not a failure. Check
