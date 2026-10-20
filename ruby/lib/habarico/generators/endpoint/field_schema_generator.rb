@@ -44,7 +44,7 @@ module Habarico
         required: generate_required(model, field_name, attr_name, variant),
         sortable: generate_sortable(model, field_name, attr_name, variant),
         sort_by: generate_sort_by(model, field_name, attr_name, variant),
-        reference: generate_reference(model, field_name, attr_name, variant),
+        reference: Habarico::ResourceReference.build(generate_reference(model, field_name, attr_name, variant)),
         enum: generate_enum(model, field_name, attr_name, variant),
         items: generate_items(model, field_name, attr_name, variant, subfields),
         properties: generate_properties(model, field_name, attr_name, variant, subfields),
@@ -315,7 +315,7 @@ module Habarico
             label: label,
             type: 'string',
             format: 'relation',
-            reference: reference_class.const_get(:REFERENCE),
+            reference: Habarico::ResourceReference.build(reference_class.const_get(:REFERENCE)),
           )
         end
       end

@@ -14,8 +14,9 @@ module Habarico
     # Width of the dialog, only used when mode is dialog (MUI breakpoint or CSS width value)
     string_attr :dialog_width
 
-    # Definition of the endpoint
-    has_one_attr :endpoint, 'Habarico::ViewActionEndpointParameters'
+    # What the view's endpoint addresses: which resource, which record, which action. `path` and
+    # `method` have no place on a view action - how a thing is called is not part of where it is.
+    has_one_attr :endpoint, 'Habarico::ResourceReference'
 
     # Additional parameters to be passed to the view
     has_many_attr :parameters, 'String', underlying_type: :hash

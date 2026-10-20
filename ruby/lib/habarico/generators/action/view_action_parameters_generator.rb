@@ -19,8 +19,25 @@ module Habarico
 
     protected
 
-    def view_action_endpoint_parameters_generator
-      @view_action_endpoint_parameters_generator ||= definition.view_action_endpoint_parameters_generator.new(definition, resource_path)
+    # What the view's endpoint addresses, left unaddressed when the action points at nothing of its
+    # own. `action_name` lives inside the address, so an action that has one names the resource it
+    # belongs to - the same rule the resource action endpoint follows.
+    def view_action_endpoint_reference(action, _context)
+      action_name = target_view_action_name(action)
+      reference = action.endpoint_reference
+      reference = resource_name if reference.blank? && action_name.present?
+      return nil if reference.blank?
+
+      Habarico::ResourceReference.build(reference, action_name: action_name)
+    end
+
+    # The action segment is the *target view's*, not the action's own name: a reserved view
+    # (`list` / `create` / `edit` / `show`) is addressed by its type and has none, so an action
+    # opening one carries no address at all.
+    def target_view_action_name(action)
+      return action.endpoint_action_name if action.endpoint_action_name.present?
+
+      definition.normalized_views.find { |view| view.name == action.view_name }&.endpoint_action_name
     end
 
     # ***********************************************************************
@@ -45,7 +62,7 @@ module Habarico
 
     def generate_endpoint(action, context)
       return nil if Habarico::ActionHelper.is_standard_action?(action)
-      view_action_endpoint_parameters_generator.generate(action, context)
+      view_action_endpoint_reference(action, context)
     end
 
     def generate_keep_linked_parent(action, _context)

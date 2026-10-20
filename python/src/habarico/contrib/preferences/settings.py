@@ -9,11 +9,10 @@ DEFAULTS = {
     # "default". `None` (for one entry or for the whole setting) means no limit.
     #
     # The values below sit an order of magnitude above what the frontend actually writes:
-    # 100 datagrid columns are ~2 KB of `columns`/`columnWidths`, a 30-widget dashboard
-    # ~19 KB and 20 saved queries ~11 KB at their fullest.
+    # 100 datagrid columns are ~2 KB of `columns`/`columnWidths` and 20 saved queries ~11 KB at
+    # their fullest. A package that owns a preference passes its own limit to `register_preference`.
     "MAX_VALUE_BYTES": {
         "default": 16 * 1024,
-        "preferences.dashboard": 32 * 1024,
         r"[a-zA-Z][a-zA-Z0-9_./-]*\.savedQueries": 32 * 1024,
     },
     # Largest number of preference rows one user may hold, or `None` for no limit. Checked

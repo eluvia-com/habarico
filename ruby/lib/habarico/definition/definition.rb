@@ -35,7 +35,7 @@ module Habarico
                   # Generator classes - action
                   :link_action_parameters_generator, :resource_action_endpoint_parameters_generator,
                   :resource_action_parameters_generator, :save_action_parameters_generator, :action_schema_generator,
-                  :view_action_endpoint_parameters_generator, :view_action_parameters_generator,
+                  :view_action_parameters_generator,
                   :confirm_dialog_properties_generator, :global_resource_action_schema_generator,
                   :resource_action_schema_generator, :upload_images_action_parameters_generator,
 
@@ -113,7 +113,6 @@ module Habarico
       @resource_action_parameters_generator = Habarico::ResourceActionParametersGenerator
       @save_action_parameters_generator = Habarico::SaveActionParametersGenerator
       @action_schema_generator = Habarico::ActionSchemaGenerator
-      @view_action_endpoint_parameters_generator = Habarico::ViewActionEndpointParametersGenerator
       @view_action_parameters_generator = Habarico::ViewActionParametersGenerator
       @confirm_dialog_properties_generator = Habarico::ConfirmDialogPropertiesGenerator
       @global_resource_action_schema_generator = Habarico::GlobalResourceActionSchemaGenerator

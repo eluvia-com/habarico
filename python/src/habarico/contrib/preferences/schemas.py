@@ -2,7 +2,7 @@
 
 These models mirror the named preference schemas declared in `contract/openapi.yaml`
 (`LocalePreference`, `ThemePreference`, `SavedQueriesPreference`,
-`ColumnsPreference`, `ColumnWidthsPreference`, `DashboardPreference`,
+`ColumnsPreference`, `ColumnWidthsPreference`,
 `AppPageWidthPreference`, `ContrastModePreference`, `StripedRowsPreference`,
 `AppDensityPreference`).
 
@@ -11,7 +11,7 @@ extracts a JSON Schema via `Model.model_json_schema()` and derives the default
 from `Model()` when not explicitly provided.
 """
 
-from typing import Annotated, Any, Literal, Optional, Union
+from typing import Annotated, Any, Literal, Optional
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -67,65 +67,3 @@ class StripedRowsPreference(RootModel[bool]):
 
 class AppDensityPreference(RootModel[Literal["compact", "standard", "comfortable"]]):
     pass
-
-
-class WidgetLayout(BaseModel):
-    x: int = Field(ge=0)
-    y: int = Field(ge=0)
-    w: int = Field(ge=1)
-    h: int = Field(ge=1)
-
-
-WidgetColor = Literal["primary", "secondary", "success", "error", "warning", "info", "inherit"]
-
-
-class TruncBucket(BaseModel):
-    """Date/datetime truncation bucket for a group-by field."""
-
-    type: Literal["trunc"]
-    granularity: Literal["second", "minute", "hour", "day", "week", "month", "quarter", "year"]
-
-
-class WidthBucket(BaseModel):
-    """Numeric fixed-width bucket for a group-by field."""
-
-    type: Literal["width"]
-    size: float
-
-
-GroupByBucket = Annotated[Union[TruncBucket, WidthBucket], Field(discriminator="type")]
-
-
-class GroupByItem(BaseModel):
-    """One group-by dimension of a chart widget. Omitted ``bucket`` → exact-value grouping."""
-
-    field: str
-    bucket: Optional[GroupByBucket] = None
-
-
-class ChartOptions(BaseModel):
-    """Chart-type-specific display options."""
-
-    orientation: Optional[Literal["vertical", "horizontal"]] = None
-    variant: Optional[Literal["pie", "doughnut"]] = None
-
-
-class WidgetConfig(BaseModel):
-    id: str
-    type: str
-    resource: Optional[str] = None
-    label: Optional[str] = None
-    layout: WidgetLayout
-    filters: Optional[dict[str, str]] = None
-    sort: Optional[SortPreference] = None
-    perPage: Optional[int] = Field(default=None, ge=1)
-    columns: Optional[list[str]] = None
-    field: Optional[str] = None
-    aggregateFunction: Optional[Literal["count", "sum", "avg", "min", "max"]] = None
-    color: Optional[WidgetColor] = None
-    groupBy: Optional[list[GroupByItem]] = None
-    chartOptions: Optional[ChartOptions] = None
-
-
-class DashboardPreference(BaseModel):
-    widgets: list[WidgetConfig] = Field(default_factory=list)

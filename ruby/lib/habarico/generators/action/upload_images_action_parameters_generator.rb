@@ -8,7 +8,7 @@ module Habarico
 
       # Create model
       Habarico::UploadImagesActionParameters.new(
-        reference: generate_reference(action, context),
+        reference: Habarico::ResourceReference.build(generate_reference(action, context)),
         target: generate_target(action, context),
         accept: generate_accept(action, context),
         image_field: generate_image_field(action, context)

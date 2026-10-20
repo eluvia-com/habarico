@@ -12,7 +12,6 @@ module Habarico
         label: generate_label(box, context),
         image_field: generate_image_field(box, context),
         default_sorting: generate_default_sorting(box, context),
-        schema_params: generate_schema_params(box, context),
       )
     end
 
@@ -30,8 +29,10 @@ module Habarico
     # Attribute generators
     # ***********************************************************************
 
-    def generate_reference(box, _context)
-      box.reference
+    # The resource the gallery reads from, with the query its schema request carries.
+    def generate_reference(box, context)
+      link = Habarico::BoxHelper.parent_link_params(box, context, resource_name)
+      Habarico::ResourceReference.build(box.reference, params: (box.schema_params || {}).merge(link || {}).presence)
     end
 
     def generate_target(box, _context)
@@ -44,10 +45,6 @@ module Habarico
 
     def generate_image_field(box, _context)
       box.image_field
-    end
-
-    def generate_schema_params(box, _context)
-      box.schema_params
     end
 
     def generate_extra_filters(box, context)

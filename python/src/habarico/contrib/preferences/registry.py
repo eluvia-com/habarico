@@ -2,7 +2,7 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 from django.core.serializers.json import DjangoJSONEncoder
 from habarico.contrib.preferences.exceptions import (
@@ -40,6 +40,10 @@ class _Entry:
     # settings held for this key or pattern when it was registered. None means unlimited.
     # Resolved once, here, the same way `default` is -- nothing reads the settings per write.
     max_bytes: Optional[int] = None
+    # The owner's chance to bring a stored value that no longer validates up to date, taken from
+    # the schema at registration -- `_normalize_schema` keeps only the JSON Schema, so the class
+    # is not available later. None when the schema offers none, and the value is then deleted.
+    migrate_value: Optional[Callable[[Any], Any]] = None
 
 
 @dataclass(frozen=True)
@@ -72,23 +76,32 @@ def _normalize_value(value: Any) -> Any:
 def _resolve_max_bytes(registered_as: str, max_bytes: Optional[int]) -> Optional[int]:
     """Settings limit for the key -- or pattern -- a preference is being registered under.
 
-    An explicit ``max_bytes`` wins. Otherwise ``HABARICO_PREFERENCES["MAX_VALUE_BYTES"]`` decides,
-    by the very string the preference is registered under, falling back to its ``"default"``
-    entry; a None there means unlimited. Read once, at registration, exactly like ``DEFAULTS``:
-    changing the setting afterwards does not move an already-registered limit.
+    ``HABARICO_PREFERENCES["MAX_VALUE_BYTES"]`` decides first, by the very string the preference is
+    registered under: a deployment's word outranks a limit a package registered, which is itself a
+    default above the dict's ``"default"`` entry. A None anywhere there means unlimited. Read once,
+    at registration, exactly like ``DEFAULTS``: changing the setting afterwards does not move an
+    already-registered limit.
     """
-    if max_bytes is not None:
-        return max_bytes
     limits = preference_settings.MAX_VALUE_BYTES or {}
     if registered_as in limits:
         return limits[registered_as]
+    if max_bytes is not None:
+        return max_bytes
     return limits.get("default")
+
+
+def _migrate_value_of(schema: PreferenceSchema) -> Optional[Callable[[Any], Any]]:
+    """The ``migrate_value`` a pydantic schema offers for a stored value in an older shape, if any."""
+    if isinstance(schema, type) and issubclass(schema, BaseModel):
+        return getattr(schema, "migrate_value", None)
+    return None
 
 
 def _build_entry(key: str, schema: PreferenceSchema, default: Any, max_bytes: Optional[int] = None) -> _Entry:
     json_schema = _normalize_schema(schema)
     validator = Draft202012Validator(json_schema)
     resolved_max_bytes = _resolve_max_bytes(key, max_bytes)
+    migrate_value = _migrate_value_of(schema)
 
     if default is EMPTY or callable(default):
         return _Entry(
@@ -96,6 +109,7 @@ def _build_entry(key: str, schema: PreferenceSchema, default: Any, max_bytes: Op
             default=default,
             validator=validator,
             max_bytes=resolved_max_bytes,
+            migrate_value=migrate_value,
         )
 
     default = _normalize_value(default)
@@ -108,6 +122,7 @@ def _build_entry(key: str, schema: PreferenceSchema, default: Any, max_bytes: Op
         schema=json_schema,
         default=default,
         validator=validator,
+        migrate_value=migrate_value,
         max_bytes=resolved_max_bytes,
     )
 
@@ -211,13 +226,33 @@ class PreferenceRegistry:
             raise PreferenceValidationError(key, exc.message) from exc
         return value
 
+    def _migrate_stored_value(self, entry: _Entry, record) -> bool:
+        """
+        Give the owner's schema a chance to bring a stored value up to date, in place.
+
+        A migration that does not validate, or one that raises, leaves the record to be deleted: a
+        schema's own bug must not make reading preferences fail.
+        """
+        if entry.migrate_value is None:
+            return False
+        try:
+            migrated = _normalize_value(entry.migrate_value(record.value))
+            entry.validator.validate(migrated)
+        except Exception:
+            return False
+        record.value = migrated
+        record.save(update_fields=["value"])
+        return True
+
     def _resolve(self, key: str, entry: _Entry, record) -> Optional[ResolvedPreference]:
         if record is not None:
             try:
                 entry.validator.validate(record.value)
             except JSONSchemaValidationError:
-                record.delete()
-            else:
+                if not self._migrate_stored_value(entry, record):
+                    record.delete()
+                    record = None
+            if record is not None:
                 return ResolvedPreference(key=key, value=record.value, updated_at=record.updated_at)
 
         default = self._resolve_default(key, entry)

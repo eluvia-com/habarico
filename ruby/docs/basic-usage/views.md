@@ -46,6 +46,10 @@ Habarico::ActionView.new(
 `endpoint_action_name` is what makes an action view routable — it is the URL segment appended
 after the record. `endpoint_reference` is a different thing: the *other* resource the action is
 served by. A view with neither gets no `path` in its schema and never becomes an action route.
+
+It is also what an action *opening* this view puts in its endpoint's address: the segment comes from
+the target view, so an action opening a reserved view (`list`, `create`, `edit`, `show`) carries no
+address at all — a reserved view is addressed by its type.
 :::
 
 ## View attributes

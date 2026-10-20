@@ -343,13 +343,19 @@ class PublishedProductAdmin(ModelAdmin):
 
 The list view has three independent action slots:
 
-| Parameter | Where rendered |
-|-----------|---------------|
-| `toolbar_actions` | Toolbar above the table (e.g. Create, bulk Delete). |
-| `row_actions` | Inline buttons on each table row (e.g. Edit, Show, Delete). |
-| `list_actions` | Utility actions next to the filter bar, separate from the toolbar (e.g. Export, Print). |
+| Parameter | Where rendered | Left alone |
+|-----------|---------------|---|
+| `toolbar_actions` | Toolbar above the table (e.g. Create, bulk Delete). | every action the resource supports |
+| `row_actions` | Inline buttons on each table row (e.g. Edit, Show, Delete). | the resource's record actions |
+| `list_actions` | Utility actions next to the filter bar, separate from the toolbar (e.g. Export, Print). | nothing |
 
 All three accept a list of action descriptors or plain action name strings.
+
+A slot the generator was not given publishes a `DefaultActions` entry, which the frontend expands
+into the resource's own actions — the defaults are in the schema rather than reconstructed by the
+client. Pass `None` to turn that off (or `[]`, which says the same thing with an empty array on the
+wire); only a slot nothing was said about carries the default. See
+[Action descriptor reference](./action-descriptor-reference.md).
 
 ```python
 from habarico import ModelAdmin

@@ -453,7 +453,7 @@ class BoxSchemaGeneratorTest < Minitest::Test
   def test_generate_gallery_passes_reference_and_image_field
     box = Habarico::GalleryBox.new(reference: 'photos', image_field: 'thumbnail')
     result = build_generator.send(:generate_gallery, build_view, box, 0, stub_context)
-    assert_equal 'photos', result.reference
+    assert_equal 'photos', result.reference.resource
     assert_equal 'thumbnail', result.image_field
   end
 
