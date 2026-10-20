@@ -25,11 +25,11 @@ export const defaultButtonProvider = ({
             choices={schema.view.choices}
             target={target}
             keepLinkedParent={schema.view.keepLinkedParent}
-            recordPk={schema.view.endpoint?.recordPk || recordPk}
+            recordPk={schema.view.reference?.recordPk || recordPk}
             mode={schema.view.mode}
             dialogWidth={schema.view.dialogWidth}
             reference={reference}
-            actionName={schema.view.endpoint?.actionName}
+            actionName={schema.view.reference?.actionName}
             params={schema.view.parameters}
             {...props}
           />

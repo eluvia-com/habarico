@@ -12,17 +12,17 @@ module Habarico
         mode: generate_mode(action, context),
         dialog_width: generate_dialog_width(action, context),
         parameters: generate_parameters(action, context),
-        endpoint: generate_endpoint(action, context),
+        reference: generate_reference(action, context),
         keep_linked_parent: generate_keep_linked_parent(action, context)
       )
     end
 
     protected
 
-    # What the view's endpoint addresses, left unaddressed when the action points at nothing of its
+    # What the view action addresses, left unaddressed when the action points at nothing of its
     # own. `action_name` lives inside the address, so an action that has one names the resource it
     # belongs to - the same rule the resource action endpoint follows.
-    def view_action_endpoint_reference(action, _context)
+    def view_action_reference(action, _context)
       action_name = target_view_action_name(action)
       reference = action.endpoint_reference
       reference = resource_name if reference.blank? && action_name.present?
@@ -60,9 +60,9 @@ module Habarico
       Habarico::CallableHelper.resolve(action.view_parameters, context)
     end
 
-    def generate_endpoint(action, context)
+    def generate_reference(action, context)
       return nil if Habarico::ActionHelper.is_standard_action?(action)
-      view_action_endpoint_reference(action, context)
+      view_action_reference(action, context)
     end
 
     def generate_keep_linked_parent(action, _context)

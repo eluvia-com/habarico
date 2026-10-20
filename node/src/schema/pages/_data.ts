@@ -748,7 +748,7 @@ const redirectView = (viewName: string): ViewActionParameters =>
   ({name: viewName, mode: 'redirect', parameters: {}}) as ViewActionParameters;
 
 // A redirect to a routed *action* view (`/:id/a/<action>`). Unlike a reserved view (which routes by
-// type alone), an action view routes by its `actionName`, so the button needs it in `endpoint` to
+// type alone), an action view routes by its `actionName`, so the button needs it in `reference` to
 // build the `/a/<action>` path — otherwise it navigates to `/a/undefined` and matches nothing.
 const redirectActionView = (
   viewName: string,
@@ -759,7 +759,7 @@ const redirectActionView = (
     name: viewName,
     mode: 'redirect',
     parameters: {},
-    endpoint: referenceTo(resource, {actionName}),
+    reference: referenceTo(resource, {actionName}),
   }) as ViewActionParameters;
 
 // Same, but opens the target view in a dialog instead of navigating to its own page. `dialogWidth`

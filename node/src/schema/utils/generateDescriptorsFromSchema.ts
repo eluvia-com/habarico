@@ -22,7 +22,8 @@ export const generateDescriptorsFromSchema = (
     actions
       // on a detail, an action opening the very view it sits in is left out
       .filter(
-        (schema) => isList || !viewName || schema.view?.name !== viewName || !!schema.view?.endpoint
+        (schema) =>
+          isList || !viewName || schema.view?.name !== viewName || !!schema.view?.reference
       )
       .filter((schema) => schema.showInList || !isList)
       .filter((schema) => {

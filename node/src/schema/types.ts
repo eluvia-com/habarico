@@ -77,7 +77,7 @@ export type ViewActionParameters = {
   name: string;
   choices: ActionViewChoice[];
   mode: ViewModeType;
-  endpoint?: ResourceReference;
+  reference?: ResourceReference;
   parameters: Record<string, string>;
   dialogWidth?: string;
   // Keep the linked parent segments in the redirect path. Set per action; defaults to a button's

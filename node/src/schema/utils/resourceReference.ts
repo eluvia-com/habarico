@@ -36,12 +36,10 @@ export const referenceKey = (reference: ResourceReference): string => {
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
-// The contract puts a reference under `reference`, and under `endpoint` of a view action; every
-// other `endpoint` wraps one in its own `reference`.
+// Every reference in the contract lives under the key `reference`; `endpoint` always wraps one
+// inside its own `reference`, with no exception.
 const isReferenceAt = (key: string, value: unknown): value is ResourceReference =>
-  (key === 'reference' || key === 'endpoint') &&
-  isObject(value) &&
-  typeof value.resource === 'string';
+  key === 'reference' && isObject(value) && typeof value.resource === 'string';
 
 // Free-form values of the contract, which hold user data and never a reference.
 const FREE_FORM_KEYS = new Set(['defaultValue', 'data', 'params', 'parameters']);
