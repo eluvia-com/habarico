@@ -1370,6 +1370,21 @@ components:
           `ResourceActionParameters` and requires its `endpoint`.
         * `upload-images` - bulk-upload image files
         * `export` - export list data to a file
+    ActionScopeType:
+      type: string
+      enum:
+        - list
+        - detail
+        - all
+      example: all
+      description: |
+        Which of a resource's actions a group descriptor expands:
+        * `list` - the ones over the collection (`is_detail` false)
+        * `detail` - the ones over a single record (`is_detail` true)
+        * `all` - both
+
+        It does not say whether the expansion targets a record or the collection; that follows from
+        `ResourceReference.record_pk` being present or absent.
     AfterSaveType:
       type: string
       enum:
@@ -1447,13 +1462,60 @@ components:
         when rendering, so `blank` becomes the HTML `target="_blank"`.
         * `self` - open in the current tab
         * `blank` - open in a new tab
-    ReferenceType:
-      type: string
+    ResourceReference:
+      type: object
       description: |
-        Reference type, defines name of the related resource. For resource from the same service, 
-        only resource name is required. If resource is from another service, 
-        reference is in format `service_name/resource_name`.
-      example: auth/user
+        Address of a resource, optionally narrowed to one record and one of its actions. Its
+        properties are the parts a route is built from — the service, `admin/{resource_name}`, then
+        the optional `{record_pk}` and `{action_name}` segments, then the query — which is why the
+        same set serves both a schema route and the data or action endpoint beside it.
+
+        `service` and `resource` are the two halves of what used to travel as one
+        `service_name/resource_name` string. Splitting them means no client parses a name to find out
+        which service it belongs to; a backend that knows the answer says it outright, and one that
+        does not omits `service`.
+
+        Where the address resolves a name (as on `ActionDescriptor`), the client loads that
+        resource's schema and binds to that resource and that record instead of the ambient context.
+        Where it sits on an endpoint, it says what that endpoint addresses; `path` and `method`
+        remain separate, because how a thing is called is not part of where it is.
+      properties:
+        service:
+          type: string
+          example: school
+          description: |
+            The service the resource belongs to. Absent means the service of the **view** this schema
+            was generated for — not the ambient one, since a descriptor sitting inside a list box is
+            still authored in the page's schema. A backend cannot name its own service, so a local
+            address simply leaves this out; only a cross-service one fills it.
+        resource:
+          type: string
+          example: teacher
+          description: |
+            The resource, as the bare `{resource_name}` segment. No service prefix: that is `service`.
+        record_pk:
+          oneOf:
+            - $ref: '#/components/schemas/KeyType'
+          description: |
+            The `{record_pk}` segment, and the record a resolved name binds to. Omitted where there
+            is no single record: a collection schema, a list or a gallery box.
+        action_name:
+          type: string
+          example: approve
+          description: |
+            The `{action_name}` segment, selecting an action's own schema
+            (`admin/{resource_name}/{action_name}/schema`, or the `{record_pk}` form). It says
+            **which schema to load**, not which action to run — the action a descriptor invokes is
+            its own `name`, looked up inside whatever schema this address returns. Omitted for a
+            resource's plain schema.
+        params:
+          type: object
+          additionalProperties: true
+          description: |
+            Query string of the request this address names — the parameters a get schema request
+            carries, or those of the endpoint it stands on.
+      required:
+        - resource
     DetailType:
       type: boolean
       example: false
@@ -1648,7 +1710,10 @@ components:
           example: view_name
           description: Name of the view which will be opened.
         endpoint:
-          $ref: '#/components/schemas/ViewActionEndpointParameters'
+          oneOf:
+            - $ref: '#/components/schemas/ResourceReference'
+          description: |
+            What the view action addresses. Absent means the resource the schema was generated for.
         choices:
           type: array
           description: |
@@ -1692,23 +1757,6 @@ components:
           $ref: '#/components/schemas/LinkTargetType'
       required:
         - url
-    ViewActionEndpointParameters:
-      type: object
-      description: |
-        Endpoint parameters. Endpoint is used for calling resource action.
-      properties:
-        reference:
-          oneOf:
-            - $ref: '#/components/schemas/ReferenceType'
-          description: Reference to another service resource. Required if view is from another service or resource.
-        action_name:
-          type: string
-          example: action_name
-          description: Name of the resource action which will be called. Value is required only if action is not standard.
-        record_pk:
-          oneOf:
-            - $ref: '#/components/schemas/KeyType'
-          description: Value of the object primary key. Required if action is for specific object.
     ResourceActionEndpointParameters:
       type: object
       description: |
@@ -1723,16 +1771,9 @@ components:
           $ref: '#/components/schemas/RequestMethodType'
         reference:
           oneOf:
-            - $ref: '#/components/schemas/ReferenceType'
-          description: Reference to another service resource. Required if view is from another service or resource.
-        action_name:
-          type: string
-          example: action_name
-          description: Name of the resource action which will be called. Value is required only if action is not standard.
-        record_pk:
-          oneOf:
-            - $ref: '#/components/schemas/KeyType'
-          description: Value of the object primary key. Required if action is for specific object.
+            - $ref: '#/components/schemas/ResourceReference'
+          description: |
+            What the endpoint addresses. Absent means the resource the schema was generated for.
       required:
         - method
     ViewEndpointParameters:
@@ -1753,12 +1794,9 @@ components:
           $ref: '#/components/schemas/RequestMethodType'
         reference:
           oneOf:
-            - $ref: '#/components/schemas/ReferenceType'
-          description: Reference to another service resource. Required if view is from another service or resource.
-        action_name:
-          type: string
-          example: action_name
-          description: Name of the resource action which will be called. Value is required only if action is not standard.
+            - $ref: '#/components/schemas/ResourceReference'
+          description: |
+            What the endpoint addresses. Absent means the resource the schema was generated for.
       required:
         - method
     ConfirmDialogProperties:
@@ -1814,11 +1852,13 @@ components:
         one parameter is set. Omitted entirely when no parameter is provided.
       properties:
         reference:
-          type: string
-          example: photos
+          oneOf:
+            - $ref: '#/components/schemas/ResourceReference'
           description: |
-            Resource where images will be created. When set, images are uploaded to this resource
-            instead of the current resource context.
+            Resource the images are created in, and whose schema the upload configuration is read
+            from when this object does not carry it. When set, images go there instead of to the
+            current resource context. An upload addresses a collection, so `record_pk`, `action_name`
+            and `params` go unused here.
         target:
           type: string
           example: article
@@ -1882,11 +1922,16 @@ components:
       type: object
       description: |
         List box parameters. List box is used for displaying objects in the table.
+
+        The box's toolbar is `BoxSchema.toolbar_actions`, on the box itself; a descriptor placed
+        there reaches this resource through its own `reference`.
       properties:
         reference:
-          type: string
-          example: auth/user
-          description: Reference to another service resource.
+          oneOf:
+            - $ref: '#/components/schemas/ResourceReference'
+          description: |
+            The resource whose objects the table lists, together with the parameters its schema
+            request carries. `record_pk` is not used here: a list box points at a collection.
         target:
           $ref: '#/components/schemas/TargetType'
         row_actions:
@@ -1895,16 +1940,8 @@ components:
             $ref: '#/components/schemas/ActionDescriptor'
           description: |
             Actions rendered as inline buttons on each table row (e.g. edit, delete).
-            Null means all supported object actions are shown.
-          nullable: true
-        toolbar_actions:
-          type: array
-          items:
-            $ref: '#/components/schemas/ActionDescriptor'
-          description: |
-            Actions rendered in the table's own toolbar (top of the resource list, e.g. create),
-            separate from the box-level toolbar which belongs to the box root. Absent when not configured.
-          nullable: true
+            Absent or empty renders nothing: a resource's own actions are never inferred
+            here. Place a `default_actions` descriptor to get them.
         list_actions:
           type: array
           items:
@@ -1912,7 +1949,6 @@ components:
           description: |
             Utility actions rendered next to the filter bar, separate from row and toolbar actions
             (e.g. export, print). Absent when not configured.
-          nullable: true
         default_sorting:
           oneOf:
             - $ref: '#/components/schemas/SortDescriptor'
@@ -1929,10 +1965,6 @@ components:
             - $ref: '#/components/schemas/SortableParameters'
           description: |
             List box can be drag & drop sortable. If sortable is set, list will be sortable.
-        schema_params:
-          type: object
-          description: |
-            Parameters that will be send to get schema request.
         double_click_action:
           allOf:
             - $ref: '#/components/schemas/ActionDescriptor'
@@ -1957,9 +1989,11 @@ components:
         Gallery box parameters. Gallery box is used for displaying images from another resource as a carousel.
       properties:
         reference:
-          type: string
-          example: photos/photo
-          description: Reference to another service resource.
+          oneOf:
+            - $ref: '#/components/schemas/ResourceReference'
+          description: |
+            The resource whose images the carousel shows, together with the parameters its schema
+            request carries. `record_pk` is not used here: a gallery box points at a collection.
         image_field:
           type: string
           example: image
@@ -1977,9 +2011,6 @@ components:
           items:
             $ref: '#/components/schemas/FilterDescriptor'
           description: List of filters which will be shown in the gallery view.
-        schema_params:
-          type: object
-          description: Parameters that will be sent to get schema request.
       required:
         - reference
         - image_field
@@ -2373,22 +2404,23 @@ components:
             $ref: '#/components/schemas/FieldDescriptor'
           description: |
             List of fields and it's configuration which will be shown in the list view.
-            Null value means all fields will be shown.
+            Absent means all fields will be shown.
         row_actions:
           type: array
           items:
             $ref: '#/components/schemas/ActionDescriptor'
           description: |
             Actions rendered as inline buttons on each table row (e.g. edit, delete).
-            Null means all supported object actions are shown.
+            Absent or empty renders nothing: a resource's own actions are never inferred
+            here. Place a `default_actions` descriptor to get them.
         toolbar_actions:
           type: array
           items:
             $ref: '#/components/schemas/ActionDescriptor'
           description: |
             Actions rendered in the toolbar above the table (e.g. create, bulk delete).
-            Null means all supported actions are shown.
-          nullable: true
+            Absent or empty renders nothing: a resource's own actions are never inferred
+            here. Place a `default_actions` descriptor to get them.
         list_actions:
           type: array
           items:
@@ -2396,7 +2428,6 @@ components:
           description: |
             Utility actions rendered next to the filter bar, separate from row and toolbar actions
             (e.g. export, print). Absent when not configured.
-          nullable: true
         default_sorting:
           oneOf:
             - $ref: '#/components/schemas/SortDescriptor'
@@ -2444,16 +2475,16 @@ components:
             $ref: '#/components/schemas/ActionDescriptor'
           description: |
             Actions rendered in the toolbar at the top of the view (e.g. delete, custom actions).
-            Null means all supported actions are shown.
-          nullable: true
+            Absent or empty renders nothing: a resource's own actions are never inferred
+            here. Place a `default_actions` descriptor to get them.
         bottom_actions:
           type: array
           items:
             $ref: '#/components/schemas/ActionDescriptor'
           description: |
             Actions rendered at the bottom of the view below the form fields (e.g. save, cancel).
-            Null means all supported actions are shown.
-          nullable: true
+            Absent or empty renders nothing: a resource's own actions are never inferred
+            here. Place a `default_actions` descriptor to get them.
       required:
         - box
     FieldWrapperProperties:
@@ -2531,12 +2562,29 @@ components:
     ActionDescriptor:
       type: object
       description: |
-        Field descriptor is used for defining action that are shown in a view.
+        Action descriptor places an action in one of a view's action slots. `type` says which kind of
+        entry it is:
+
+        * `action` — names a single action, the ordinary case. `name` is required.
+        * `default_actions` — stands for a resource's default actions, which the client expands into
+          one `action` entry each, every one bound to `reference`. `reference` is required, `scope`
+          narrows which of them, and `name` has no meaning.
+
+        A slot holding no descriptor renders nothing: defaults are never inferred from the resource on
+        their own, `default_actions` is the only way to ask for them.
       properties:
+        type:
+          type: string
+          enum:
+            - action
+            - default_actions
+          description: |
+            Which kind of entry this is. `action` names one action; `default_actions` stands for a
+            resource's defaults and is expanded by the client.
         name:
           type: string
           example: field_name
-          description: Action name.
+          description: Action name. Required when `type` is `action`; ignored for `default_actions`.
         label:
           type: string
           example: Action label
@@ -2549,10 +2597,35 @@ components:
           oneOf:
             - $ref: '#/components/schemas/ColorType'
           description: Action color that overrides default action color. If not set, default color is used.
+        confirm_dialog:
+          oneOf:
+            - $ref: '#/components/schemas/ConfirmDialogProperties'
+          description: |
+            Confirm dialog that overrides the one declared by the action this descriptor names.
+            If not set, the action's own dialog is used.
         action:
           oneOf:
             - $ref: '#/components/schemas/ActionSchema'
           description: Action that is shown in the field.
+        reference:
+          oneOf:
+            - $ref: '#/components/schemas/ResourceReference'
+          description: |
+            Where the action named by `name` is defined, and what it is bound to. A name is resolved
+            in this order: `action` first, then `reference`, then the schema the descriptor is
+            rendered in. `action` short-circuits the **lookup** only, never the **binding** — a
+            descriptor carrying both still runs its action against `reference`, so two descriptors
+            that look alike cannot end up acting on different records. Absent, the action is both
+            looked up and bound in the ambient schema, which is what every descriptor did before
+            this field existed.
+
+            Required when `type` is `default_actions`: that is the resource whose defaults expand here.
+        scope:
+          oneOf:
+            - $ref: '#/components/schemas/ActionScopeType'
+          description: |
+            Which of the resource's actions a `default_actions` entry expands. Absent means `all`.
+            Has no meaning when `type` is `action`.
         view:
           oneOf:
             - $ref: '#/components/schemas/ViewActionDescriptorParameters'
@@ -2562,9 +2635,8 @@ components:
           items:
             $ref: '#/components/schemas/ActionDescriptor'
           description: List of sub actions which will be shown in the action menu.
-          nullable: true
       required:
-        - name
+        - type
     SortDescriptor:
       type: object
       description: |
@@ -2912,14 +2984,13 @@ components:
             overlay itself is the card, so nothing takes the default.
         collapsible:
           type: string
-          nullable: true
           example: open
           enum:
             - open
             - closed
           description: |
-            Makes the box collapsible and sets the state it is rendered in. Null means the box is not
-            collapsible. A collapsible box keeps its header even without a label, because the header
+            Makes the box collapsible and sets the state it is rendered in. Absent means the box is
+            not collapsible. A collapsible box keeps its header even without a label, because the header
             hosts the toggle.
         boxes:
           type: array
@@ -2927,10 +2998,9 @@ components:
             oneOf:
               - $ref: '#/components/schemas/BoxSchema'
               - $ref: '#/components/schemas/FieldDescriptor'
-              - type: array
-                items:
-                  $ref: '#/components/schemas/FieldDescriptor'
-          description: List of boxes and fields
+          description: |
+            List of child boxes and fields. A run of consecutive field descriptors is laid out as
+            one row by the client, so a row is not declared here.
         read_only:
           type: boolean
           example: false
@@ -2945,7 +3015,10 @@ components:
             Actions rendered in the box's toolbar (top of the box / card header area). On a plain box
             the toolbar is always visible; on a step container (tab/wizard) the actions appear on the
             last step. Absent when not configured.
-          nullable: true
+
+            This is the only toolbar a box has. It takes the box's own actions and, through a
+            descriptor's `reference`, actions belonging to the resource the box points at — which is
+            why `ListBoxParameters` no longer carries a second `toolbar_actions` of its own.
         bottom_actions:
           type: array
           items:
@@ -2953,7 +3026,6 @@ components:
           description: |
             Actions rendered at the bottom of the box, below the fields — similar to form submit buttons
             at the view level. Absent when not configured.
-          nullable: true
         tab:
           $ref: '#/components/schemas/TabBoxParameters'
         wizard:
@@ -3026,7 +3098,12 @@ components:
           example: field_name
           description: Field name used for sorting. If not set, field name is used.
         reference:
-          $ref: '#/components/schemas/ReferenceType'
+          oneOf:
+            - $ref: '#/components/schemas/ResourceReference'
+          description: |
+            The resource this field relates to, present when the field is a relation. The client
+            addresses it to render the related object and to offer its records as choices. A relation
+            names a collection, so `record_pk`, `action_name` and `params` go unused here.
         enum:
           $ref: '#/components/schemas/EnumType'
         items:
@@ -3076,7 +3153,12 @@ components:
           example: default_value
           description: Default filter value.
         reference:
-          $ref: '#/components/schemas/ReferenceType'
+          oneOf:
+            - $ref: '#/components/schemas/ResourceReference'
+          description: |
+            The resource this filter's values come from, present when the filter is a relation. The
+            client addresses it to offer its records as filter choices. A relation names a collection,
+            so `record_pk`, `action_name` and `params` go unused here.
         enum:
           $ref: '#/components/schemas/EnumType'
         items:
@@ -3246,12 +3328,13 @@ components:
             value, so the frontend uses this mapping to render the display label. Mutually
             exclusive with `reference`.
         reference:
-          allOf:
-            - $ref: '#/components/schemas/ReferenceType'
+          oneOf:
+            - $ref: '#/components/schemas/ResourceReference'
           description: |
-            Related admin resource name when the field is a relation. Grouped results return
-            the raw primary key, so the frontend uses this to resolve the related object.
-            Mutually exclusive with `enum`.
+            The resource this field relates to, present when the field is a relation. Grouped results
+            return the raw primary key, so the client addresses this resource to resolve the related
+            object. Mutually exclusive with `enum`. A relation names a collection, so `record_pk`,
+            `action_name` and `params` go unused here.
         options:
           allOf:
             - $ref: '#/components/schemas/FieldOptions'
@@ -3870,12 +3953,19 @@ components:
       properties:
         id:
           type: string
-        resource:
-          type: string
+        reference:
+          oneOf:
+            - $ref: '#/components/schemas/ResourceReference'
           description: |
-            Resource the widget reads from (`service/resource`). Required for built-in
-            data-driven widgets (table / aggregate / chart). Omitted for custom widgets
-            that manage their own data source.
+            Resource the widget reads from. Required for built-in data-driven widgets
+            (table / aggregate / chart). Omitted for custom widgets that manage their own
+            data source. A widget reads a collection, so `record_pk`, `action_name` and
+            `params` go unused here.
+
+            Unlike every other `ResourceReference` in this spec, this one is **stored**, not
+            generated: it lives in `preferences.dashboard`. Dashboards saved before this
+            change hold the old `resource: "service/resource"` string, so a reader has to
+            migrate them or accept both shapes.
         type:
           $ref: '#/components/schemas/WidgetType'
         label:

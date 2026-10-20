@@ -27,7 +27,7 @@ module Habarico
     boolean_attr :card
 
     # Makes the box collapsible; value sets the default state ('open' = expanded, 'closed' = collapsed).
-    # Null means the box is not collapsible.
+    # Absent means the box is not collapsible.
     string_attr :collapsible
     enum_attr :collapsible, %i[open closed]
 
