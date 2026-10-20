@@ -12,6 +12,7 @@ module Habarico
         mode: generate_mode(action, context),
         dialog_width: generate_dialog_width(action, context),
         parameters: generate_parameters(action, context),
+        choices: generate_choices(action, context),
         endpoint: generate_endpoint(action, context),
         keep_linked_parent: generate_keep_linked_parent(action, context)
       )
@@ -43,8 +44,15 @@ module Habarico
       Habarico::CallableHelper.resolve(action.view_parameters, context)
     end
 
+    def generate_choices(action, context)
+      Habarico::CallableHelper.resolve(action.view_choices, context)
+    end
+
     def generate_endpoint(action, context)
-      return nil if Habarico::ActionHelper.is_standard_action?(action)
+      # A standard action of the current resource needs no endpoint - the frontend opens the view
+      # over the record it already has. One that names its own target does: the endpoint is where
+      # the target resource and record are written down.
+      return nil if Habarico::ActionHelper.is_standard_action?(action) && !Habarico::ActionHelper.has_explicit_target?(action)
       view_action_endpoint_parameters_generator.generate(action, context)
     end
 
