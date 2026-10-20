@@ -1,9 +1,9 @@
 module Habarico
-  class UploadImagesAction < Action
+  class UploadFilesAction < Action
     include DefinitionModel
 
     def initialize(params = {})
-      @type = :"upload-images"
+      @type = :"upload-files"
       super(params)
     end
 

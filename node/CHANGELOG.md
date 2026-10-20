@@ -1,5 +1,46 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- **BREAKING:** the `upload-images` action is renamed to `upload-files` — it bulk-uploads documents
+  (PDF, DOCX, XLSX, ZIP, …) as much as images, and the name said otherwise. No alias keeps the old
+  names:
+  - the `ActionType` value `'upload-images'` → `'upload-files'` and the `ActionSchema` slot
+    `uploadImages` → `uploadFiles`;
+  - the type `UploadImagesActionParameters` → `UploadFilesActionParameters`, its field
+    `imageField` → `fileField`;
+  - the button `SchemaUploadImagesButton` → `SchemaUploadFilesButton`, its prop `uploadImages` →
+    `uploadFiles`;
+  - the translation namespace `ra.upload_images.*` → `ra.upload_files.*`, in every locale. It is
+    shared by `UploadInput` and `useUploadAreaLabels`, so an application overriding these strings
+    must rename them even when it does not use the action. The renamed keys:
+    `dialog_title`, `select_files`, `remove_all_tooltip`, `remove_all`, `upload_success`,
+    `upload_error`, `uploading`, `processing`, `upload_count`, `drop_files`, `click_to_upload`,
+    `or_drag_and_drop`, `upload_complete`, `upload_failed`, `file_too_large`, `file_too_large_max`,
+    `file_type_not_allowed`, `image_processing_failed`, `unresolved_errors`,
+    `files_remaining_hint` and `try_again`. An override left under the old key is ignored without
+    an error: the built-in text shows instead.
+
+  The dialog title, the "remove all" tooltip, the success message and the generic upload error
+  speak of files instead of photos in every locale, and the button's default icon, shown when the
+  action carries no `icon`, is `UploadFile` instead of `AddPhotoAlternate` (`IconType` gained
+  `UploadFile`). The default `accept` still admits images only (`.png`, `.jpg`, `.jpeg`, `.bmp`,
+  `.gif`); an action uploading documents must set `accept`, in its parameters or on the options of
+  its `fileField`. The action works only with a backend that
+  sends `upload-files` (HAB-993) — against an older one, which sends `upload-images`, the button is
+  not rendered and no error is reported; upgrade the backend and the frontend together. To migrate,
+  rename `uploadImages` / `imageField` and the `ra.upload_images.*` overrides, and a custom
+  `buttonProvider` matching `'upload-images'`. (HAB-1000)
+
+### Fixed
+
+- A file row of `UploadInput` and of the `upload-files` dialog shows an uploaded document (PDF,
+  DOCX, ZIP, …) as its file-type tile instead of a broken-image thumbnail. Only a file whose name
+  has an image extension a browser can render (PNG, JPG, GIF, WebP, AVIF, SVG, BMP, ICO) gets a
+  thumbnail. (HAB-1000)
+
 ## [7.2.0] — 2026-10-19
 
 ### Changed

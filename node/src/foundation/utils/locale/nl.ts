@@ -531,12 +531,12 @@ export const nlMessages: LocaleMessages = {
       error_message:
         'Sorry, er is een fout opgetreden tijdens de communicatie met AI. Probeer het opnieuw.',
     },
-    upload_images: {
-      dialog_title: "Foto's uploaden",
+    upload_files: {
+      dialog_title: 'Bestanden uploaden',
       select_files: 'Bestanden selecteren',
-      remove_all_tooltip: "Alle foto's verwijderen",
+      remove_all_tooltip: 'Alle bestanden verwijderen',
       remove_all: 'Alles verwijderen',
-      upload_success: "Foto's zijn succesvol geüpload.",
+      upload_success: 'Bestanden zijn succesvol geüpload.',
       upload_error: 'Er is een fout opgetreden tijdens het uploaden.',
       uploading: 'Uploaden…',
       processing: 'Verwerken…',

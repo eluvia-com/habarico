@@ -66,8 +66,8 @@ msgstr "Il valore deve essere un dizionario con le chiavi 'lower' o 'upper'."
 msgid "Save"
 msgstr "Salva"
 
-msgid "Upload images"
-msgstr "Carica immagini"
+msgid "Upload files"
+msgstr "Carica file"
 
 msgid "Delete"
 msgstr "Elimina"

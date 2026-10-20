@@ -68,8 +68,8 @@ msgstr "Wartość musi być słownikiem z kluczami 'lower' lub 'upper'."
 msgid "Save"
 msgstr "Zapisz"
 
-msgid "Upload images"
-msgstr "Prześlij obrazy"
+msgid "Upload files"
+msgstr "Prześlij pliki"
 
 msgid "Delete"
 msgstr "Usuń"
