@@ -1,0 +1,19 @@
+# The example's images are built from this directory (examples/eshop/compose.yaml), so without
+# these the build context would carry well over a gigabyte of installed dependencies - each of
+# which the images install themselves, for the platform they run on.
+.git
+
+**/node_modules
+**/.venv
+**/__pycache__
+**/*.egg-info
+**/.bundle
+**/vendor/bundle
+
+# Build output. The frontend image builds the library itself.
+node/lib
+node/storybook-static
+examples/eshop/frontend/dist
+
+examples/eshop/rails/log
+examples/eshop/rails/tmp

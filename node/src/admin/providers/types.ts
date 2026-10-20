@@ -18,13 +18,12 @@ export type LoginSsoMethodState = {
   login: () => void;
 };
 
-// The built-in `LoginForm` no longer bundles a Google (or any other) OAuth implementation — that
-// required `@eluvia/auth`'s `useGoogleLogin`. Instead, return one or more `LoginSsoMethod` entries
-// from `ServiceAuthProvider.getSsoLoginMethods` (see `buildServiceAuthProvider`'s `ssoLoginMethods`
-// param); habarico renders the button/spinner and calls `useLogin` with the routing context, so
-// only the OAuth *hook* (not the surrounding UI) needs to be provided. Any library whose login hook
-// fits this shape works — `@eluvia/auth`'s `useGoogleLogin` included, wrapped to close over its own
-// `googleClientId`.
+// The built-in `LoginForm` bundles no Google (or any other) OAuth implementation. Instead, return
+// one or more `LoginSsoMethod` entries from `ServiceAuthProvider.getSsoLoginMethods` (see
+// `buildServiceAuthProvider`'s `ssoLoginMethods` param); habarico renders the button/spinner and
+// calls `useLogin` with the routing context, so only the OAuth *hook* (not the surrounding UI)
+// needs to be provided. Any library whose login hook fits this shape works, wrapped to close over
+// its own client id.
 export type LoginSsoMethod = {
   /** Unique key — used as the React list key and to detect this method's own callback. */
   id: string;
@@ -34,9 +33,8 @@ export type LoginSsoMethod = {
   useLogin: (context: LoginSsoMethodContext) => LoginSsoMethodState;
 };
 
-// Generic shape of the authenticated user, structurally compatible with `@eluvia/auth`'s `User`
-// (and any other auth backend) — `buildServiceAuthProvider` never imports that package directly,
-// so any auth library whose user object carries these fields can be plugged in.
+// Generic shape of the authenticated user. `buildServiceAuthProvider` imports no auth package, so
+// any backend whose user object carries these fields can be plugged in.
 export type ServiceAuthUser = {
   id: string | number;
   email?: string;
@@ -46,8 +44,8 @@ export type ServiceAuthUser = {
   avatar?: {url?: string; filename?: string; content?: string};
 };
 
-// Generic shape of the locally-held auth state, structurally compatible with `@eluvia/auth`'s
-// `getAuthData()` return value.
+// Generic shape of the locally-held auth state, as `getAuthData()` returns it. `jwt` is optional:
+// a session-cookie backend keeps only the user here.
 export type ServiceAuthData = {
   user?: ServiceAuthUser;
   jwt?: {access: string; refresh: string};

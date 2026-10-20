@@ -97,7 +97,7 @@ export const UpdateIdentityDialog = ({open = false, onClose}: UpdateIdentityDial
       ...data,
       ...(avatar && avatarFilename ? {avatarFilename, avatarContent: avatar.split(',')[1]} : {}),
     });
-    // authProvider.updateIdentity() only updates @eluvia/auth's own store; react-admin's
+    // authProvider.updateIdentity() only updates the provider's own store; react-admin's
     // useGetIdentity() cache must be refetched explicitly or the header keeps showing stale data.
     await refetchIdentity();
   };

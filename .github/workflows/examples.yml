@@ -1,0 +1,97 @@
+# Checks of examples/eshop - the runnable example built on the libraries in this tree. It is not a
+# versioned unit and nothing publishes it; these jobs exist so a change that breaks it fails in the
+# pull request that made it. See .github/README.md.
+name: Examples
+
+# Every pull request runs every library's checks, so each job reports a status the `next` ruleset
+# can require; a workflow skipped by a `paths` filter would leave that check pending forever.
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: examples-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  examples-django:
+    name: examples-django
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/eshop/django
+
+    # Habarico locks a record with a PostgreSQL advisory lock before an update or a delete, so the
+    # example has no sqlite fallback to fall back on.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: eshop
+          POSTGRES_USER: eshop
+          POSTGRES_PASSWORD: eshop
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    env:
+      PGHOST: localhost
+      PGDATABASE: eshop
+      PGUSER: eshop
+      PGPASSWORD: eshop
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      # requirements.txt installs habarico from ../../../python, so this is the working tree's
+      # library, not a release.
+      - run: pip install -r requirements.txt
+
+      - run: python manage.py test
+
+  examples-rails:
+    name: examples-rails
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/eshop/rails
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: eshop
+          POSTGRES_USER: eshop
+          POSTGRES_PASSWORD: eshop
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    env:
+      PGHOST: localhost
+      PGUSER: eshop
+      PGPASSWORD: eshop
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # The Gemfile takes habarico from ../../../ruby. bundler-cache is off: the lock is not
+      # committed, so there is nothing stable to key a cache on.
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: examples/eshop/rails
+
+      - run: bundle install
+
+      - run: bin/rails db:prepare
+
+      - run: bin/rails test
