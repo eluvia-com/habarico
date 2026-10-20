@@ -17,13 +17,14 @@ because the ruleset matches checks by name alone:
 
 | Workflow | Jobs |
 |----------|------|
-| `node.yml` | `node-code-quality` (lint + typecheck), `node-unit-tests`, `node-storybook-tests` |
+| `node.yml` | `node-code-quality` (lint + typecheck), `node-unit-tests`, `node-storybook-tests`; on a manual run also `node-pack`, the branch as a tarball artifact |
 | `python.yml` | `python-code-quality` (flake8 + black), `python-unit-tests` (pipenv + pytest) |
 | `ruby.yml` | `ruby-code-quality` (rubocop), `ruby-unit-tests` (`rake test`) |
 | `beta-bump.yml` | `beta-bump` |
 | `major.yml` | `major` (the major button) |
-| `publish.yml` | `detect`, then one job per changed library |
+| `publish.yml` | `detect`, then one job per changed library; on a stable tag `github-release` after it |
 | `release.yml` | `release` (the finalize button) |
+| `patch.yml` | `patch` (the patch button, on a maintenance branch) |
 | `storybook.yml` | `publish-storybook`: uploads Storybook to storybook.habarico.com on a `node@X.Y.0` tag, or the `next/` preview by hand |
 | `docs-check.yml` | `docs-check`: builds the documentation site on a pull request touching `*/docs/**` or the contract |
 | `changelog-check.yml` | `changelog-check`: reads the changelogs the way the site does, on a pull request touching one |
@@ -39,7 +40,10 @@ directory has moved since its last bump commit, bumps each to its next beta vers
 (no tag), and pushes **one** `Bump version to ...` commit. That push is what actually reaches
 `publish.yml`: it reads the version straight back out of the file the bump commit just wrote,
 nothing derived. A `<lib>@X.Y.Z` tag, pushed by `release.yml`, publishes the stable artifact the
-same way it always has.
+same way it always has, and once the library is in its registry `github-release` creates the
+GitHub Release `<lib>@X.Y.Z` with the tag's changelog section, cut at 30,000 characters with a
+link to the full changelog, and a link to the package. Only node's newest stable release is
+marked "Latest".
 
 `publish.yml` also has a `workflow_dispatch` with a `library` input, which publishes that one
 library again: on `next` the beta its version file carries, on a `<lib>@X.Y.Z` tag that release.
@@ -49,6 +53,11 @@ It refuses on `next` when the library's directory has moved since its last bump 
 changelogs, commits, tags, pushes `next`, fast-forwards `master`, creates `release/<lib>@vX.Y`
 maintenance branches. The version files stay on the released version until the next merge, when
 `beta-bump.yml` opens the next cycle. It publishes nothing — the tags it pushes are what start `publish.yml`.
+
+`patch.yml` is the patch button (`workflow_dispatch`, with a `dry_run` input), run on a
+`release/<lib>@vX.Y` branch. It releases that library at its next patch version: stamps the
+changelog (a generic entry when `[Unreleased]` has none), commits, pushes the branch, then the tag
+that starts `publish.yml`. It merges nothing back into `next` or `master`.
 
 `major.yml` is the major button (`workflow_dispatch`, with a `dry_run` input). It moves every
 library onto the first beta of the next major in one bump commit on `next`, which `publish.yml`
@@ -75,7 +84,9 @@ version file in a reviewed pull request, per library. See `.github/RELEASE-DESIG
 No library has an internal registry; the `@eluvia` npm scope stays with `habarico-enterprise`.
 
 Betas use npm's `beta` dist-tag, so `npm install habarico` still resolves the last stable
-version; `pip` and `gem` skip pre-releases unless asked with `--pre`.
+version; `pip` and `gem` skip pre-releases unless asked with `--pre`. A stable node release takes
+`latest` only when it is above the current one; a patch of an older series goes under the tag of
+its series (`release-7.1`). PyPI and rubygems.org resolve the highest version on their own.
 
 ## Going public
 
@@ -95,7 +106,7 @@ rejects a publish whose repository does not match the GitHub repository it runs 
 | `SHARED_MINOR_MAJOR` | `true` | Keeps major.minor identical across the libraries, read by `beta-bump.yml`, `release.yml` and `major.yml`; `major.yml` does not run without it. |
 | `NEXT_BRANCH` | `next` | Trunk. Hard-coded in `publish.yml`'s and `beta-bump.yml`'s triggers as well, because `on:` has no contexts — all three must agree. |
 | `STABLE_BRANCH` | `master` | Fast-forwarded by the finalize. |
-| `RELEASE_APP_ID` | — (required) | GitHub App used by `release.yml`'s finalize and by the bump commits of `beta-bump.yml` and `major.yml` to write to the repository. |
+| `RELEASE_APP_ID` | — (required) | GitHub App used by `release.yml`'s finalize, `patch.yml` and the bump commits of `beta-bump.yml` and `major.yml` to write to the repository. |
 | `GITLAB_DOCS_TOKEN_USER` | — (required) | Username of the GitLab deploy token `docs-check.yml` and `changelog-check.yml` clone with. |
 | `STORYBOOK_BUCKET` | — (required) | Name of the Spaces bucket storybook.habarico.com is served from; `storybook.yml` uploads into it. |
 | `STORYBOOK_BUCKET_REGION` | — (required) | Its Spaces region (e.g. `fra1`); the endpoint is derived from it. |
@@ -107,7 +118,7 @@ credentials out of the pull-request workflows, and gives somewhere to hang prote
 
 | Secret | Used by | Needed because |
 |--------|---------|----------------|
-| `RELEASE_APP_PRIVATE_KEY` | `release.yml`, `beta-bump.yml`, `major.yml` | Private key of the GitHub App above. `GITHUB_TOKEN` will not do: pushes made with it deliberately do not start further workflow runs, so neither the release tags nor a bump commit would ever trigger `publish.yml`. The App needs `contents: write` and a ruleset bypass on both branches. |
+| `RELEASE_APP_PRIVATE_KEY` | `release.yml`, `patch.yml`, `beta-bump.yml`, `major.yml` | Private key of the GitHub App above. `GITHUB_TOKEN` will not do: pushes made with it deliberately do not start further workflow runs, so neither the release tags nor a bump commit would ever trigger `publish.yml`. The App needs `contents: write` and a ruleset bypass on `next`, `master` and `release/*`. |
 | `GITLAB_DOCS_TOKEN` | `docs-check.yml`, `changelog-check.yml` | The GitLab deploy token itself: `read_repository` on the `eluvia/habarico` group, which covers `hab-docs` and `habarico-enterprise`. |
 | `STORYBOOK_BUCKET_KEY`, `STORYBOOK_BUCKET_SECRET` | `storybook.yml` | Spaces access key with write access to `STORYBOOK_BUCKET`. |
 
@@ -119,9 +130,3 @@ The library checks read no secrets, so `pull_request` runs from forks work uncha
   repository (`hab-docs`), which clones the pages out of `<lib>/docs/` and publishes them. Nothing
   in this repository starts that publish on either CI — since HAB-872 it is started by a stable tag
   of `habarico-enterprise`, the release that closes every cycle.
-- **No documentation preview.** The pages of a pull request are not published to the test host;
-  build them locally with `hab-docs` to see them rendered.
-- **Patch releases from a maintenance branch.** `release.yml` creates `release/<lib>@vX.Y`, but
-  there is no patch button — a patch has to be versioned, committed and tagged by hand.
-- **A GitHub Release record.** `RELEASE-DESIGN.md` plans one on every stable tag, but
-  `publish.yml` does not create one yet.
