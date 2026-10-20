@@ -1,6 +1,6 @@
 import React from 'react';
 import {varAlpha} from '@design/theme/utils';
-import {formatBytes} from '@foundation/utils/file';
+import {formatBytes, isImageFilename} from '@foundation/utils/file';
 import {Box, Button, IconButton, LinearProgress, Typography} from '@mui/material';
 import type {SxProps, Theme} from '@mui/material';
 import {FileImagePreview} from '../../atoms/FileImagePreview';
@@ -98,7 +98,7 @@ export const FileRow = ({
   return (
     <Box sx={rowSx(!!error, padding, singleFile, noBorder, !!disabled)}>
       <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
-        {previewUrl ? (
+        {previewUrl && isImageFilename(filename) ? (
           <FileImagePreview src={previewUrl} alt={filename} />
         ) : (
           <FileTypePreview filename={filename} />

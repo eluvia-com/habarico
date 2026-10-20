@@ -40,7 +40,7 @@ module Habarico
     # Parameters specific to action type 'save'
     has_one_attr :save, 'Habarico::SaveActionParameters'
 
-    # Parameters specific to action type 'upload-images'
-    has_one_attr :upload_images, 'Habarico::UploadImagesActionParameters'
+    # Parameters specific to action type 'upload-files'
+    has_one_attr :upload_files, 'Habarico::UploadFilesActionParameters'
   end
 end

@@ -4,7 +4,7 @@ from .actions import (
     ExportActionDescriptor,
     ResourceActionSchema,
     SaveActionDescriptor,
-    UploadImagesActionDescriptor,
+    UploadFilesActionDescriptor,
 )
 from .boxes import (
     ArrayBox,
@@ -116,6 +116,6 @@ __all__ = [
     "ViewModeType",
     "LinkTargetType",
     "SaveActionDescriptor",
-    "UploadImagesActionDescriptor",
+    "UploadFilesActionDescriptor",
     "ExportActionDescriptor",
 ]

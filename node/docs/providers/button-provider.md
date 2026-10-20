@@ -53,7 +53,7 @@ all. See
 | `link` | Navigates to an external URL |
 | `save` | Submits the current form, optionally with extra data |
 | `ai-assistant` | Generates field values through the AI endpoint |
-| `upload-images` | Opens the bulk image upload dialog |
+| `upload-files` | Opens the bulk upload dialog — one record per file, images and documents alike |
 | `export` | Runs the backend export of the selected rows or the filtered list, in the action schema's `format` |
 
 ## Example

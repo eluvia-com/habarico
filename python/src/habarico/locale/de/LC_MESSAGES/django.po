@@ -66,8 +66,8 @@ msgstr "Wert muss ein Dictionary mit 'lower' oder 'upper' Schlüsseln sein."
 msgid "Save"
 msgstr "Speichern"
 
-msgid "Upload images"
-msgstr "Bilder hochladen"
+msgid "Upload files"
+msgstr "Dateien hochladen"
 
 msgid "Delete"
 msgstr "Löschen"

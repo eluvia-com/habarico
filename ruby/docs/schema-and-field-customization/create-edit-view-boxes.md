@@ -148,12 +148,12 @@ Habarico::ShowView.new(
         extra_filters: ->(c) { { unit_id: c.record&.id } },
         toolbar_actions: [
           Habarico::ActionReference.new(
-            name: 'upload-images',
-            action: Habarico::UploadImagesAction.new(
+            name: 'upload-files',
+            action: Habarico::UploadFilesAction.new(
               label: 'Upload photos',
-              upload_images_reference: 'unit_photos',
-              upload_images_target: 'unit',
-              upload_images_image_field: 'photo',
+              upload_files_reference: 'unit_photos',
+              upload_files_target: 'unit',
+              upload_files_file_field: 'photo',
             ),
           ),
         ],

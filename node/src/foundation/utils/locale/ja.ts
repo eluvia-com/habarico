@@ -279,12 +279,12 @@ export const jaMessages: LocaleMessages = {
       error_message:
         '申し訳ありませんが、AIとの通信中にエラーが発生しました。もう一度お試しください。',
     },
-    upload_images: {
-      dialog_title: '写真をアップロード',
+    upload_files: {
+      dialog_title: 'ファイルをアップロード',
       select_files: 'ファイルを選択',
-      remove_all_tooltip: 'すべての写真を削除',
+      remove_all_tooltip: 'すべてのファイルを削除',
       remove_all: 'すべて削除',
-      upload_success: '写真が正常にアップロードされました。',
+      upload_success: 'ファイルが正常にアップロードされました。',
       upload_error: 'アップロード中にエラーが発生しました。',
       uploading: 'アップロード中…',
       processing: '処理中…',
