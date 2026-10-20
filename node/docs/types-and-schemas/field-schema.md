@@ -29,7 +29,7 @@ type FieldSchema = {
   nullable?: boolean;
   required?: boolean;
   defaultValue?: string | boolean | number;
-  reference?: string;        // Target resource for relation fields, e.g. "eshop/category"
+  reference?: ResourceReference;  // Target resource for relation fields
   sortable?: boolean;
   sortBy?: string;
   aggregations?: AggregateFunctionType[];     // Functions offered on the /aggregate endpoint
@@ -54,7 +54,7 @@ type ItemFieldSchema = {
   nullable?: boolean;
   required?: boolean;
   defaultValue?: string | boolean | number;
-  reference?: string;
+  reference?: ResourceReference;
   enum?: EnumType;
   options?: FieldOptions;
   properties?: FieldSchema[];
@@ -233,7 +233,7 @@ type FieldDescriptor = {
   groupBy?: FieldGroupByOption[];
   // carried through for aggregate widgets so the chart can render readable labels
   format?: FieldFormatType;
-  reference?: string;
+  reference?: ResourceReference;
   enum?: EnumType;
 };
 
@@ -253,7 +253,7 @@ type FilterSchema = {
   label: string;
   helpText?: string;
   defaultValue?: string | boolean | number;
-  reference?: string;
+  reference?: ResourceReference;
   enum?: EnumType;
   options?: FieldOptions;
   properties?: FieldSchema[];
@@ -278,7 +278,7 @@ Parameters of the `upload-images` action button (`SchemaUploadImagesButton`) —
 
 ```typescript
 type UploadImagesActionParameters = {
-  reference?: string;              // Resource where images are created
+  reference?: ResourceReference;   // Resource where images are created
   target?: string;                 // FK field on the image model linking to the parent record
   imageField: string;              // Field on the created record that holds the image
   accept?: string[];               // Allowed extensions e.g. [".png", ".jpg"]; defaults to common image types

@@ -7,7 +7,6 @@ import {useViewPresentation} from '@admin/contexts/ViewPresentationContext';
 import {FilterDiv} from '@admin/overrides/ra-iu-materialui';
 import {ViewSchemaBreadcrumbs} from '@schema/components/breadcrumbs/ViewSchemaBreadcrumbs';
 import {SchemaDatagrid} from '@schema/components/collections/SchemaDatagrid';
-import {SchemaDatagridRowActions} from '@schema/components/collections/SchemaDatagrid/SchemaDatagridRowActions';
 import {SchemaListActions} from '@schema/components/views/SchemaListActions';
 import {SchemaSidePanel} from '@schema/components/views/SchemaSidePanel';
 import {SchemaViewTitle} from '@schema/components/views/SchemaViewTitle';
@@ -23,6 +22,7 @@ import {
   FIELD_DEFAULT,
   FieldSelection,
   actionDescriptorsToFieldSelection,
+  descriptorsNeedAllActions,
   fieldDescriptorsToActionSelection,
   fieldDescriptorsToFieldSelection,
   mergeFieldSelections,
@@ -105,7 +105,7 @@ export const ListContent = ({
   const rowActions = viewSchemaProperties.rowActions;
   const actionFields = listFields ? fieldDescriptorsToActionSelection(listFields) : {};
   const actionSelection: FieldSelection | string =
-    rowActions === undefined
+    rowActions === undefined || descriptorsNeedAllActions(rowActions)
       ? FIELD_DEFAULT
       : mergeFieldSelections(actionFields, actionDescriptorsToFieldSelection(rowActions));
 
@@ -121,10 +121,6 @@ export const ListContent = ({
   // --------------------------------------------------------------------------
   // Render
   // --------------------------------------------------------------------------
-
-  const rowActionButtons = (!rowActions || rowActions.length > 0) && (
-    <SchemaDatagridRowActions descriptors={rowActions} />
-  );
 
   const preferenceKey = `${resource}.list.datagrid`;
 
@@ -185,7 +181,8 @@ export const ListContent = ({
       <MethodSchemaProvider schema={methodSchema}>
         <SchemaDatagrid
           fields={listFields}
-          rowActionButtons={datagridButtons || rowActionButtons}
+          rowActions={rowActions}
+          rowActionButtons={datagridButtons}
           indexField={viewSchemaProperties.sortable?.fieldName}
           sortForFilters={viewSchemaProperties.sortable?.sortForFilters}
           singleClickAction={viewSchemaProperties.singleClickAction}

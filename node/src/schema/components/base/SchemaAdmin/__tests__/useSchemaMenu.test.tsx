@@ -26,14 +26,20 @@ const showView = {
   name: 'detail',
   type: 'show' as const,
   isDetail: true,
-  endpoint: {method: 'get' as const, actionName: 'detail'},
+  endpoint: {
+    method: 'get' as const,
+    reference: {service: 'svc', resource: 'orders', actionName: 'detail'},
+  },
 };
 
 const listView = {
   name: 'list',
   type: 'list' as const,
   isDetail: false,
-  endpoint: {method: 'get' as const, actionName: 'list'},
+  endpoint: {
+    method: 'get' as const,
+    reference: {service: 'svc', resource: 'orders', actionName: 'list'},
+  },
 };
 
 const buildSchema = (
@@ -59,7 +65,7 @@ const viewMenu = (viewName: string, recordPk?: number): MenuSchema => ({
     choices: [],
     mode: 'redirect',
     parameters: {},
-    ...(recordPk === undefined ? {} : {endpoint: {recordPk}}),
+    ...(recordPk === undefined ? {} : {endpoint: {service: 'svc', resource: 'orders', recordPk}}),
   },
 });
 

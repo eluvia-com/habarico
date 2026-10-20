@@ -19,6 +19,7 @@ import {useFormDefaultValues} from '@schema/hooks/useFormDefaultValues';
 import {useGetTargetValues} from '@schema/hooks/useGetTargetValues';
 import {useGlobalResourceSchemaContext} from '@schema/hooks/useGlobalResourceSchemaContext';
 import {useLocalResourceSchemaRefresh} from '@schema/hooks/useLocalResourceSchemaRefresh';
+import {findSaveAction} from '@schema/utils/actionDescriptor';
 import {getFormData} from '@schema/utils/api';
 import {DataType} from '@typing';
 import {ActionSaveContextProvider} from './ActionSaveContext';
@@ -67,8 +68,7 @@ export const ActionContent = ({
   // Handlers
   // --------------------------------------------------------------------------
 
-  const afterSave = viewSchema.detail?.bottomActions?.find((d) => d.action?.type === 'save')?.action
-    ?.save?.afterSave;
+  const afterSave = findSaveAction(viewSchema.detail?.bottomActions)?.save?.afterSave;
 
   const handleSuccess = () => {
     // Redirect to the appropriate view based on the available views and afterSave specification

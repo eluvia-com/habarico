@@ -1,5 +1,6 @@
 import {createContext, useContext} from 'react';
 import {RequestMethodType} from '@schema/types';
+import {serviceOfKey} from '@schema/utils/resourceReference';
 import {LocalResourceSchemaContextType} from './types';
 
 export const LocalResourceSchemaContext = createContext<LocalResourceSchemaContextType | undefined>(
@@ -27,7 +28,7 @@ export const useLocalResourceSchemaContext = () => {
     if (!method) return;
     return schema.endpoints[method];
   };
-  const serviceName = resource?.split('/')[0] || '';
+  const serviceName = resource ? serviceOfKey(resource) : '';
   return {
     serviceName,
     resource,

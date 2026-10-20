@@ -29,13 +29,12 @@ Under `schema.gallery` (`GalleryBoxParameters`):
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `reference` (required) | `string` | — | Resource holding the images, in `"service/resource"` form |
+| `reference` (required) | `ResourceReference` | — | Resource holding the images; its `params` are sent when fetching that resource's schema |
 | `imageField` (required) | `string` | — | Field of that resource carrying the file |
 | `target` | `string` | — | Foreign key pointing back at the parent record |
 | `filters` | `FilterDescriptor[]` | — | Currently ignored by the frontend — the gallery's filter bar is switched off |
 | `defaultSorting` | `SortDescriptor` | — | Initial sort |
 | `extraFilters` | `Filters` | — | Filters applied on top, not shown in the UI |
-| `schemaParams` | `Record<string, string>` | — | Extra query params sent when fetching the reference's schema |
 
 The box's own `toolbarActions` render in the header, bound to the `target` — that is where an
 upload or manage button goes. `bottomActions` render right-aligned underneath.
