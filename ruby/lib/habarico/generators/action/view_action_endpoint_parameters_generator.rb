@@ -24,13 +24,18 @@ module Habarico
     end
 
     def generate_action_name(action, _context)
-      action.endpoint_action_name || action.name
+      return action.endpoint_action_name if action.endpoint_action_name.present?
+      # A standard action is reached through the resource's standard endpoint, which carries no
+      # action name - the frontend derives it from the view alone.
+      return nil if Habarico::ActionHelper.is_standard_action?(action)
+      action.name
     end
 
     def generate_record_pk(action, context)
-      if action&.is_detail
-        context.record_pk
-      end
+      # An explicit record pk on the action wins over the record in the context: it is how an
+      # action targets a record other than the one it was invoked on.
+      return action.endpoint_record_pk if action.endpoint_record_pk.present?
+      context.record_pk if action&.is_detail
     end
 
   end

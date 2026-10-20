@@ -19,5 +19,8 @@ module Habarico
     # frontend to know which attribute to set on the record it creates for each upload.
     string_attr :image_field
 
+    # Additional data added to every image record the frontend creates for an upload
+    any_attr :data
+
   end
 end

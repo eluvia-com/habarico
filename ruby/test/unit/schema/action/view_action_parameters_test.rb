@@ -27,6 +27,22 @@ class ViewActionParametersTest < Minitest::Test
   end
 
   # ---------------------------------------------------------------------------
+  # choices
+  # ---------------------------------------------------------------------------
+
+  def test_choices_defaults_to_nil
+    params = Habarico::ViewActionParameters.new(name: 'detail', mode: 'redirect')
+    assert_nil params.choices
+  end
+
+  def test_choices_accepts_action_view_choices
+    choices = [Habarico::ActionViewChoice.new(label: 'Current quarter', parameters: { 'period' => 'quarter' })]
+    params = Habarico::ViewActionParameters.new(name: 'detail', choices: choices)
+    assert_equal ['Current quarter'], params.choices.map(&:label)
+    assert_equal [{ 'period' => 'quarter' }], params.choices.map(&:parameters)
+  end
+
+  # ---------------------------------------------------------------------------
   # dialog_width
   # ---------------------------------------------------------------------------
 

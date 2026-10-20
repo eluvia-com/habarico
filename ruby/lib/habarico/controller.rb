@@ -234,24 +234,78 @@ module Habarico
       }
     end
 
+    # Renders an `ActionResult`: `message`, `state` and `trigger_action` live under `meta`, and the
+    # response's own `data` is merged next to it. This is the shape the contract prescribes and the
+    # only one the frontend reads - it looks at `resp.data.meta` and nowhere else.
     def render_response(response)
-      if response.action
-        action = definition.normalized_actions.find { |a| a.name.to_s == response.action.to_s }
-        if action
-          resource_path = Habarico::ResourceService.instance.get_resource_path(controller_name)
-          action_schema_generator = definition.action_schema_generator.new(definition, resource_path)
-          trigger_action = action_schema_generator.generate(action, context).as_json.deep_compact(compactable: [nil, {}].freeze)
-        end
-      end
-      render json: {
-        state: response.state,
-        message: response.message,
-        trigger_action: trigger_action
-      }.deep_compact
+      meta = {
+        'message' => response.message,
+        'state' => response.state,
+        'trigger_action' => generate_trigger_action(response.action)
+      }.compact
+      render json: { 'meta' => meta }.merge(response.data.presence || {})
     end
 
     def get_trigger_action_schema(_record)
       nil # override in subclasses to return an ActionSchema instance
+    end
+
+    # Builds the complete `Habarico::ActionSchema` of `action` - every nested object and, for a
+    # resource action, the endpoint path included. Return it from `get_trigger_action_schema` or
+    # hand it to `Habarico::Response.new(action: ...)`.
+    #
+    # With no options the schema targets the current resource and the record in the context.
+    # `reference` retargets it at another resource and `record_pk` at another record; both end up
+    # in `view.endpoint` / `resource.endpoint` (and in the resource path), which is where the
+    # frontend reads the trigger target from. `record` builds the context from that record instead
+    # of the controller's own - which is what the `get_trigger_action_schema(record)` hook wants,
+    # since it is called once per serialized record.
+    def build_action_schema(action, record: nil, record_pk: nil, reference: nil)
+      raise Eluvia::Errors::StandardError.new('Argument `action` must be a Habarico::Action') unless action.is_a?(Habarico::Action)
+
+      if record_pk.present? || reference.present?
+        action = action.dup
+        action.endpoint_record_pk = record_pk if record_pk.present?
+        action.endpoint_reference = reference if reference.present?
+      end
+
+      resource_path = Habarico::ResourceService.instance.get_resource_path(controller_name)
+      definition.action_schema_generator
+                .new(definition, resource_path)
+                .generate(action, record ? _context(record) : context)
+    end
+
+    # Turns what `Habarico::Response#action` carries into the serialized `trigger_action`. It takes
+    # a ready `Habarico::ActionSchema` (full control), a `Habarico::Action` built on the spot (an
+    # ad-hoc action the resource does not declare in `actions`), or the name of one of the
+    # resource's declared actions.
+    def generate_trigger_action(action)
+      return nil if action.nil?
+
+      schema = case action
+               when Habarico::ActionSchema then action
+               when Habarico::Action then build_action_schema(action)
+               when ::String, ::Symbol then build_action_schema(find_declared_action!(action))
+               else
+                 raise Eluvia::Errors::StandardError.new(
+                   "Response action must be a Habarico::ActionSchema, a Habarico::Action or an action name, got `#{action.class}`."
+                 )
+               end
+
+      schema.as_json.deep_compact(compactable: [nil, {}].freeze)
+    end
+
+    # Looks an action up among the ones the resource declares in `actions`. An unknown name raises
+    # immediately, since it is far more likely a typo than a deliberately empty trigger.
+    def find_declared_action!(name)
+      declared = definition.normalized_actions
+      action = declared.find { |declared_action| declared_action.name.to_s == name.to_s }
+      return action if action
+
+      raise Eluvia::Errors::StandardError.new(
+        "Action `#{name}` is not declared in `actions` of resource `#{controller_name}`. " \
+        "Declared actions: #{declared.map(&:name).join(', ').presence || 'none'}."
+      )
     end
 
     # Checks the `order_by` query parameter against what this resource offers for sorting.

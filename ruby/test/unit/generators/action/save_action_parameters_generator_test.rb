@@ -47,6 +47,18 @@ class SaveActionParametersGeneratorTest < Minitest::Test
     assert_equal data, result.data
   end
 
+  def test_after_save_is_nil_by_default
+    action = Habarico::SaveAction.new
+    result = build_generator.generate(action, stub_context)
+    assert_nil result.after_save
+  end
+
+  def test_after_save_is_passed_through
+    action = Habarico::SaveAction.new(after_save: :prev)
+    result = build_generator.generate(action, stub_context)
+    assert_equal 'prev', result.after_save
+  end
+
   def test_raises_for_wrong_action_type
     action = Habarico::ResourceAction.new
     assert_raises(Eluvia::Errors::StandardError) do

@@ -20,6 +20,9 @@ module Habarico
     # Additional parameters to be passed to the view
     has_many_attr :parameters, 'String', underlying_type: :hash
 
+    # Choices offered before the view opens, each carrying its own view parameters
+    has_many_attr :choices, 'Habarico::ActionViewChoice'
+
     # Keep linked parent in the URL when navigating to the linked resource
     boolean_attr :keep_linked_parent
 
