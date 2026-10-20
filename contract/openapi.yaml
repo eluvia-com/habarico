@@ -3855,6 +3855,20 @@ components:
         h:
           type: integer
           minimum: 1
+        stackedH:
+          type: integer
+          minimum: 1
+          description: |
+            Height in grid rows used when the dashboard is too narrow for columns and stacks
+            its widgets one below another. Without it the stacked widget keeps `h`.
+        minW:
+          type: integer
+          minimum: 1
+          description: Smallest width, in grid columns, the widget can be resized to.
+        minH:
+          type: integer
+          minimum: 1
+          description: Smallest height, in grid rows, the widget can be resized to.
     WidgetConfig:
       type: object
       x-habarico-tier: enterprise

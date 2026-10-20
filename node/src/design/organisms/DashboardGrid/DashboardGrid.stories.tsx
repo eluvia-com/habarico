@@ -149,6 +149,20 @@ const DashboardGridDemo = ({mode}: {mode: DashboardGridMode}) => {
   );
 };
 
+/**
+ * The grid picks its layout from the width of its container, not of the window — so a story that
+ * must show one of the two layouts regardless of the canvas (the docs page is narrower than the
+ * breakpoint) pins its container width: wide scrolls sideways instead of stacking.
+ */
+const GridWidth = ({wide, children}: {wide: boolean; children: React.ReactNode}) =>
+  wide ? (
+    <Box sx={{overflowX: 'auto'}}>
+      <Box sx={{minWidth: 1000}}>{children}</Box>
+    </Box>
+  ) : (
+    <Box sx={{maxWidth: 600}}>{children}</Box>
+  );
+
 const meta: Meta<typeof DashboardGrid> = {
   title: 'design/organisms/DashboardGrid',
   component: DashboardGrid,
@@ -162,7 +176,10 @@ const meta: Meta<typeof DashboardGrid> = {
           'panels are static (stacked on narrow screens); in `edit` mode it enables drag + resize ' +
           'and shows a dot grid. It renders the standard `Panel` chrome from each panel definition ' +
           'and emits `onLayoutChange` — persistence, overlap validation, the add/edit flow and the ' +
-          'mode toggle belong to the consumer. Drag from a panel header; resize from the bottom-right corner.',
+          'mode toggle belong to the consumer. Drag from a panel header; resize from the bottom-right corner. ' +
+          'At a container width of 996px or less the panels are stacked in one column; in `edit` mode ' +
+          'they can then only be resized in height, from the bottom edge, and the new height is ' +
+          'reported as `stackedH`.',
       },
     },
     controls: {include: ['mode']},
@@ -208,10 +225,32 @@ export const Detail: Story = {
   render: () => <DashboardGridDemo mode={'detail'} />,
 };
 
-/** Edit view — drag grip + resize corner on each panel, dot grid overlay. */
+/**
+ * Edit view on a wide grid — drag grip + resize corner on each panel, dot grid overlay. Panels move
+ * and resize freely within the 12 columns.
+ */
 export const Edit: Story = {
   parameters: {docs: {canvas: {sourceState: 'none'}}},
-  render: () => <DashboardGridDemo mode={'edit'} />,
+  render: () => (
+    <GridWidth wide>
+      <DashboardGridDemo mode={'edit'} />
+    </GridWidth>
+  ),
+};
+
+/**
+ * Edit view on a narrow grid (container 996px wide or less) — the panels stay stacked in one
+ * column and can only be resized in height, from the handle on their bottom edge; the panels below
+ * move along. The new height is reported as the panel's `stackedH`, so the wide layout keeps its
+ * own heights.
+ */
+export const EditStacked: Story = {
+  parameters: {docs: {canvas: {sourceState: 'none'}}},
+  render: () => (
+    <GridWidth wide={false}>
+      <DashboardGridDemo mode={'edit'} />
+    </GridWidth>
+  ),
 };
 
 /** Empty state — detail shows a centered message; edit shows the add-panel ghost. */
