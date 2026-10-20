@@ -9,6 +9,20 @@ Releases are cut through the CI `next` flow: merges to `next` publish beta
 pre-releases, and the `## [0.56.0] — 2026-08-03` section below is stamped with the
 version and date when a release is finalized.
 
+## [Unreleased]
+
+### Fixed
+
+- `kaminari` and `pundit` are required by the gem itself. Both are gemspec dependencies, but
+  `Bundler.require` only loads what the host application lists in its own `Gemfile`, so an app
+  that did not name them answered its first list request with `undefined method 'page'` and raised
+  an uninitialised `Pundit` from a permission callable. Neither gem has to be added to the
+  `Gemfile` any more. (HAB-829)
+
+- `rails generate habarico:preferences:install` copies the migration instead of failing with
+  `uninitialized constant ActiveRecord::Generators`. The generator reuses Active Record's
+  migration numbering, which railties does not autoload. (HAB-829)
+
 ## [7.2.0] — 2026-10-19
 
 ### Changed

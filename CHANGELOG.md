@@ -11,6 +11,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `examples/eshop/` — a runnable admin on the e-shop domain the documentation uses, built on the
+  three libraries as they are in this tree: a Django backend, a Rails backend and one React
+  frontend that works against either. `docker compose --profile python|ruby up -d` brings the
+  chosen stack up seeded and ready; the same pieces run natively for reading and editing. It
+  installs from public registries alone, with no token and
+  no private registry, which is what it is for: it demonstrates that Habarico depends on no
+  authentication library, each backend writing its own on stock framework pieces (Django sessions,
+  Rails `has_secure_password`) behind one shared contract. The `examples.yml` workflow runs both
+  backends' tests on every pull request, so a library change that breaks the example fails in the
+  pull request that made it. `examples/` is not a versioned unit and nothing publishes it.
+  The documentation now takes its authentication examples from there instead of from a private
+  Eluvia auth library a reader cannot install. (HAB-829)
+
 ### Changed
 
 - The `filter` query parameter is written down, on the list endpoint that has always taken it and

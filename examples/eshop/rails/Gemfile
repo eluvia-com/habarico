@@ -1,0 +1,13 @@
+source 'https://rubygems.org'
+
+# The library under test, taken straight from this repository: a change that breaks the example
+# shows up in the same pull request.
+gem 'habarico', path: '../../../ruby'
+
+gem 'rails', '~> 7.2'
+gem 'pg', '~> 1.5'
+gem 'puma', '~> 6.4'
+# has_secure_password
+gem 'bcrypt', '~> 3.1'
+# Optional dependency of habarico/contrib/preferences, which backs the admin's saved settings.
+gem 'json_schemer', '~> 2.3'
