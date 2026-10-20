@@ -12,14 +12,14 @@ list to check a parameter against.
 ## Declaration
 
 ```python
-from habarico.schema import Box, GridBox, GridItemBox, ListBox, TabBox, TabItemBox
+from habarico.schema import Box, GridBox, ListBox, TabBox, TabItemBox
 from habarico.schema.generators import EditViewSchemaGenerator
 
 EditViewSchemaGenerator(box=TabBox(boxes=[
     TabItemBox(label="Product", boxes=[
         GridBox(boxes=[
-            GridItemBox(md=8, boxes=[Box(label="Basics", boxes=["name", "sku"])]),
-            GridItemBox(md=4, boxes=[Box(label="Pricing", boxes=["price", "vat_rate"])]),
+            Box(label="Basics", grid_item={"md": 8}, boxes=["name", "sku"]),
+            Box(label="Pricing", grid_item={"md": 4}, boxes=["price", "vat_rate"]),
         ]),
     ]),
     TabItemBox(label="Orders", boxes=[ListBox(reference="eshop/order", target="product")]),
@@ -34,7 +34,6 @@ All classes import from `habarico.schema` (or `habarico.schema.boxes`).
 |---|---|---|
 | `Box` | `simple` | A labelled stack of fields — the fallback |
 | `GridBox` | `grid` | A responsive 12-column grid |
-| `GridItemBox` | `grid-item` | One column of a grid |
 | `GridFieldsBox` | `grid` | A grid with one field per column — a shorthand |
 | `TabBox` | `tab` | Tabs |
 | `WizardBox` | `wizard` | A stepped form |
@@ -60,6 +59,7 @@ Accepted by every class (they come from `BaseBox`):
 | `required_query` | `str` | `None` | Condition expression; the box's fields become required when it is truthy |
 | `toolbar_actions` | `Actions` | `None` | Buttons in the box header |
 | `bottom_actions` | `Actions` | `None` | Buttons below the box's fields |
+| `grid_item` | `GridItem \| dict` | `None` | Column span inside the parent `GridBox` — see [`grid_item`](#grid_item) |
 
 `show_query` and `required_query` are stored under `options.dynamic_render`.
 
@@ -84,15 +84,39 @@ step caption. In the schema these land under a `tab` / `wizard` object:
 {"type": "wizard", "wizard": {"show_toolbar_navigation": true, "validate_steps": true}}
 ```
 
-## `GridItemBox`
+## `grid_item`
+
+How wide a box is inside its parent `GridBox`. It is a placement rather than a box type, so every
+class accepts it — pass a `GridItem` descriptor or a plain dict of breakpoint spans:
+
+```python
+from habarico.schema import Box, GridBox, GridItem, ListBox
+
+GridBox(boxes=[
+    Box(label="Unit management", grid_item={"md": 3}, boxes=["owner", "manager"]),
+    ListBox(label="Documents", grid_item=GridItem(md=9), reference="document", target="unit"),
+])
+```
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `xs`, `sm`, `md`, `lg`, `xl` | `int` | `None` | Column span (1–12) at that breakpoint |
 
-Omitting them all lets the frontend compute the spans from the number of children. Mixing explicit
-and computed items in one grid does not work — one `GridItemBox` switches the whole grid to
-explicit mode.
+A breakpoint that is not set inherits the span of the one below it (`xs` → `sm` → `md` → `lg` →
+`xl`), so `{"md": 9}` on its own is a complete placement. Omitting `grid_item` entirely lets the
+frontend compute the spans from the number of cells. Mixing explicit and computed cells in one grid
+does not work — one cell carrying `grid_item` switches the whole grid to explicit mode, and every
+cell without one then takes a full row.
+
+Because the box that carries the span is the box that draws the card, its card stretches to the
+height of its row like every other cell in it.
+
+:::note
+Until HAB-963 the spans lived on a wrapper box, `GridItemBox(md=9, boxes=[ListBox(...)])`, and on
+the `grid-item` box type. Both are gone: pass `grid_item` to the box that draws the cell. Besides
+being one concept in one place, it is what makes the card stretch to the height of its row — in the
+wrapper form only the (invisible) wrapper stretched.
+:::
 
 ## `GridFieldsBox`
 
@@ -103,11 +127,9 @@ own `Box`.
 GridFieldsBox("price", "vat_rate", "stock")
 ```
 
-:::caution
-It also accepts `xs`, `sm`, `md`, `lg` and `xl`, but ignores them — they are neither forwarded to
-the generated boxes nor to `GridBox`. Use `GridBox` with explicit `GridItemBox` children when the
-widths matter.
-:::
+It also accepts `xs`, `sm`, `md`, `lg` and `xl` and passes them to every generated box as its
+`grid_item`, so `GridFieldsBox("price", "vat_rate", "stock", md=4)` lays the three fields out three
+to a row on medium screens.
 
 ## `ListBox`
 

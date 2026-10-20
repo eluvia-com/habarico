@@ -11,6 +11,30 @@
 
 ## [7.1.0] — 2026-10-12
 
+### Removed
+
+- **BREAKING:** the `grid-item` box type is gone from `BoxType`. A grid cell is the box that draws
+  it, carrying its own `gridItem` placement - which is also what makes its card stretch to the
+  height of its row, where a wrapper left the card at the height of its content. A schema from an
+  older backend still renders: an unknown box type falls back to `SchemaSimpleBox` as it always has,
+  and the cell's `gridItem` is read whatever its type. What such a schema loses is the type as an
+  opt-out signal - a `grid-item` cell that carried no spans at all used to switch the grid to
+  explicit widths, and now only a `gridItem` does. (HAB-963)
+
+### Fixed
+
+- `SchemaGridBox` decides whether to compute its cells' widths from the presence of `gridItem`
+  rather than from the box type. A grid whose cells are boxes carrying their own `gridItem` (a
+  `list` box sizing itself) was switching to the computed widths and overriding them breakpoint by
+  breakpoint, so every cell without an explicit span took a computed width instead of the full row
+  it takes in an explicit grid. (HAB-963)
+
+- `SchemaWizardBox` collects the field names of a step by what a box type is *not*: only the
+  collection box types (`list`, `gallery`) hold no form fields of their own, and `object` / `array`
+  keep their own path handling, so any other type - including one a backend of another version sends
+  - contributes its children instead of dropping them. Step validation therefore no longer depends
+  on a closed list of layout types. (HAB-963)
+
 ### Added
 
 - `SchemaAdmin` and `BaseAdmin` gained an optional `alwaysEnableSaveButton?: boolean` prop (default

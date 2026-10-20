@@ -16,7 +16,7 @@ the containers it can pick.
 | [SchemaSimpleBox](./simple-box.md) | `simple` | A labelled stack of fields — also the fallback for an unknown type |
 | [SchemaTabBox](./tab-box.md) | `tab` | Tabbed sections, with the open tab kept in the URL |
 | [SchemaWizardBox](./wizard-box.md) | `wizard` | A stepped form that validates each step before advancing |
-| [SchemaGridBox](./grid-box.md) | `grid` / `grid-item` | A responsive 12-column grid |
+| [SchemaGridBox](./grid-box.md) | `grid` | A responsive 12-column grid |
 | [SchemaListBox](./list-box.md) | `list` | An embedded list of a related resource |
 | [SchemaArrayBox](./array-box.md) | `array` | A repeatable group of fields; an array with `array.listed` renders as `SchemaChoicesArrayBox` — one checkbox row per enum value |
 | [SchemaObjectBox](./object-box.md) | `object` | The properties of a nested object |

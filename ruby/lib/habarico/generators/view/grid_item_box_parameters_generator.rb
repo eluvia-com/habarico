@@ -3,7 +3,7 @@ module Habarico
 
     def generate(box, context)
       # Validate arguments
-      raise Eluvia::Errors::StandardError.new('Argument `box` must be a Habarico::GridItemBox') unless box.is_a?(Habarico::GridItemBox)
+      raise Eluvia::Errors::StandardError.new('Argument `box` must be a Habarico::Box') unless box.is_a?(Habarico::Box)
 
       # Create model
       Habarico::GridItemBoxParameters.new(
@@ -17,28 +17,34 @@ module Habarico
 
     protected
 
+    # Breakpoint spans of the box, given as a `grid_item` hash on any box type ({ md: 9 }).
+    def grid_item_spans(box)
+      spans = box.grid_item || {}
+      spans.respond_to?(:symbolize_keys) ? spans.symbolize_keys : spans
+    end
+
     # ***********************************************************************
     # Attribute generators
     # ***********************************************************************
 
     def generate_xs(box, _context)
-      box.xs
+      grid_item_spans(box)[:xs]
     end
 
     def generate_sm(box, _context)
-      box.sm
+      grid_item_spans(box)[:sm]
     end
 
     def generate_md(box, _context)
-      box.md
+      grid_item_spans(box)[:md]
     end
 
     def generate_lg(box, _context)
-      box.lg
+      grid_item_spans(box)[:lg]
     end
 
     def generate_xl(box, _context)
-      box.xl
+      grid_item_spans(box)[:xl]
     end
   end
 end

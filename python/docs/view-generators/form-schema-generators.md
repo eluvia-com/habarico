@@ -164,22 +164,21 @@ To move the Save button next to a specific block (e.g. the right column of a gri
 
 ```python
 from habarico.schema.actions import SaveActionDescriptor
-from habarico.schema.boxes import GridBox, GridItemBox, Box, WizardBox, TabItemBox
+from habarico.schema.boxes import GridBox, Box, WizardBox, TabItemBox
 
 EditViewSchemaGenerator(
     bottom_actions=[],  # drop the default view-level Save button
     box=GridBox(boxes=[
-        GridItemBox(md=6, boxes=[Box(label="Preview", boxes=["name"])]),
-        GridItemBox(md=6, boxes=[
-            WizardBox(
-                show_toolbar_navigation=True,
-                toolbar_actions=[SaveActionDescriptor()],  # shown on the last step
-                boxes=[
-                    TabItemBox(label="Step 1", boxes=["name"]),
-                    TabItemBox(label="Step 2", boxes=["description"]),
-                ],
-            ),
-        ]),
+        Box(label="Preview", grid_item={"md": 6}, boxes=["name"]),
+        WizardBox(
+            grid_item={"md": 6},
+            show_toolbar_navigation=True,
+            toolbar_actions=[SaveActionDescriptor()],  # shown on the last step
+            boxes=[
+                TabItemBox(label="Step 1", boxes=["name"]),
+                TabItemBox(label="Step 2", boxes=["description"]),
+            ],
+        ),
     ]),
 )
 ```

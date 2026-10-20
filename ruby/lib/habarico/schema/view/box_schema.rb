@@ -45,7 +45,10 @@ module Habarico
     # Additional parameters for box type 'wizard'
     has_one_attr :wizard, 'Habarico::WizardBoxParameters'
 
-    # Additional parameters for box type 'grid-item'
+    # Placement of the box inside its parent 'grid' box - the column span at each breakpoint. Unlike
+    # the parameter blocks around it this one is not tied to a box type: any box carries it, so a grid
+    # cell can be a 'list'/'gallery'/'array' box itself (HAB-963). Absent when the box has no placement
+    # and the frontend computes the span from the number of cells.
     has_one_attr :grid_item, 'Habarico::GridItemBoxParameters'
 
     # Additional parameters for box type 'list'

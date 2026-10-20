@@ -14,7 +14,7 @@ info:
     `/admin/user` and `/admin/user/{record_pk}` endpoints. `/admin/user/schema` returns only actions and views 
     that are supported in `/admin/user` endpoint and `/admin/user/{record_pk}/schema` returns only actions and views 
     that are supported in `/admin/user/{record_pk}` endpoint but with higher detail.
-  version: 3.4.0
+  version: 4.0.0
   contact:
     email: lubos.matl@eluvia.com
 servers:
@@ -1235,7 +1235,6 @@ components:
         - object
         - array
         - grid
-        - grid-item
         - gallery
       description: |
         Box type, defines type of the box. Box is used for grouping fields.
@@ -1247,8 +1246,8 @@ components:
         * `list` - list box.
         * `object` - object box for complex object field.
         * `array` - array box for array object field.
-        * `grid` - grid box.
-        * `grid-item` - grid item box.
+        * `grid` - grid box. Its cells are its children; each one carries its own `grid_item`
+          placement, whatever its type.
         * `gallery` - gallery box for displaying images as a carousel.
     ActionStateType:
       type: string
@@ -2008,7 +2007,16 @@ components:
     GridItemBoxParameters:
       type: object
       description: |
-        Grid item box parameters. Grid is used to position boxes in the grid.
+        Placement of a box inside its parent `grid` box - the number of columns the box spans at
+        each breakpoint. It is a placement, not a box type: **any** box carries it, so a cell of a
+        grid is simply the box that draws it - a `list`, `gallery`, `array` or `object` box sizes
+        itself. A box that omits `grid_item` lets the frontend compute the span from the number of
+        cells; as soon as one cell of a grid carries `grid_item`, the whole grid switches to
+        explicit spans, so a box without a placement must omit the key entirely rather than send an
+        empty object.
+
+        Every breakpoint is optional, and an omitted one inherits the span of the breakpoint below
+        it (`xs` -> `sm` -> `md` -> `lg` -> `xl`), so `{"md": 9}` alone is a complete placement.
       properties:
         xs:
           type: integer
@@ -2030,12 +2038,6 @@ components:
           type: integer
           example: 2
           description: Grid item width for xl breakpoint.
-      required:
-        - xs
-        - sm
-        - md
-        - lg
-        - xl
     ObjectBoxParameters:
       type: object
       description: |

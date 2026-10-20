@@ -29,7 +29,7 @@ module Habarico
                            ai ai-text range]
 
     # BoxType - layout container types
-    BOX_TYPE = %i[tab tab-item wizard simple list object array grid grid-item gallery]  # rubocop:disable Style/MutableConstant
+    BOX_TYPE = %i[tab tab-item wizard simple list object array grid gallery]  # rubocop:disable Style/MutableConstant
 
     # ViewType - kind of the view
     VIEW_TYPE = %i[list show create edit action].freeze

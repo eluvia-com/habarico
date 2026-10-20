@@ -22,12 +22,12 @@ Habarico::ShowView.new(
         boxes: [
           Habarico::GridBox.new(
             boxes: [
-              Habarico::GridItemBox.new(
-                md: 6,
+              Habarico::Box.new(
+                grid_item: { md: 6 },
                 boxes: [:product, :customer, :status],
               ),
-              Habarico::GridItemBox.new(
-                md: 6,
+              Habarico::Box.new(
+                grid_item: { md: 6 },
                 boxes: [:placed_at, :delivered_at, :outstanding_amount],
               ),
             ]
