@@ -9,6 +9,13 @@ Releases are cut through the CI `next` flow: merges to `next` publish beta
 pre-releases, and the `## [0.56.0] — 2026-08-03` section below is stamped with the
 version and date when a release is finalized.
 
+## [Unreleased]
+
+### Added
+
+- The `preferences.dashboard` widget layout validates the optional `stackedH`, `minW` and `minH`
+  as integers of at least 1, matching the `WidgetLayout` contract schema (HAB-1007).
+
 ## [7.2.0] — 2026-10-19
 
 ### Changed

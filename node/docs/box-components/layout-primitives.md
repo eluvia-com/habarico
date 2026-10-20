@@ -33,7 +33,8 @@ import {Panel, PanelHeader, PanelContent} from 'habarico';
 | `collapsible` | `boolean` | `false` | Adds the chevron toggle to the header |
 | `defaultCollapsed` | `boolean` | `false` | Uncontrolled initial state; ignored when `collapsed` is set |
 | `collapsed` / `onCollapsedChange` | `boolean` / `(collapsed) => void` | — | Controlled collapse state |
-| `resizeHandle` | `boolean` | `false` | Renders a resize affordance — presentational only |
+| `resizable` | `boolean` | `false` | Renders a resize affordance, placed by `resizeHandle`; presentational only |
+| `resizeHandle` | `'corner' \| 'bottom'` | `'corner'` | Where the resize affordance sits — `corner` in the bottom-right corner, `bottom` in the middle of the bottom edge for a height-only resize; ignored unless `resizable` |
 | `fullHeight` | `boolean` | `false` | Stretches to the container height, e.g. to equalise panels in a grid row |
 | `sx` | `SxProps<Theme>` | — | Passed to the surface |
 

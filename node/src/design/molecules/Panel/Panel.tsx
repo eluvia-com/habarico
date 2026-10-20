@@ -5,6 +5,12 @@ import {PanelContext, type PanelVariant} from './PanelContext';
 
 export type {PanelVariant};
 
+/**
+ * Where the resize affordance sits: `corner` — the bottom-right corner, for a panel resized in both
+ * directions; `bottom` — the middle of the bottom edge, for a panel resized in height only.
+ */
+export type PanelResizeHandle = 'corner' | 'bottom';
+
 export type PanelProps = {
   /**
    * Surface style:
@@ -24,10 +30,16 @@ export type PanelProps = {
   /** Called with the next collapsed value whenever the toggle is clicked. */
   onCollapsedChange?: (collapsed: boolean) => void;
   /**
-   * When `true`, renders a resize affordance in the bottom-right corner. Presentational
-   * only — the Panel implements no resizing (a dashboard wires the actual behaviour).
+   * When `true`, renders a resize affordance, placed by `resizeHandle`. Presentational only — the
+   * Panel implements no resizing (a dashboard wires the actual behaviour). Defaults to `false`.
    */
-  resizeHandle?: boolean;
+  resizable?: boolean;
+  /**
+   * Where the resize affordance sits when `resizable` is `true`: `corner` in the bottom-right
+   * corner, `bottom` in the middle of the bottom edge for a panel that can only change its height.
+   * Ignored while `resizable` is `false`. Defaults to `corner`.
+   */
+  resizeHandle?: PanelResizeHandle;
   /**
    * When `true`, the panel stretches to fill its container's height (`height: 100%`) — e.g. to
    * equalise the heights of panels sitting side by side in a grid row. Ignored while collapsed, so
@@ -47,6 +59,34 @@ export type PanelProps = {
   sx?: SxProps<Theme>;
 };
 
+const RESIZE_HANDLE_SX: Record<PanelResizeHandle, SxProps<Theme>> = {
+  corner: {
+    right: 5,
+    bottom: 5,
+    width: 12,
+    height: 12,
+    borderRight: '2px solid',
+    borderBottom: '2px solid',
+    borderColor: 'text.disabled',
+    borderBottomRightRadius: '6px',
+    cursor: 'nwse-resize',
+  },
+  bottom: {
+    left: '50%',
+    bottom: 5,
+    width: 24,
+    height: 4,
+    ml: '-12px',
+    borderRadius: 2,
+    bgcolor: 'text.disabled',
+    cursor: 'ns-resize',
+  },
+};
+
+const ResizeHandle = ({at}: {at: PanelResizeHandle}) => (
+  <Box aria-hidden sx={{position: 'absolute', ...RESIZE_HANDLE_SX[at]}} />
+);
+
 /**
  * Standardized panel shell — the single container used to build detail/edit forms,
  * nested lists, dashboard widgets and similar sections, so they share one visual and
@@ -55,8 +95,8 @@ export type PanelProps = {
  * collapse state, which it shares with its slots through `PanelContext`.
  *
  * Purely presentational: the drag and resize affordances are built-in visuals toggled by
- * boolean props — the Panel renders them but implements no drag/grid/resize logic (a
- * dashboard wires the actual behaviour).
+ * props — the Panel renders them but implements no drag/grid/resize logic (a dashboard wires
+ * the actual behaviour).
  */
 export const Panel = ({
   variant,
@@ -64,7 +104,8 @@ export const Panel = ({
   defaultCollapsed = false,
   collapsed: collapsedProp,
   onCollapsedChange,
-  resizeHandle,
+  resizable = false,
+  resizeHandle = 'corner',
   fullHeight = false,
   emphasized = false,
   children,
@@ -134,23 +175,7 @@ export const Panel = ({
       >
         {/* Everything inside a Panel is "inside a card", so a nested Panel auto-selects `nested`. */}
         <InsidePanelContextProvider value={true}>{children}</InsidePanelContextProvider>
-        {resizeHandle && (
-          <Box
-            aria-hidden
-            sx={{
-              position: 'absolute',
-              right: 5,
-              bottom: 5,
-              width: 12,
-              height: 12,
-              borderRight: '2px solid',
-              borderBottom: '2px solid',
-              borderColor: 'text.disabled',
-              borderBottomRightRadius: '6px',
-              cursor: 'nwse-resize',
-            }}
-          />
-        )}
+        {resizable && <ResizeHandle at={resizeHandle} />}
       </Card>
     </PanelContext.Provider>
   );
