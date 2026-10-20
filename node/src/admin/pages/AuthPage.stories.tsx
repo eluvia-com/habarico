@@ -15,8 +15,8 @@ import {LANGUAGES, i18nProvider} from './_i18n';
 import {PAGE_STORY_PARAMETERS} from './_storyParameters';
 
 // A registered SSO method so `LoginForm` renders an alternative-login button below the credentials
-// form (mirroring how a real app plugs in e.g. `@eluvia/auth`'s Google hook). `useLogin` is inert
-// here — the button is for showcasing the layout, not a working OAuth round-trip.
+// form (mirroring how a real app plugs in an OAuth hook). `useLogin` is inert here — the button is
+// for showcasing the layout, not a working OAuth round-trip.
 const googleLoginMethod: LoginSsoMethod = {
   id: 'google',
   label: 'ra.auth.sign_in_with_google',

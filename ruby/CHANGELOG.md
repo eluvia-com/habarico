@@ -158,6 +158,18 @@ version and date when a release is finalized.
 - The resource schema endpoints (`/{resource}/schema`, `/{resource}/{pk}/schema`, `/{resource}/{action}/schema`) answer 404 for a resource the gem does not know, as `contract/openapi.yaml` declares, instead of failing with a 500 (HAB-1062).
 - A box type added through `Habarico::Types.register(:BOX_TYPE, …)` is one `Habarico::BoxSchema` is intended for, so a box of that type is read as a box rather than as a field (HAB-1062).
 - `default_filter` receives `current_user` on the detail endpoints (`show`, `update`, `destroy` and custom detail actions) as it does on the list, so a filter depending on the user no longer lets a record the list hides be reached by its ID (HAB-1062).
+- The local resource schema (`/{resource}/schema`) is generated again instead of failing with
+  `undefined method 'action_name'` for `Habarico::ViewEndpointParameters` (HAB-829).
+
+- `kaminari` and `pundit` are required by the gem itself. Both are gemspec dependencies, but
+  `Bundler.require` only loads what the host application lists in its own `Gemfile`, so an app
+  that did not name them answered its first list request with `undefined method 'page'` and raised
+  an uninitialised `Pundit` from a permission callable. Neither gem has to be added to the
+  `Gemfile` any more. (HAB-829)
+
+- `rails generate habarico:preferences:install` copies the migration instead of failing with
+  `uninitialized constant ActiveRecord::Generators`. The generator reuses Active Record's
+  migration numbering, which railties does not autoload. (HAB-829)
 
 ## [7.2.0] — 2026-10-19
 

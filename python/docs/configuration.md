@@ -31,13 +31,18 @@ API:
 ```python
 ADMIN_REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
-        "your_permissions.IsAdminUser",
+        "rest_framework.permissions.IsAdminUser",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "eluvia.auth.django.authentications.PublicJwtAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ],
 }
 ```
+
+Habarico brings no authentication of its own and cares about none: any DRF authentication class
+works — sessions as above, a token class, or one of your own. The
+[e-shop example](https://github.com/eluvia-com/habarico/tree/master/examples/eshop) is a complete
+project on the two lines above, session login included.
 
 Keys not listed here fall back to `REST_FRAMEWORK`, so a project whose admin uses the same
 authentication as the rest of the API can leave the block out entirely.

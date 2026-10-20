@@ -1,5 +1,11 @@
 require "eluvia-base"
 
+# Runtime dependencies of the gemspec. Bundler.require in a host app only requires what that app
+# lists itself, so without these a host gets `undefined method 'page'` on its first list request
+# (kaminari) or an uninitialised constant from a permission callable (pundit).
+require "kaminari"
+require "pundit"
+
 # *****************************************************************************
 # Basic library
 # *****************************************************************************
