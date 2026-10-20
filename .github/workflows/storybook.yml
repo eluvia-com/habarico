@@ -1,0 +1,105 @@
+# Publishes the built Storybook into the Spaces bucket storybook.habarico.com is served from.
+# A `node@X.Y.0` tag uploads it to the bucket root and under its minor series (`7.2/`), which the
+# documentation pages of that series link at; a patch tag publishes nothing. A manual run on `next`
+# uploads the preview under `next/`, which only the test host serves, or with `tag` that release.
+name: Storybook
+
+on:
+  push:
+    # Matches no patch tag: `node@7.2.10` does not end in `.0` after a dot.
+    tags:
+      - "node@*.*.0"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "node@X.Y.0 tag to publish again; empty publishes the preview of next"
+        type: string
+        default: ""
+
+# Two uploads into the same prefix at once would interleave their objects.
+concurrency:
+  group: storybook
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish-storybook:
+    name: publish-storybook
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: release
+    defaults:
+      run:
+        working-directory: node
+    env:
+      STORYBOOK_DISABLE_TELEMETRY: "1"
+      STORYBOOK_BUCKET: ${{ vars.STORYBOOK_BUCKET }}
+      STORYBOOK_BUCKET_REGION: ${{ vars.STORYBOOK_BUCKET_REGION }}
+      STORYBOOK_BUCKET_KEY: ${{ secrets.STORYBOOK_BUCKET_KEY }}
+      STORYBOOK_BUCKET_SECRET: ${{ secrets.STORYBOOK_BUCKET_SECRET }}
+    steps:
+      # Fails before the build rather than after it on a ref that has nothing to publish.
+      - name: Work out the target
+        id: target
+        working-directory: .
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -eu
+          REF="$GITHUB_REF"
+          [ -z "$INPUT_TAG" ] || REF="refs/tags/$INPUT_TAG"
+          case "$REF" in
+            refs/tags/node@*)
+              VERSION="${REF#refs/tags/node@}"
+              if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.0$'; then
+                echo "ERROR: $REF is not a node@X.Y.0 release tag"
+                exit 1
+              fi
+              echo "mode=release" >> "$GITHUB_OUTPUT"
+              echo "ref=$REF" >> "$GITHUB_OUTPUT"
+              echo "series=$(echo "$VERSION" | cut -d. -f1-2)" >> "$GITHUB_OUTPUT"
+              ;;
+            refs/heads/next)
+              echo "mode=preview" >> "$GITHUB_OUTPUT"
+              echo "ref=$REF" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "ERROR: run this on next (preview) or on a node@X.Y.0 tag, not on $GITHUB_REF"
+              exit 1
+              ;;
+          esac
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.target.outputs.ref }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: node/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run build-storybook
+
+      # The uploader's only runtime dependency, kept out of devDependencies so other jobs skip it.
+      - run: npm install --no-save @aws-sdk/client-s3
+
+      # --no-asset-pool keeps Storybook's relatively addressed assets inside the prefix they are
+      # served from; the root upload passes it too so both copies are the same build.
+      - name: Upload the release
+        if: steps.target.outputs.mode == 'release'
+        env:
+          SERIES: ${{ steps.target.outputs.series }}
+        run: |
+          set -eu
+          node scripts/upload-bucket.mjs --dir storybook-static --no-asset-pool
+          node scripts/upload-bucket.mjs --dir storybook-static --no-asset-pool --prefix "$SERIES"
+
+      # Most files of a build are content-hashed chunks, so a prune replaces most of the prefix.
+      - name: Upload the preview
+        if: steps.target.outputs.mode == 'preview'
+        run: node scripts/upload-bucket.mjs --dir storybook-static --no-asset-pool --prefix next --prune --allow-large-prune

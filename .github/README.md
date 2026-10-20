@@ -24,6 +24,7 @@ because the ruleset matches checks by name alone:
 | `major.yml` | `major` (the major button) |
 | `publish.yml` | `detect`, then one job per changed library |
 | `release.yml` | `release` (the finalize button) |
+| `storybook.yml` | `publish-storybook`: uploads Storybook to storybook.habarico.com on a `node@X.Y.0` tag, or the `next/` preview by hand |
 | `docs-check.yml` | `docs-check`: builds the documentation site on a pull request touching `*/docs/**` or the contract |
 | `changelog-check.yml` | `changelog-check`: reads the changelogs the way the site does, on a pull request touching one |
 
@@ -96,6 +97,8 @@ rejects a publish whose repository does not match the GitHub repository it runs 
 | `STABLE_BRANCH` | `master` | Fast-forwarded by the finalize. |
 | `RELEASE_APP_ID` | — (required) | GitHub App used by `release.yml`'s finalize and by the bump commits of `beta-bump.yml` and `major.yml` to write to the repository. |
 | `GITLAB_DOCS_TOKEN_USER` | — (required) | Username of the GitLab deploy token `docs-check.yml` and `changelog-check.yml` clone with. |
+| `STORYBOOK_BUCKET` | — (required) | Name of the Spaces bucket storybook.habarico.com is served from; `storybook.yml` uploads into it. |
+| `STORYBOOK_BUCKET_REGION` | — (required) | Its Spaces region (e.g. `fra1`); the endpoint is derived from it. |
 
 **Environment `release`** wraps every publish job, which is what keeps the write-scoped
 credentials out of the pull-request workflows, and gives somewhere to hang protection rules later.
@@ -105,8 +108,8 @@ credentials out of the pull-request workflows, and gives somewhere to hang prote
 | Secret | Used by | Needed because |
 |--------|---------|----------------|
 | `RELEASE_APP_PRIVATE_KEY` | `release.yml`, `beta-bump.yml`, `major.yml` | Private key of the GitHub App above. `GITHUB_TOKEN` will not do: pushes made with it deliberately do not start further workflow runs, so neither the release tags nor a bump commit would ever trigger `publish.yml`. The App needs `contents: write` and a ruleset bypass on both branches. |
-
 | `GITLAB_DOCS_TOKEN` | `docs-check.yml`, `changelog-check.yml` | The GitLab deploy token itself: `read_repository` on the `eluvia/habarico` group, which covers `hab-docs` and `habarico-enterprise`. |
+| `STORYBOOK_BUCKET_KEY`, `STORYBOOK_BUCKET_SECRET` | `storybook.yml` | Spaces access key with write access to `STORYBOOK_BUCKET`. |
 
 The library checks read no secrets, so `pull_request` runs from forks work unchanged.
 
@@ -118,8 +121,6 @@ The library checks read no secrets, so `pull_request` runs from forks work uncha
   of `habarico-enterprise`, the release that closes every cycle.
 - **No documentation preview.** The pages of a pull request are not published to the test host;
   build them locally with `hab-docs` to see them rendered.
-- **No Storybook publish.** storybook.habarico.com is not updated from a `node@X.Y.0` tag, and
-  there is no preview of `next` on the Storybook test host.
 - **Patch releases from a maintenance branch.** `release.yml` creates `release/<lib>@vX.Y`, but
   there is no patch button — a patch has to be versioned, committed and tagged by hand.
 - **A GitHub Release record.** `RELEASE-DESIGN.md` plans one on every stable tag, but
