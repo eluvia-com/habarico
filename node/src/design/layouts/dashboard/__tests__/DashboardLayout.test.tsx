@@ -49,14 +49,15 @@ const openDrawer = async (user: UserEvent) => {
 };
 
 describe('DashboardLayout mobile nav drawer', () => {
-  it('closes after navigating through a top-level item with children', async () => {
+  it('stays open and expands a top-level item with children', async () => {
     renderLayout('/overview');
     const user = userEvent.setup();
     const drawer = await openDrawer(user);
 
-    await user.click(drawer.getByRole('link', {name: 'Catalog'}));
+    await user.click(drawer.getByRole('button', {name: 'Catalog'}));
 
-    await waitFor(() => expect(screen.queryByRole('presentation')).not.toBeInTheDocument());
+    expect(screen.getByRole('presentation')).toBeInTheDocument();
+    expect(drawer.getByRole('link', {name: 'Categories'})).toBeVisible();
   });
 
   it('closes after navigating through the logo', async () => {
