@@ -7,7 +7,7 @@
 # workflow file of the commit it first ran on, so a fix to this file would never reach it.
 #
 # Betas and stable releases go to the public registries only: python to PyPI, ruby to
-# rubygems.org, node to npmjs.com. See "Going public" in .github/README.md.
+# rubygems.org, node to npmjs.com. See "Going public" in .github/WORKFLOWS.md.
 name: Publish
 
 on:

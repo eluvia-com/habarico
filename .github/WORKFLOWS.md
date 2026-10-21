@@ -5,7 +5,7 @@ public registries only.
 
 | Document | What it is for |
 |----------|----------------|
-| `README.md` (this file) | Reference — what runs, and every variable and secret it reads |
+| `WORKFLOWS.md` (this file) | Reference — what runs, and every variable and secret it reads |
 | `OPERATIONS.md` | Procedures — first-time setup, cutting a release, consuming a beta, troubleshooting |
 | `RELEASE-DESIGN.md` | Design record — why the release flow is shaped the way it is |
 
