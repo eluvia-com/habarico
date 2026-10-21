@@ -10,11 +10,7 @@ Gem::Specification.new do |spec|
   spec.description = "With this library you can define a bunch of admin resources and connect it to a Habarico frontend to automatically generate an admin user interface."
   spec.license = "MIT"
 
-  # No `allowed_push_host`: the free gem is MIT and published to rubygems.org (HAB-812). The paid
-  # habarico-enterprise gem keeps its own restriction.
-  #
-  # The URLs below are provisional - the new home of the repository is not decided yet
-  # (HAB-798). The paid gem mirrors them with an `-enterprise` suffix.
+  # No `allowed_push_host`: the gem is published to rubygems.org.
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/eluvia-com/habarico"
   spec.metadata["changelog_uri"] = "https://github.com/eluvia-com/habarico/blob/master/ruby/CHANGELOG.md"

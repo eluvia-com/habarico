@@ -7,9 +7,6 @@ sidebar_position: 2
 pip install habarico
 ```
 
-The package is published to the internal PyPI registry, not to pypi.org — configure the registry
-credentials before installing.
-
 Requires **Python 3.10+**. Django, Django REST Framework, `django-filter`,
 `django-phonenumber-field`, `drf-extra-fields`, `jsonschema` and `pydantic` come in as
 dependencies; nothing else has to be installed for the core feature set.

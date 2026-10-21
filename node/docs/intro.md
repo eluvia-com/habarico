@@ -16,7 +16,7 @@ implementation and the schema-driven renderer will use it wherever that type app
 
 | Page | What it covers |
 | --- | --- |
-| [Installation](./installation.mdx) | Packages, the router requirement and local development |
+| [Installation](./installation.mdx) | Peer dependencies and the router requirement |
 | [Base components](./base-components/index.md) | `SchemaAdmin` and `SchemaResource` — the entry points |
 | [View components](./view-components/index.md) | List, show, create, edit and action views |
 | [Box components](./box-components/index.md) | The layout containers a view is built from |
