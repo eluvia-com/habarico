@@ -9,6 +9,12 @@
   (`UploadInput`, `TreeArrayInput`), `SchemaWrappedFields` and `SchemaRangeInput` each used a grey of
   their own. The pickers take the color and the field tint from new `MuiPickersOutlinedInput` and
   `MuiPickersInputBase` theme overrides. (HAB-1018)
+- A click on a menu group (an item with sub-items) navigated to its first child and only then
+  expanded it. The group now opens or closes its sub-menu in place, and the page changes only once a
+  child is clicked; it is rendered as a button with `aria-expanded` rather than a link. A group
+  holding the current page still starts open and reopens whenever navigation leads into it. In the
+  collapsed rail a click opens the group's sub-menu at once, as hovering does, so it works on touch
+  screens too. The mobile drawer stays open while a group is expanded. (HAB-996)
 
 ## [7.2.0] — 2026-10-19
 

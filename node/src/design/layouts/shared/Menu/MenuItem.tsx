@@ -14,6 +14,8 @@ export type MenuItemProps = {
   sub?: boolean;
   /** Item inside the collapsed-rail dropdown: `md` hover/active radius instead of `lg`. */
   dropdown?: boolean;
+  /** Whether the sub-menu of a group is open; announced through `aria-expanded`. */
+  expanded?: boolean;
   tooltip?: ReactNode;
   onMouseEnter?: (e: MouseEvent<HTMLElement>) => void;
   onMouseLeave?: (e: MouseEvent<HTMLElement>) => void;
@@ -27,6 +29,7 @@ export const MenuItem = ({
   highlighted,
   sub,
   dropdown,
+  expanded,
   tooltip,
   onMouseEnter,
   onMouseLeave,
@@ -37,12 +40,17 @@ export const MenuItem = ({
   // Active item colours differ per mode (redesign): icon is brighter than the text.
   const activeText = isLight ? theme.palette.primary.dark : theme.palette.primary.light;
   const activeIcon = isLight ? theme.palette.primary.main : theme.palette.primary.lighter;
+  // A group only opens its sub-menu; navigation happens on its children. Its `href` stays on the
+  // item for custom menus and for matching the active path.
+  const isGroup = !!item.items?.length;
+  const linkProps = isGroup
+    ? {'aria-expanded': !!expanded}
+    : {component: RouterLink, href: item.href};
   return (
     <Tooltip title={tooltip} placement={'right'}>
       <ListItemButton
         disableGutters
-        component={RouterLink}
-        href={item.href}
+        {...linkProps}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         onClick={onClick}
