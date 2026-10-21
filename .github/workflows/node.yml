@@ -1,4 +1,4 @@
-# Checks of the Node library (ci-toolbox/node-library@2 plus storybook-tests). This workflow only runs checks; publishing lives in publish.yml - see .github/README.md.
+# Checks of the Node library (ci-toolbox/node-library@2 plus storybook-tests). This workflow only runs checks; publishing lives in publish.yml - see .github/WORKFLOWS.md.
 name: Node
 
 # Every pull request runs every library's checks, so each job reports a status the `next` ruleset

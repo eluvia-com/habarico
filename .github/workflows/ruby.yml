@@ -1,5 +1,5 @@
 # Checks of the Ruby library (ci-toolbox/ruby-library@2 with its unit tests on). This workflow
-# only runs checks; publishing lives in publish.yml - see .github/README.md.
+# only runs checks; publishing lives in publish.yml - see .github/WORKFLOWS.md.
 name: Ruby
 
 # Every pull request runs every library's checks, so each job reports a status the `next` ruleset
