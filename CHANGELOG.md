@@ -108,6 +108,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `habarico-enterprise` additionally folding the project-wide upload size ceiling into `max_size`
   for a field a chunked-upload provider serves. No wire change. `info.version` 3.3.3 -> 3.3.4.
   ([HAB-966](https://sparktech.myjetbrains.com/youtrack/issue/HAB-966))
+- `stackedH`, `minW` and `minH` on `WidgetLayout`, all optional integers of at least 1.
+  `stackedH` is the widget's height when a narrow dashboard stacks its widgets one below another,
+  so that height is kept apart from the `h` of the multi-column grid; without it the stacked
+  widget keeps `h`. `minW` / `minH` are the resize lower bounds the frontend already stored in
+  `preferences.dashboard` without the contract describing them. Additive, part of `info.version`
+  3.4.0. (HAB-1006)
 - `x-habarico-tier: enterprise` on every part of the contract that the paid `habarico-enterprise`
   package provides: the six endpoints (`uploads/initiate` / `complete` / `abort`, `search`,
   `{resource_name}/aggregate` and its `/schema`), the `search` query parameter, and the 25

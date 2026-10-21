@@ -58,4 +58,19 @@ class BasePreferencesTest < Minitest::Test
     bad = { "widgets" => [{ "type" => "chart" }] } # missing id + layout
     assert_raises(P::PreferenceValidationError) { P.validate("preferences.dashboard", bad) }
   end
+
+  def test_dashboard_widget_layout_validates_optional_size_hints
+    P.register_base_preferences
+    dashboard = ->(layout) { { "widgets" => [{ "id" => "w1", "type" => "table", "layout" => layout }] } }
+    base = { "x" => 0, "y" => 0, "w" => 6, "h" => 3 }
+
+    assert P.validate("preferences.dashboard", dashboard.call(base.merge("stackedH" => 5, "minW" => 3, "minH" => 2)))
+    %w[stackedH minW minH].each do |field|
+      [0, 1.5, "2"].each do |value|
+        assert_raises(P::PreferenceValidationError, "#{field}=#{value.inspect} should be rejected") do
+          P.validate("preferences.dashboard", dashboard.call(base.merge(field => value)))
+        end
+      end
+    end
+  end
 end

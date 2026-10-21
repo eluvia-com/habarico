@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `WidgetLayout` accepts the optional `stackedH`, `minW` and `minH` (integers of at least 1), so
+  `preferences.dashboard` validates them as `contract/openapi.yaml` 3.4.0 describes them: `stackedH`
+  is the widget's height on a narrow, stacked dashboard, `minW` / `minH` its resize lower bounds.
+  A `DashboardPreference` instance given as a default now dumps the three keys as `null` when unset.
+  (HAB-1006)
+
 ## [7.2.0] — 2026-10-19
 
 ### Changed

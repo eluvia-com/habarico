@@ -1,5 +1,35 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `DashboardGridPanelLayout` gained an optional `stackedH` — the panel's height in grid rows when
+  `DashboardGrid` stacks its panels into one column (container width at or below 996px). Without
+  it the stacked panel keeps its `h`, so existing layouts render unchanged. (HAB-1004)
+- `DashboardGrid` in `edit` mode on a narrow grid (container width at or below 996px) keeps the
+  panels stacked in one column and lets each be resized in height from its bottom edge; the panels
+  below move along. Panels cannot be dragged there. `onLayoutChange` reports the new height as the
+  panel's `stackedH` and passes `x`/`y`/`w`/`h` back unchanged, so the wide layout is left as it
+  was — a consumer that copies only `x`/`y`/`w`/`h` from it drops the change. (HAB-1004)
+
+### Changed
+
+- **BREAKING:** `Panel`'s resize affordance is switched on by `resizable?: boolean` (default
+  `false`) and placed by `resizeHandle?: 'corner' | 'bottom'` (default `'corner'`): `bottom` draws
+  it in the middle of the bottom edge, for a panel resized in height only. `resizeHandle` is no
+  longer a boolean — replace `resizeHandle` with `resizable`. (HAB-1004)
+- `DashboardGrid` stacks its panels on a narrow grid in the reading order of the 12-column layout
+  — top to bottom, then left to right — instead of in the order of the `panels` array. A panel
+  placed at the top of the dashboard is now at the top of the stack too. (HAB-1004)
+
+### Fixed
+
+- The bottom-edge resize handle of a stacked `DashboardGrid` panel (edit mode at a container width
+  of 996px or less) is easy to hit with a finger: its hit area is a 96×44px target spanning the
+  panel's bottom edge and the gap below it, and dragging it resizes the panel instead of scrolling
+  the page. (HAB-1004)
+
 ## [7.2.0] — 2026-10-19
 
 ### Changed

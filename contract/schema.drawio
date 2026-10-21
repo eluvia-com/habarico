@@ -1800,7 +1800,7 @@
           <mxGeometry height="40" width="250" y="30" as="geometry" />
         </mxCell>
         <mxCell id="5W7Hy5Kiuy9gFd32IRS_-833" parent="1" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;whiteSpace=wrap;fillColor=#dcd0e8;strokeColor=#7b5ea7;" value="&amp;lt;&amp;lt;enumeration&amp;gt;&amp;gt;&lt;br&gt;&lt;b&gt;AggregateFunctionType&lt;/b&gt;" vertex="1">
-          <mxGeometry height="120" width="250" x="11469.330000000002" y="-2280.333333333333" as="geometry" />
+          <mxGeometry height="120" width="250" x="11469.330000000002" y="-2240.333333333333" as="geometry" />
         </mxCell>
         <mxCell id="5W7Hy5Kiuy9gFd32IRS_-834" parent="5W7Hy5Kiuy9gFd32IRS_-833" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" value="count&lt;div&gt;min&lt;/div&gt;&lt;div&gt;max&lt;/div&gt;&lt;div&gt;sum&lt;/div&gt;&lt;div&gt;avg&lt;/div&gt;" vertex="1">
           <mxGeometry height="80" width="250" y="40" as="geometry" />
@@ -1833,13 +1833,13 @@
           <mxGeometry height="150" width="250" y="30" as="geometry" />
         </mxCell>
         <mxCell id="5W7Hy5Kiuy9gFd32IRS_-844" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;whiteSpace=wrap;fillColor=#dcd0e8;strokeColor=#7b5ea7;" value="&lt;b&gt;WidgetLayout&lt;/b&gt;" vertex="1">
-          <mxGeometry height="100" width="250" x="11469.330000000002" y="-2543.333333333333" as="geometry" />
+          <mxGeometry height="140" width="250" x="11469.330000000002" y="-2543.333333333333" as="geometry" />
         </mxCell>
-        <mxCell id="5W7Hy5Kiuy9gFd32IRS_-845" parent="5W7Hy5Kiuy9gFd32IRS_-844" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" value="x: integer&lt;div&gt;y: integer&lt;/div&gt;&lt;div&gt;w: integer&lt;/div&gt;&lt;div&gt;h: integer&lt;/div&gt;" vertex="1">
-          <mxGeometry height="70" width="250" y="30" as="geometry" />
+        <mxCell id="5W7Hy5Kiuy9gFd32IRS_-845" parent="5W7Hy5Kiuy9gFd32IRS_-844" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" value="x: integer&lt;div&gt;y: integer&lt;/div&gt;&lt;div&gt;w: integer&lt;/div&gt;&lt;div&gt;h: integer&lt;/div&gt;&lt;div&gt;stackedH: integer&lt;/div&gt;&lt;div&gt;minW: integer&lt;/div&gt;&lt;div&gt;minH: integer&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="250" y="30" as="geometry" />
         </mxCell>
         <mxCell id="5W7Hy5Kiuy9gFd32IRS_-846" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;whiteSpace=wrap;fillColor=#dcd0e8;strokeColor=#7b5ea7;" value="&lt;b&gt;ChartOptions&lt;/b&gt;" vertex="1">
-          <mxGeometry height="70" width="250" x="11469.330000000002" y="-2400.333333333333" as="geometry" />
+          <mxGeometry height="70" width="250" x="11469.330000000002" y="-2360.333333333333" as="geometry" />
         </mxCell>
         <mxCell id="5W7Hy5Kiuy9gFd32IRS_-847" parent="5W7Hy5Kiuy9gFd32IRS_-846" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" value="orientation: string&lt;div&gt;variant: string&lt;/div&gt;" vertex="1">
           <mxGeometry height="40" width="250" y="30" as="geometry" />
@@ -1854,8 +1854,8 @@
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="11149.333333333334" y="-2578.333333333333" />
-              <mxPoint x="11149.333333333334" y="-2133.333333333333" />
-              <mxPoint x="11594.333333333334" y="-2133.333333333333" />
+              <mxPoint x="11149.333333333334" y="-2093.333333333333" />
+              <mxPoint x="11594.333333333334" y="-2093.333333333333" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -1898,7 +1898,7 @@
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="11439.333333333334" y="-2683.333333333333" />
-              <mxPoint x="11439.333333333334" y="-2213.333333333333" />
+              <mxPoint x="11439.333333333334" y="-2173.333333333333" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -1917,7 +1917,7 @@
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="11779.333333333334" y="-2653.333333333333" />
-              <mxPoint x="11779.333333333334" y="-2373.333333333333" />
+              <mxPoint x="11779.333333333334" y="-2333.333333333333" />
             </Array>
           </mxGeometry>
         </mxCell>

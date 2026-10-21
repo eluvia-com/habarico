@@ -540,6 +540,40 @@ class TestDashboardPreferenceSchema:
                 },
             )
 
+    def test_accepts_layout_with_stacked_height_and_resize_bounds(self):
+        register_preference("dashboard", schema=DashboardPreference)
+
+        value = {
+            "widgets": [
+                {
+                    "id": "w1",
+                    "resource": "product",
+                    "type": "table",
+                    "layout": {"x": 0, "y": 0, "w": 6, "h": 4, "stackedH": 8, "minW": 3, "minH": 2},
+                }
+            ]
+        }
+        assert validate("dashboard", value) == value
+
+    @pytest.mark.parametrize("key", ["stackedH", "minW", "minH"])
+    def test_rejects_non_positive_optional_layout_size(self, key):
+        register_preference("dashboard", schema=DashboardPreference)
+
+        with pytest.raises(PreferenceValidationError):
+            validate(
+                "dashboard",
+                {
+                    "widgets": [
+                        {
+                            "id": "w1",
+                            "resource": "product",
+                            "type": "table",
+                            "layout": {"x": 0, "y": 0, "w": 6, "h": 4, key: 0},
+                        }
+                    ]
+                },
+            )
+
 
 class TestPydanticModelRegistration:
     def test_no_default_returns_none(self):
@@ -606,7 +640,7 @@ class TestModelInstanceDefault:
                     "resource": "product",
                     "type": "aggregate",
                     "label": None,
-                    "layout": {"x": 0, "y": 0, "w": 3, "h": 2},
+                    "layout": {"x": 0, "y": 0, "w": 3, "h": 2, "stackedH": None, "minW": None, "minH": None},
                     "filters": None,
                     "sort": None,
                     "perPage": None,
