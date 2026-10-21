@@ -12,16 +12,13 @@ import {Button, CircularProgress, DialogActions, DialogContent, DialogTitle} fro
 import {DEFAULT_IMAGE_ACCEPT} from '@schema/components/inputs/constants';
 import {useGetLocalResourceSchema} from '@schema/hooks/useGetLocalResourceSchema';
 import {useGetTargetValues} from '@schema/hooks/useGetTargetValues';
-import {UploadImagesActionParameters} from '@schema/types';
+import {UploadFilesActionParameters} from '@schema/types';
 
-export type SchemaUploadImagesButtonProps = Omit<ActionButtonProps, 'type'> & {
-  uploadImages?: UploadImagesActionParameters;
+export type SchemaUploadFilesButtonProps = Omit<ActionButtonProps, 'type'> & {
+  uploadFiles?: UploadFilesActionParameters;
 };
 
-export const SchemaUploadImagesButton = ({
-  uploadImages,
-  ...props
-}: SchemaUploadImagesButtonProps) => {
+export const SchemaUploadFilesButton = ({uploadFiles, ...props}: SchemaUploadFilesButtonProps) => {
   const {
     reference,
     target,
@@ -32,20 +29,20 @@ export const SchemaUploadImagesButton = ({
     maxFiles,
     upload: uploadParam,
     data,
-    imageField,
-  } = uploadImages ?? {};
+    fileField,
+  } = uploadFiles ?? {};
 
   // The action params rarely carry the upload/accept config; it lives on the target field's
-  // schema (imageField.options). Fall back to it so the button matches the create form behaviour
+  // schema (fileField.options). Fall back to it so the button matches the create form behaviour
   // (e.g. S3 multipart uploads instead of always base64).
   const {getMethodSchema} = useGetLocalResourceSchema({resource: reference});
-  const imageFieldOptions = imageField
+  const fileFieldOptions = fileField
     ? (getMethodSchema('post')?.fields ?? getMethodSchema('get')?.fields)?.find(
-        (f) => f.name === imageField
+        (f) => f.name === fileField
       )?.options
     : undefined;
-  const upload = uploadParam ?? imageFieldOptions?.upload;
-  const accept = acceptParam ?? imageFieldOptions?.accept ?? DEFAULT_IMAGE_ACCEPT;
+  const upload = uploadParam ?? fileFieldOptions?.upload;
+  const accept = acceptParam ?? fileFieldOptions?.accept ?? DEFAULT_IMAGE_ACCEPT;
 
   const translate = useTranslate();
   const {Dialog, openDialog, closeDialog} = useDialog();
@@ -79,7 +76,7 @@ export const SchemaUploadImagesButton = ({
   });
 
   const handleConfirm = async () => {
-    if (!imageField) return;
+    if (!fileField) return;
     setSaving(true);
     let anyFailed = false;
     const readyEntries = entries.filter((e) => e.uploadResult && !e.error && !e.done);
@@ -87,7 +84,7 @@ export const SchemaUploadImagesButton = ({
     for (const entry of readyEntries) {
       try {
         await dataProvider.create(uploadResource, {
-          data: {...data, ...uploadTargetValues, [imageField]: entry.uploadResult},
+          data: {...data, ...uploadTargetValues, [fileField]: entry.uploadResult},
         });
         updateEntry(entry.id, {done: true});
       } catch (e) {
@@ -98,7 +95,7 @@ export const SchemaUploadImagesButton = ({
 
     setSaving(false);
     if (!anyFailed) {
-      notify(translate('ra.upload_images.upload_success'), {type: 'success'});
+      notify(translate('ra.upload_files.upload_success'), {type: 'success'});
       refresh();
       removeAll();
       closeDialog();
@@ -106,7 +103,7 @@ export const SchemaUploadImagesButton = ({
   };
 
   const handleRetryEntry = async (id: string) => {
-    if (!imageField) return;
+    if (!fileField) return;
     const entry = entries.find((e) => e.id === id);
     if (!entry || entry.progress !== null) return;
 
@@ -116,10 +113,10 @@ export const SchemaUploadImagesButton = ({
       setSaving(true);
       try {
         await dataProvider.create(uploadResource, {
-          data: {...data, ...uploadTargetValues, [imageField]: entry.uploadResult},
+          data: {...data, ...uploadTargetValues, [fileField]: entry.uploadResult},
         });
         updateEntry(id, {done: true});
-        notify(translate('ra.upload_images.upload_success'), {type: 'success'});
+        notify(translate('ra.upload_files.upload_success'), {type: 'success'});
         refresh();
       } catch (e) {
         updateEntry(id, {error: getUploadErrorMsg(e)});
@@ -141,12 +138,12 @@ export const SchemaUploadImagesButton = ({
         variant="text"
         size="medium"
         {...props}
-        icon={props.icon ?? <Icon icon={IconType.AddPhotoAlternate} />}
+        icon={props.icon ?? <Icon icon={IconType.UploadFile} />}
         onClick={openDialog}
       />
 
       <Dialog maxWidth="sm" fullWidth disableClose={isDisabled}>
-        <DialogTitle>{translate('ra.upload_images.dialog_title')}</DialogTitle>
+        <DialogTitle>{translate('ra.upload_files.dialog_title')}</DialogTitle>
         <DialogContent>
           <UploadArea
             items={entries}
@@ -179,8 +176,8 @@ export const SchemaUploadImagesButton = ({
             startIcon={saving ? <CircularProgress size={16} /> : undefined}
           >
             {saving
-              ? translate('ra.upload_images.uploading')
-              : translate('ra.upload_images.upload_count', {count: readyCount})}
+              ? translate('ra.upload_files.uploading')
+              : translate('ra.upload_files.upload_count', {count: readyCount})}
           </Button>
         </DialogActions>
       </Dialog>

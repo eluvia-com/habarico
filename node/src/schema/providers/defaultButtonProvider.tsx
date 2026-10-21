@@ -3,7 +3,7 @@ import {LinkButton} from '@admin/components/buttons/LinkButton';
 import {SaveButton} from '@admin/components/buttons/SaveButton';
 import {ExportButton} from '@schema/components/buttons/ExportButton';
 import {ResourceButton} from '@schema/components/buttons/ResourceButton';
-import {SchemaUploadImagesButton} from '@schema/components/buttons/SchemaUploadImagesButton';
+import {SchemaUploadFilesButton} from '@schema/components/buttons/SchemaUploadFilesButton';
 import {SchemaViewButton} from '@schema/components/buttons/SchemaViewButton';
 import {AdminButtonProviderProps} from '@schema/providers/types';
 
@@ -55,8 +55,8 @@ export const defaultButtonProvider = ({
       return;
     case 'save':
       return <SaveButton data={schema.save?.data} {...props} />;
-    case 'upload-images':
-      return <SchemaUploadImagesButton uploadImages={schema.uploadImages} {...props} />;
+    case 'upload-files':
+      return <SchemaUploadFilesButton uploadFiles={schema.uploadFiles} {...props} />;
     case 'export':
       return (
         <ExportButton format={schema.export?.format} fields={schema.export?.fields} {...props} />

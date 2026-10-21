@@ -525,12 +525,12 @@ export const ukMessages: LocaleMessages = {
       error_message:
         'Вибачте, під час спілкування з AI сталася помилка. Будь ласка, спробуйте ще раз.',
     },
-    upload_images: {
-      dialog_title: 'Завантажити фотографії',
+    upload_files: {
+      dialog_title: 'Завантажити файли',
       select_files: 'Вибрати файли',
-      remove_all_tooltip: 'Видалити всі фотографії',
+      remove_all_tooltip: 'Видалити всі файли',
       remove_all: 'Видалити все',
-      upload_success: 'Фотографії успішно завантажені.',
+      upload_success: 'Файли успішно завантажені.',
       upload_error: 'Під час завантаження сталася помилка.',
       uploading: 'Завантаження…',
       processing: 'Обробка…',

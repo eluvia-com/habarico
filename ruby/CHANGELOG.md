@@ -9,6 +9,31 @@ Releases are cut through the CI `next` flow: merges to `next` publish beta
 pre-releases, and the `## [0.56.0] — 2026-08-03` section below is stamped with the
 version and date when a release is finalized.
 
+## [Unreleased]
+
+### Changed
+
+- **BREAKING:** The `upload-images` action is renamed to `upload-files`, following the contract: it
+  bulk-uploads documents (PDF, DOCX, XLSX, ZIP, …) as much as images. No alias keeps the old names;
+  rename them in the host app:
+  - `Habarico::UploadImagesAction` → `Habarico::UploadFilesAction` (its type is `:"upload-files"`);
+  - its attributes `upload_images_reference` / `upload_images_target` / `upload_images_accept` /
+    `upload_images_image_field` → `upload_files_reference` / `upload_files_target` /
+    `upload_files_accept` / `upload_files_file_field`;
+  - the schema key `upload_images` → `upload_files` on `ActionSchema`, and
+    `Habarico::UploadImagesActionParameters` → `Habarico::UploadFilesActionParameters` with its
+    `image_field` → `file_field`;
+  - a custom generator — the `Definition` attribute `upload_images_action_parameters_generator` →
+    `upload_files_action_parameters_generator`, and a subclass of
+    `Habarico::UploadImagesActionParametersGenerator` now subclasses
+    `Habarico::UploadFilesActionParametersGenerator` and overrides `generate_file_field` instead of
+    `generate_image_field`.
+
+  `GalleryBox#image_field` keeps its name — a gallery does show images. The action works only with
+  a frontend that contains HAB-993: one that knows only `upload-images` renders no button and
+  reports no error, so upgrade the backend and the frontend together. Without `upload_files_accept`
+  the frontend still accepts images only; set it whenever the action uploads documents. (HAB-998)
+
 ## [7.2.0] — 2026-10-19
 
 ### Changed

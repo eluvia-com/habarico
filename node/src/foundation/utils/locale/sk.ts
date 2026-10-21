@@ -308,12 +308,12 @@ export const skMessages: LocaleMessages = {
       error_message:
         'Ospravedlňujem sa, pri komunikácii s AI došlo k chybe. Skúste to prosím znovu.',
     },
-    upload_images: {
-      dialog_title: 'Nahrať fotografie',
+    upload_files: {
+      dialog_title: 'Nahrať súbory',
       select_files: 'Vybrať súbory',
-      remove_all_tooltip: 'Odstrániť všetky fotografie',
+      remove_all_tooltip: 'Odstrániť všetky súbory',
       remove_all: 'Zmazať všetko',
-      upload_success: 'Fotografie boli úspešne nahrané.',
+      upload_success: 'Súbory boli úspešne nahrané.',
       upload_error: 'Pri nahrávaní došlo k chybe.',
       uploading: 'Nahrávam…',
       processing: 'Spracováva sa…',

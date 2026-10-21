@@ -67,8 +67,8 @@ msgstr "Valoarea trebuie să fie un dicționar cu cheile 'lower' sau 'upper'."
 msgid "Save"
 msgstr "Salvare"
 
-msgid "Upload images"
-msgstr "Încarcă imagini"
+msgid "Upload files"
+msgstr "Încarcă fișiere"
 
 msgid "Delete"
 msgstr "Ștergere"

@@ -25,7 +25,7 @@
         <mxCell id="5W7Hy5Kiuy9gFd32IRS_-443" parent="1" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&amp;lt;&amp;lt;enumeration&amp;gt;&amp;gt;&lt;br&gt;&lt;b&gt;ActionType&lt;/b&gt;" vertex="1">
           <mxGeometry height="160" width="140" x="8889.330000000002" y="-3433.333333333333" as="geometry" />
         </mxCell>
-        <mxCell id="5W7Hy5Kiuy9gFd32IRS_-444" parent="5W7Hy5Kiuy9gFd32IRS_-443" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" value="view&lt;div&gt;link&lt;/div&gt;&lt;div&gt;resource&lt;/div&gt;&lt;div&gt;save&lt;/div&gt;&lt;div&gt;ai-assistant&lt;/div&gt;&lt;div&gt;upload-images&lt;/div&gt;&lt;div&gt;export&lt;/div&gt;" vertex="1">
+        <mxCell id="5W7Hy5Kiuy9gFd32IRS_-444" parent="5W7Hy5Kiuy9gFd32IRS_-443" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" value="view&lt;div&gt;link&lt;/div&gt;&lt;div&gt;resource&lt;/div&gt;&lt;div&gt;save&lt;/div&gt;&lt;div&gt;ai-assistant&lt;/div&gt;&lt;div&gt;upload-files&lt;/div&gt;&lt;div&gt;export&lt;/div&gt;" vertex="1">
           <mxGeometry height="120" width="140" y="40" as="geometry" />
         </mxCell>
         <mxCell id="5W7Hy5Kiuy9gFd32IRS_-445" edge="1" parent="1" source="5W7Hy5Kiuy9gFd32IRS_-447" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;" target="5W7Hy5Kiuy9gFd32IRS_-537">
@@ -1035,10 +1035,10 @@
         <mxCell id="5W7Hy5Kiuy9gFd32IRS_-640" parent="5W7Hy5Kiuy9gFd32IRS_-639" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" value="data: object&lt;div&gt;after_save: AfterSaveType&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
           <mxGeometry height="40" width="200" y="30" as="geometry" />
         </mxCell>
-        <mxCell id="5W7Hy5Kiuy9gFd32IRS_-641" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;UploadImagesActionParameters&lt;/b&gt;" vertex="1">
+        <mxCell id="5W7Hy5Kiuy9gFd32IRS_-641" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;UploadFilesActionParameters&lt;/b&gt;" vertex="1">
           <mxGeometry height="105" width="210" x="8635.5" y="-3070.333333333333" as="geometry" />
         </mxCell>
-        <mxCell id="5W7Hy5Kiuy9gFd32IRS_-642" parent="5W7Hy5Kiuy9gFd32IRS_-641" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" value="reference: string&lt;div&gt;target: string&lt;/div&gt;&lt;div&gt;accept: array&lt;string&gt;&lt;/div&gt;&lt;div&gt;data: object&lt;/div&gt;&lt;div&gt;image_field: string&lt;/div&gt;" vertex="1">
+        <mxCell id="5W7Hy5Kiuy9gFd32IRS_-642" parent="5W7Hy5Kiuy9gFd32IRS_-641" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;" value="reference: string&lt;div&gt;target: string&lt;/div&gt;&lt;div&gt;accept: array&lt;string&gt;&lt;/div&gt;&lt;div&gt;data: object&lt;/div&gt;&lt;div&gt;file_field: string&lt;/div&gt;" vertex="1">
           <mxGeometry height="75" width="210" y="30" as="geometry" />
         </mxCell>
         <mxCell id="5W7Hy5Kiuy9gFd32IRS_-643" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;ExportActionParameters&lt;/b&gt;" vertex="1">
@@ -1170,7 +1170,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="5W7Hy5Kiuy9gFd32IRS_-668" connectable="0" parent="5W7Hy5Kiuy9gFd32IRS_-667" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="upload_images" vertex="1">
+        <mxCell id="5W7Hy5Kiuy9gFd32IRS_-668" connectable="0" parent="5W7Hy5Kiuy9gFd32IRS_-667" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="upload_files" vertex="1">
           <mxGeometry relative="1" x="-0.05" y="3" as="geometry">
             <mxPoint x="-22" y="3" as="offset" />
           </mxGeometry>

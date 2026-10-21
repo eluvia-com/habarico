@@ -271,12 +271,12 @@ export const csMessages: LocaleMessages = {
       new_conversation: 'Nová konverzace',
       error_message: 'Omlouvám se, došlo k chybě při komunikaci s AI. Zkuste to prosím znovu.',
     },
-    upload_images: {
-      dialog_title: 'Nahrát fotografie',
+    upload_files: {
+      dialog_title: 'Nahrát soubory',
       select_files: 'Vybrat soubory',
-      remove_all_tooltip: 'Odstranit všechny fotografie',
+      remove_all_tooltip: 'Odstranit všechny soubory',
       remove_all: 'Smazat vše',
-      upload_success: 'Fotografie byly úspěšně nahrány.',
+      upload_success: 'Soubory byly úspěšně nahrány.',
       upload_error: 'Při nahrávání došlo k chybě.',
       uploading: 'Nahrávám…',
       processing: 'Zpracovává se…',

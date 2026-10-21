@@ -394,13 +394,13 @@ export const roMessages: LocaleMessages = {
       error_message:
         'Ne pare rău, a apărut o eroare în timpul comunicării cu AI. Vă rugăm să încercați din nou.',
     },
-    upload_images: {
-      dialog_title: 'Încarcă fotografii',
+    upload_files: {
+      dialog_title: 'Încarcă fișiere',
       select_files: 'Selectează fișiere',
-      remove_all_tooltip: 'Elimină toate fotografiile',
+      remove_all_tooltip: 'Elimină toate fișierele',
       remove_all: 'Elimină tot',
-      upload_success: 'Fotografiile au fost încărcate cu succes.',
-      upload_error: 'A apărut o eroare la încărcarea fotografiilor.',
+      upload_success: 'Fișierele au fost încărcate cu succes.',
+      upload_error: 'A apărut o eroare la încărcarea fișierelor.',
       uploading: 'Se încarcă…',
       processing: 'Se procesează…',
       upload_count: 'Încarcă (%{count})',

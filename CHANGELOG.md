@@ -13,6 +13,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **BREAKING:** The `upload-images` action is renamed to `upload-files`: it is used to bulk-upload
+  documents (PDF, DOCX, XLSX, ZIP, …) as much as images, and the name said otherwise. The
+  `ActionType` value `upload-images` → `upload-files`, the `ActionSchema` slot `upload_images` →
+  `upload_files`, its schema `UploadImagesActionParameters` → `UploadFilesActionParameters` and the
+  parameter `image_field` → `file_field`; no alias keeps the old names. The `file_field`
+  description no longer claims a frontend default — there is none, and an action without it saves
+  nothing — and `accept` says its default admits images only. `GalleryBoxParameters.image_field`
+  and `ImageFieldOptions` keep their names: a gallery does show images. `info.version` 3.4.0 →
+  3.5.0; renamed in `contract/schema.drawio` and `contract/schema.svg` as well. The backends and
+  the frontend implementing it must be upgraded together — a backend sending `upload-files` to a
+  frontend that only knows `upload-images` (or the reverse) renders no button and reports no error.
+  (HAB-993)
+
 - The `filter` query parameter is written down, on the list endpoint that has always taken it and
   on the new export endpoint: the `field=<JSON value>` terms it carries as one percent-encoded
   value, that `field` is a filter the resource schema advertises (lookup suffix included), that an

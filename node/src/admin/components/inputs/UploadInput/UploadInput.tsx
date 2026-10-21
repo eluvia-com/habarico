@@ -34,7 +34,7 @@ export type UploadInputProps = {
   resizeWidth?: number;
   cropAspectRatio?: number;
   showImagePreview?: boolean;
-  /** Override the upload UI strings. Defaults to translations of `ra.upload_images.*`. */
+  /** Override the upload UI strings. Defaults to translations of `ra.upload_files.*`. */
   labels?: UploadAreaLabels;
 };
 
@@ -64,7 +64,7 @@ export const UploadInput = ({
   // queue below exists, and re-read on every run so it always sees the current rows.
   const failedCountRef = useRef(0);
   const validateUploads: Validator = () =>
-    failedCountRef.current > 0 ? 'ra.upload_images.unresolved_errors' : undefined;
+    failedCountRef.current > 0 ? 'ra.upload_files.unresolved_errors' : undefined;
 
   const {
     field: {onChange, value},

@@ -9,6 +9,24 @@ export const getExt = (filename: string): string => {
   return filename.split('.').pop()?.toLowerCase() ?? '';
 };
 
+// Image formats every current browser renders in an `<img>`. HEIC / TIFF are images too, but most
+// browsers cannot draw them, so they get the file-type tile instead of a broken thumbnail.
+const IMAGE_EXTENSIONS = new Set([
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'avif',
+  'svg',
+  'bmp',
+  'ico',
+]);
+
+/** Whether the filename's extension is an image format a browser can render as a thumbnail. */
+export const isImageFilename = (filename: string): boolean =>
+  IMAGE_EXTENSIONS.has(getExt(filename));
+
 /** Checks whether a File matches an `accept` list of extensions (".png"), mime types or wildcards ("image/*"). */
 export const isFileAccepted = (file: File, accept: string[]): boolean => {
   const types = accept.map((t) => t.trim().toLowerCase());
