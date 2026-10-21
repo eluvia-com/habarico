@@ -1,7 +1,6 @@
 import React, {useState} from 'react';
 import {FieldTitle, InputHelperText, useInput} from 'react-admin';
 import {InputProps} from '@admin/components/inputs/types';
-import {alpha} from '@mui/material';
 import {styled, useThemeProps} from '@mui/material/styles';
 import {DatePicker} from '@mui/x-date-pickers/DatePicker';
 import {PickerValue} from '@mui/x-date-pickers/internals';
@@ -89,14 +88,11 @@ export const DateInput = (props: DateInputProps) => {
           // The caller's own `sx` last, so it wins over these defaults. Array form, because
           // `SxProps` may be an array or a theme callback just as legally as a plain object.
           sx: [
-            (theme) => ({
-              '& .MuiPickersInputBase-root': {
-                backgroundColor: alpha(theme.palette.background.paper, 0.2),
-              },
+            {
               '& .MuiPickersSectionList-root': {
                 width: 0,
               },
-            }),
+            },
             ...(Array.isArray(sx) ? sx : [sx]),
           ],
         },
