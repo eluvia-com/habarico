@@ -1,7 +1,6 @@
 import React, {useState} from 'react';
 import {FieldTitle, InputHelperText, useInput} from 'react-admin';
 import {InputProps} from '@admin/components/inputs/types';
-import {alpha} from '@mui/material';
 import {styled, useThemeProps} from '@mui/material/styles';
 import {TimePicker} from '@mui/x-date-pickers/TimePicker';
 import {PickerValue} from '@mui/x-date-pickers/internals';
@@ -62,16 +61,7 @@ export const TimeInput = (props: TimeInputProps) => {
           error: invalid,
           fullWidth: true,
           size: 'small',
-          // The caller's own `sx` last, so it wins over these defaults. Array form, because
-          // `SxProps` may be an array or a theme callback just as legally as a plain object.
-          sx: [
-            (theme) => ({
-              '& .MuiPickersInputBase-root': {
-                backgroundColor: alpha(theme.palette.background.paper, 0.2),
-              },
-            }),
-            ...(Array.isArray(sx) ? sx : [sx]),
-          ],
+          sx,
         },
       }}
       onChange={handleChange}

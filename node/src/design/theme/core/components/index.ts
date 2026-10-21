@@ -16,6 +16,8 @@ import {MuiMenu} from './Menu';
 import {MuiMenuItem} from './MenuItem';
 import {MuiOutlinedInput} from './OutlinedInput';
 import {MuiPaper} from './Paper';
+import {MuiPickersInputBase} from './PickersInputBase';
+import {MuiPickersOutlinedInput} from './PickersOutlinedInput';
 import {MuiPopover} from './Popover';
 import {MuiRadio} from './Radio';
 import {MuiScopedCssBaseline} from './ScopedCssBaseline';
@@ -43,6 +45,8 @@ export const components: NonNullable<ThemeOptions['components']> = {
   MuiMenuItem,
   MuiOutlinedInput,
   MuiPaper,
+  MuiPickersInputBase,
+  MuiPickersOutlinedInput,
   MuiPopover,
   MuiRadio,
   MuiScopedCssBaseline,

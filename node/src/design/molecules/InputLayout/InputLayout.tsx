@@ -1,5 +1,4 @@
 import React, {ReactNode} from 'react';
-import {varAlpha} from '@design/theme/utils';
 import {Box, FormHelperText} from '@mui/material';
 import type {SxProps, Theme} from '@mui/material/styles';
 
@@ -57,7 +56,7 @@ export const InputLayout = ({
           m: 0,
           minWidth: 0,
           border: 1,
-          borderColor: error ? 'error.main' : varAlpha(theme.palette.grey['500Channel'], 0.45),
+          borderColor: error ? 'error.main' : 'divider',
           borderRadius: 1,
           px: 1,
           pt: 0.5,
