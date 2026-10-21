@@ -7,7 +7,7 @@ those schemas — no screen is written per resource.
 
 ## Installation
 
-The gem is published to the internal server, not to rubygems.org. Add it to your `Gemfile`:
+Add the gem to your `Gemfile`:
 
 ```ruby
 gem 'habarico'
