@@ -22,7 +22,7 @@ module Habarico
         definition: TestArticlesController.definition,
         resource_name: 'test_articles',
         context_for: ->(_record) {},
-        trigger_action_for: ->(_record) {},
+        trigger_action_schema_for: ->(_record) {},
         search_query: search_query
       ).highlights(article)
     end

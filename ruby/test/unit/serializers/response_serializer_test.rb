@@ -6,11 +6,11 @@ module Habarico
 
       def serialize(response, action_schema: nil)
         actions = []
-        action_schema_for = lambda do |action|
+        trigger_action_schema_for = lambda do |action|
           actions << action
           action_schema
         end
-        [ResponseSerializer.new(action_schema_for: action_schema_for).serialize(response), actions]
+        [ResponseSerializer.new(trigger_action_schema_for: trigger_action_schema_for).serialize(response), actions]
       end
 
       def test_meta_carries_message_and_state

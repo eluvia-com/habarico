@@ -8,15 +8,15 @@ module Habarico
 
       META_FIELD = 'meta'.freeze
 
-      # `context_for` and `trigger_action_for` are called with the record - the controller's
-      # `_context` and `get_trigger_action_schema`, so overrides of either keep applying.
-      def initialize(definition:, resource_name:, context_for:, trigger_action_for:, fields: nil, search_query: nil)
+      # `context_for` and `trigger_action_schema_for` are called with the record and answer its
+      # `Habarico::Context` and the `Habarico::ActionSchema` of its trigger action (or nil).
+      def initialize(definition:, resource_name:, context_for:, trigger_action_schema_for:, fields: nil, search_query: nil)
         @definition = definition
         @resource_name = resource_name
         @fields_serializer = definition.fields_serializer.new(definition)
         @meta_serializer = MetaSerializer.new
         @context_for = context_for
-        @trigger_action_for = trigger_action_for
+        @trigger_action_schema_for = trigger_action_schema_for
         @fields = fields
         @search_query = search_query
       end
@@ -63,7 +63,7 @@ module Habarico
 
       def meta_data(view_type, record)
         context = @context_for.call(record)
-        trigger_action = @trigger_action_for.call(record)
+        trigger_action = @trigger_action_schema_for.call(record)
 
         {
           'repr' => record.respond_to?(:representation) ? record.representation : record.to_s,

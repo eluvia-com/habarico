@@ -43,7 +43,7 @@ module Habarico
           definition: definition,
           resource_name: 'articles',
           context_for: ->(_record) {},
-          trigger_action_for: ->(_record) { trigger_action },
+          trigger_action_schema_for: ->(_record) { trigger_action },
           fields: fields,
           search_query: search_query
         )

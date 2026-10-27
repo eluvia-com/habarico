@@ -74,6 +74,32 @@ module Habarico
     protected
 
     # *************************************************************************
+    # Trigger actions
+    # *************************************************************************
+
+    # Generates the complete `Habarico::ActionSchema` of `action` - a declared action's name or a
+    # `Habarico::Action` - for `get_trigger_action_schema` or `Habarico::Response.new(action: ...)`.
+    # `record` builds the context from that record, `record_pk` and `reference` retarget the action.
+    def trigger_action_schema(action, record: nil, record_pk: nil, reference: nil)
+      resource_path = Habarico::ResourceService.instance.get_resource_path(controller_name)
+      definition.trigger_action_schema_generator
+                .new(definition, resource_path)
+                .generate(action, record ? _context(record) : context, record_pk: record_pk, reference: reference)
+    end
+
+    # The trigger action of a serialized record: a declared action's name, a `Habarico::Action` or
+    # a `Habarico::ActionSchema`, or nil for none. Override in subclasses.
+    def get_trigger_action_schema(_record)
+      nil
+    end
+
+    # The schema of what `get_trigger_action_schema` answers for `record`, built in its context.
+    def record_trigger_action_schema(record)
+      action = get_trigger_action_schema(record)
+      action && trigger_action_schema(action, record: record)
+    end
+
+    # *************************************************************************
     # Serializers
     # *************************************************************************
 
@@ -84,9 +110,15 @@ module Habarico
         definition: definition,
         resource_name: controller_name,
         context_for: method(:_context),
-        trigger_action_for: method(:get_trigger_action_schema),
+        trigger_action_schema_for: method(:record_trigger_action_schema),
         fields: params[:fields],
         search_query: search_query
+      )
+    end
+
+    def response_serializer
+      Habarico::Serializers::ResponseSerializer.new(
+        trigger_action_schema_for: method(:trigger_action_schema)
       )
     end
 
@@ -111,21 +143,7 @@ module Habarico
     end
 
     def render_response(response)
-      render json: Habarico::Serializers::ResponseSerializer.new(action_schema_for: method(:build_action_schema)).serialize(response)
-    end
-
-    def get_trigger_action_schema(_record)
-      nil # override in subclasses to return an ActionSchema instance
-    end
-
-    # Builds the complete `Habarico::ActionSchema` of `action` - a declared action's name or a
-    # `Habarico::Action` - for `get_trigger_action_schema` or `Habarico::Response.new(action: ...)`.
-    # `record` builds the context from that record, `record_pk` and `reference` retarget the action.
-    def build_action_schema(action, record: nil, record_pk: nil, reference: nil)
-      resource_path = Habarico::ResourceService.instance.get_resource_path(controller_name)
-      definition.trigger_action_schema_generator
-                .new(definition, resource_path)
-                .generate(action, record ? _context(record) : context, record_pk: record_pk, reference: reference)
+      render json: response_serializer.serialize(response)
     end
 
     def validate_order_by_param

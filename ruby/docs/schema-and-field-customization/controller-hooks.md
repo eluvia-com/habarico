@@ -39,17 +39,18 @@ end
 
 These hooks run after permissions are checked and before the write is committed. Return `false` to block the operation with a `400 Bad Request` error.
 
-**`get_trigger_action_schema(record)`** — override to inject a trigger action into every serialized record response. Return a `Habarico::ActionSchema` instance or `nil` (default). `build_action_schema` turns an action into the complete schema — nested objects and, for a resource action, the endpoint path included:
+**`get_trigger_action_schema(record)`** — override to inject a trigger action into every serialized record response. Return the name of an action declared in `actions`, a `Habarico::Action`, a complete `Habarico::ActionSchema`, or `nil` (default) for none — the same values `Habarico::Response.new(action: …)` accepts. A name or an action is turned into the complete schema in the context of `record`:
 
 ```ruby
 def get_trigger_action_schema(record)
-  return nil unless record.needs_review?
-
-  build_action_schema('review', record: record)
+  'review' if record.needs_review?
 end
 ```
 
-`build_action_schema(action, record:, record_pk:, reference:)`:
+To point the trigger at another record or another resource, build the schema yourself with
+`generate_trigger_action_schema` — nested objects and, for a resource action, the endpoint path included.
+
+`generate_trigger_action_schema(action, record:, record_pk:, reference:)`:
 
 | Argument | Description |
 |----------|-------------|
@@ -65,7 +66,7 @@ opens the detail of the category it belongs to, in a side panel:
 def get_trigger_action_schema(record)
   return nil unless params[:show_category].present?
 
-  build_action_schema(
+  generate_trigger_action_schema(
     Habarico::ViewAction.new(name: 'show', view_name: 'show', view_mode: :sidepanel, is_detail: true),
     record: record,
     reference: 'categories',
