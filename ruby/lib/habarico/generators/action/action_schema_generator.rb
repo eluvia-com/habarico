@@ -97,8 +97,10 @@ module Habarico
 
     def generate_save(action, context)
       if action.type.to_sym == :save
+        # Either parameter on its own is worth sending: `after_save` changes where the form goes
+        # after the save, with no data to add to the record.
         data = Habarico::CallableHelper.resolve(action.data, context)
-        save_action_parameters_generator.generate(action, context) unless data.nil?
+        save_action_parameters_generator.generate(action, context) unless data.nil? && action.after_save.nil?
       end
     end
 

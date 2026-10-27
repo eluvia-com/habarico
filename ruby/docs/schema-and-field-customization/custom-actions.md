@@ -55,14 +55,104 @@ The block must return a `Habarico::Response` (or a plain string, which is wrappe
 | Attribute | Description | Default |
 |-----------|-------------|---------|
 | `message` | User-facing message string | `nil` |
-| `state` | Response state (`:success`, `:error`, etc.) | `:success` |
-| `action` | Name of a defined action to trigger in the UI after the response | `nil` |
+| `state` | Response state — `:success`, `:error`, or `:running` for a background action the frontend keeps polling | `:success` |
+| `action` | Follow-up action the frontend runs once it has the response — see below | `nil` |
+| `data` | Hash rendered next to `meta`, for a payload of the action's own | `nil` |
 
-Using `action:` causes the frontend to execute the named action (e.g. open a dialog or redirect) after the server response completes:
+The response is rendered as the contract's `ActionResult`: `message`, `state` and `trigger_action`
+live under `meta`, and `data` is merged beside it.
+
+```json
+{
+  "meta": {
+    "message": "Product has been published.",
+    "state": "success",
+    "trigger_action": {
+      "type": "view",
+      "is_detail": true,
+      "view": {"name": "show", "mode": "dialog", "endpoint": {"record_pk": "…"}}
+    }
+  },
+  "published_at": "2026-09-21T10:15:00Z"
+}
+```
+
+### Triggering a follow-up action
+
+`action:` accepts three things:
 
 ```ruby
-Habarico::Response.new(message: 'Record approved.', action: 'show')
+# 1. The name of an action declared in `actions` - runs it on the record the action ran on
+Habarico::Response.new(message: 'Product approved.', action: 'show')
+
+# 2. An action object built on the spot - it does not have to be declared in `actions`
+Habarico::Response.new(
+  message: 'Invoice issued.',
+  action: Habarico::LinkAction.new(
+    name: 'open_invoice',
+    link_url: 'https://invoices.example.com/INV-2026-0042',
+    link_target: 'blank',
+  ),
+)
+
+# 3. A complete `Habarico::ActionSchema` - full control over what is sent
+Habarico::Response.new(action: build_action_schema(Habarico::ShowAction.new, record_pk: order.id))
 ```
+
+A name that is not declared in `actions` raises an error naming the declared ones.
+
+### Pointing the trigger at another record or resource
+
+`endpoint_record_pk` names the target record and `endpoint_reference` the target resource. Both win
+over the resource and the record the action ran on, and both apply to a `view` action and a
+`resource` action alike:
+
+```ruby
+register_action :split_order, method: :put, permission: :update do
+  new_order = OrderService.instance.split(@record)
+
+  # Open the detail of the order that was just created, in a dialog
+  Habarico::Response.new(
+    message: 'Order has been split.',
+    action: Habarico::ViewAction.new(
+      name: 'show',
+      view_name: 'show',
+      view_mode: :dialog,
+      is_detail: true,
+      endpoint_record_pk: new_order.id,
+    ),
+  )
+end
+```
+
+```ruby
+# Redirect to the customer the order belongs to - another resource, another record
+Habarico::Response.new(
+  action: Habarico::ViewAction.new(
+    name: 'show',
+    view_name: 'show',
+    view_mode: :redirect,
+    is_detail: true,
+    endpoint_reference: 'customers',
+    endpoint_record_pk: order.customer_id,
+  ),
+)
+
+# Or call another resource's endpoint and let the UI chain on from its response
+Habarico::Response.new(
+  action: Habarico::ResourceAction.new(
+    name: 'recount_products',
+    endpoint_method: :put,
+    is_detail: true,
+    endpoint_reference: 'categories',
+    endpoint_record_pk: product.category_id,
+  ),
+)
+```
+
+`Habarico::Controller#build_action_schema(action, record:, record_pk:, reference:)` builds the same
+schema from a declared action's name or a `Habarico::Action` and returns it — it is what the
+[`get_trigger_action_schema` hook](./controller-hooks.md) returns, and what form 3 above uses.
 
 ---
 
@@ -89,6 +179,23 @@ actions [
 ```
 
 The `if:` lambda receives a `Habarico::Context` and hides the action when it returns falsy.
+
+`view_choices` offers a choice before the view opens — each choice carries its own view
+parameters, which the frontend adds to the query string of the view it navigates to:
+
+```ruby
+Habarico::ViewAction.new(
+  name: 'sales_report',
+  label: 'Sales report',
+  view_name: 'sales_report',
+  view_mode: :dialog,
+  is_detail: false,
+  view_choices: [
+    Habarico::ActionViewChoice.new(label: 'This quarter', parameters: { 'period' => 'quarter' }),
+    Habarico::ActionViewChoice.new(label: 'This year', parameters: { 'period' => 'year' }),
+  ],
+)
+```
 
 **`Habarico::ResourceAction`** — a bare endpoint action with no form (optionally shows a confirm dialog before calling the endpoint):
 
@@ -128,6 +235,15 @@ Habarico::ActionView.new(
 actions [:show, :edit, Habarico::SaveAction.new]
 ```
 
+`data` is merged into the record before it is saved, and `after_save` says where the form goes once
+the save succeeds — `stay` (keep the form open), `prev` (go back / close the dialog), `show` (open the
+saved record's detail) or `list` (go to the list). Either attribute on its own is enough; when
+`after_save` is not set, the frontend keeps its own default:
+
+```ruby
+Habarico::SaveAction.new(label: 'Save and publish', data: { 'status' => 'published' }, after_save: :show)
+```
+
 **`Habarico::UploadImagesAction`** — an action that opens an image upload dialog:
 
 ```ruby
@@ -139,6 +255,7 @@ Habarico::UploadImagesAction.new(
   upload_images_target: 'unit',                 # foreign key name on the image resource
   upload_images_accept: ['.png', '.jpg'],       # accepted file extensions (array, not a comma-separated string)
   upload_images_image_field: 'photo',           # field on the image resource that holds the uploaded file (required)
+  upload_images_data: { 'source' => 'catalogue' }, # extra attributes set on every created image record
   permission: :update,
 )
 ```
@@ -215,7 +332,11 @@ Habarico::ActionReference.new(
 | `is_detail` | Whether the action is tied to a single record |
 | `permission` | Permission checked before the action is offered |
 | `if` | Lambda receiving `Habarico::Context` — hides the action when falsy |
-| `data` | `ResourceAction` only — extra payload sent with the request |
+| `data` | `ResourceAction` and `SaveAction` — extra payload sent with the request / merged into the record before saving |
+| `endpoint_reference` | Target resource of the action, when it is not the current one |
+| `endpoint_record_pk` | Target record of the action, when it is not the record in the context — `view` and `resource` actions |
+| `endpoint_action_name` | Name of the endpoint action to call, when it differs from the action name |
+| `endpoint_method` | HTTP method of the endpoint (`ResourceAction`) |
 
 ## See also
 

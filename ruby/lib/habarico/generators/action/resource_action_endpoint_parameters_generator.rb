@@ -22,7 +22,10 @@ module Habarico
     # ***********************************************************************
 
     def generate_path(action, context)
-      return nil if Habarico::ActionHelper.is_standard_action?(action)
+      # A standard action of the current resource needs no path - the frontend already knows the
+      # endpoint. One that names its own target does: the path is what points the call at the
+      # other resource or record.
+      return nil if Habarico::ActionHelper.is_standard_action?(action) && !Habarico::ActionHelper.has_explicit_target?(action)
       url_prefix = Habarico::Config.routing_url_prefix.trim('/')
       result = !url_prefix.blank? ? "/#{url_prefix}" : ''
 
@@ -30,6 +33,7 @@ module Habarico
       reference = generate_reference(action, context)
       if reference.present?
         resource_path_2 = ResourceService.instance.get_resource_path(reference)
+        raise Eluvia::Errors::StandardError.new("Resource `#{reference}` referenced by action `#{action.name}` is not registered.") if resource_path_2.blank?
         result += "/#{resource_path_2.join('/')}"
       else
         result += "/#{resource_path.join('/')}"
@@ -56,14 +60,16 @@ module Habarico
     end
 
     def generate_action_name(action, _context)
+      return action.endpoint_action_name if action.endpoint_action_name.present?
       return nil if Habarico::ActionHelper.is_standard_action?(action)
-      action.endpoint_action_name || action.name
+      action.name
     end
 
     def generate_record_pk(action, context)
-      if action&.is_detail
-        context.record_pk
-      end
+      # An explicit record pk on the action wins over the record in the context: it is how an
+      # action targets a record other than the one it was invoked on.
+      return action.endpoint_record_pk if action.endpoint_record_pk.present?
+      context.record_pk if action&.is_detail
     end
 
   end

@@ -38,6 +38,7 @@ module Habarico
                   :view_action_endpoint_parameters_generator, :view_action_parameters_generator,
                   :confirm_dialog_properties_generator, :global_resource_action_schema_generator,
                   :resource_action_schema_generator, :upload_images_action_parameters_generator,
+                  :trigger_action_schema_generator,
 
                   # Generator classes - endpoint
                   :dynamic_render_options_generator, :method_schema_generator, :endpoints_schema_generator,
@@ -119,6 +120,7 @@ module Habarico
       @global_resource_action_schema_generator = Habarico::GlobalResourceActionSchemaGenerator
       @resource_action_schema_generator = Habarico::ResourceActionSchemaGenerator
       @upload_images_action_parameters_generator = Habarico::UploadImagesActionParametersGenerator
+      @trigger_action_schema_generator = Habarico::TriggerActionSchemaGenerator
 
       # Endpoint
       @dynamic_render_options_generator = Habarico::DynamicRenderOptionsGenerator

@@ -52,6 +52,9 @@ module Habarico
     # LinkTargetType - where a link action opens
     LINK_TARGET_TYPE = %i[self blank].freeze
 
+    # AfterSaveType - where a save action goes once the record is saved
+    AFTER_SAVE_TYPE = %i[stay prev show list].freeze
+
     # TextAlignType - horizontal alignment of a field value
     TEXT_ALIGN_TYPE = %i[left center right].freeze
 

@@ -133,6 +133,7 @@ require "habarico/generators/action/global_resource_action_schema_generator"
 require "habarico/generators/action/resource_action_schema_generator"
 require "habarico/generators/action/save_action_parameters_generator"
 require "habarico/generators/action/upload_images_action_parameters_generator"
+require "habarico/generators/action/trigger_action_schema_generator"
 
 # Endpoint generators
 require "habarico/generators/endpoint/method_schema_generator"

@@ -11,7 +11,8 @@ module Habarico
         reference: generate_reference(action, context),
         target: generate_target(action, context),
         accept: generate_accept(action, context),
-        image_field: generate_image_field(action, context)
+        image_field: generate_image_field(action, context),
+        data: generate_data(action, context)
       )
     end
 
@@ -35,6 +36,10 @@ module Habarico
 
     def generate_image_field(action, _context)
       action.upload_images_image_field
+    end
+
+    def generate_data(action, context)
+      Habarico::CallableHelper.resolve(action.upload_images_data, context)
     end
 
   end
