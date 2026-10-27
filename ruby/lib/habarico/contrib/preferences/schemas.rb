@@ -55,6 +55,9 @@ module Habarico
             "y" => { "type" => "integer", "minimum" => 0 },
             "w" => { "type" => "integer", "minimum" => 1 },
             "h" => { "type" => "integer", "minimum" => 1 },
+            "stackedH" => { "type" => "integer", "minimum" => 1 },
+            "minW" => { "type" => "integer", "minimum" => 1 },
+            "minH" => { "type" => "integer", "minimum" => 1 },
           },
         }.freeze
 
