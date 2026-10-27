@@ -65,7 +65,7 @@ Every top-level directory with its own pydev config (`.pydev/base.yml` with a `v
 
 `<pkg>/docs/` is part of its package for that purpose too: a change to a page alone bumps the package's beta and ships with its next release. That is the point — the page is published from the release tag it belongs to.
 
-The units are built, released and published from GitHub Actions — see `.github/README.md`
+The units are built, released and published from GitHub Actions — see `.github/WORKFLOWS.md`
 for what runs and `.github/OPERATIONS.md` for how to release and how to consume a beta.
 
 ## Branch Naming

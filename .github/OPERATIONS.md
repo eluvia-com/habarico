@@ -2,7 +2,7 @@
 
 How to set the workflows up, use them day to day, and recover when one fails.
 
-`README.md` is the reference — what runs, and every variable and secret it reads.
+`WORKFLOWS.md` is the reference — what runs, and every variable and secret it reads.
 `RELEASE-DESIGN.md` is the design record — why the release flow is shaped the way it is. This
 file is the procedures.
 
@@ -23,7 +23,7 @@ permission, install it on this repository, and give it a **ruleset bypass on bot
 goes in the `RELEASE_APP_ID` variable, its private key in the `RELEASE_APP_PRIVATE_KEY` secret,
 shared by both workflows.
 
-**3. The variables and secrets.** See the two tables in `README.md`. `TOOLBOX_IMAGE` needs no
+**3. The variables and secrets.** See the two tables in `WORKFLOWS.md`. `TOOLBOX_IMAGE` needs no
 action: it defaults to the public upstream `pydev` image (`ghcr.io/druids/developers-chamber:1`).
 python and ruby publish to PyPI and rubygems.org through a trusted publisher, configured there once
 before the first publish (see `RELEASE-DESIGN.md`). node needs its first version on npmjs.com
