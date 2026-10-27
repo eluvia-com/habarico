@@ -74,6 +74,23 @@ module Habarico
     protected
 
     # *************************************************************************
+    # Serializer
+    # *************************************************************************
+
+    # `fields` comes straight from the query string and is kept out of `Habarico::FilterParamsResolver`,
+    # since it controls serialization rather than which records are returned.
+    def record_serializer(search_query: nil)
+      Habarico::Serializers::RecordSerializer.new(
+        definition: definition,
+        resource_name: controller_name,
+        context_for: method(:_context),
+        trigger_action_for: method(:get_trigger_action_schema),
+        fields: params[:fields],
+        search_query: search_query
+      )
+    end
+
+    # *************************************************************************
     # Renderers
     # *************************************************************************
 
@@ -91,19 +108,6 @@ module Habarico
         },
         objects: @records.map { |record| list_serializer.serialize(:list, record) }
       }
-    end
-
-    # `fields` comes straight from the query string and is kept out of `Habarico::FilterParamsResolver`,
-    # since it controls serialization rather than which records are returned.
-    def record_serializer(search_query: nil)
-      Habarico::Serializers::RecordSerializer.new(
-        definition: definition,
-        resource_name: controller_name,
-        context_for: method(:_context),
-        trigger_action_for: method(:get_trigger_action_schema),
-        fields: params[:fields],
-        search_query: search_query
-      )
     end
 
     # Renders an `ActionResult`: `message`, `state` and `trigger_action` live under `meta`, and the

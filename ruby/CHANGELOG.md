@@ -24,6 +24,7 @@ version and date when a release is finalized.
 - **BREAKING:** A custom action's response now follows the contract's `ActionResult`: `message`, `state` and `trigger_action` are nested under `meta` instead of sitting at the top level, and `Habarico::Response#data` is merged beside it. `meta` is the only place the frontend has ever read them from, so none of the three used to reach the UI - including `state: running` for a background action, which left `Habarico::Response#action` dead code. A client reading the old top-level keys must switch to `meta` (HAB-955).
 - `Habarico::Response#action` takes a `Habarico::Action` built on the spot, or a complete `Habarico::ActionSchema`, besides the name of an action declared in `actions`. A name that is not declared now raises an error listing the declared ones instead of silently sending no trigger action (HAB-955).
 - **BREAKING:** `Habarico::Serializers::Serializer` is renamed to `Habarico::Serializers::FieldsSerializer` (HAB-1062).
+- **BREAKING:** `Habarico::Search::FieldResolver` and `Habarico::Search::LeafField` are renamed to `Habarico::FieldPathResolver` and `Habarico::LeafField`; the resolver walks any relation path, and the `sort_by` of an `association__column` field is resolved by it too (HAB-1062).
 
 ### Removed
 

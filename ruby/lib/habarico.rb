@@ -30,13 +30,20 @@ require "habarico/helpers/sorting_helper"
 require "habarico/file_validations"
 
 # *****************************************************************************
+# Resolvers
+# *****************************************************************************
+
+require "habarico/resolvers/field_path_resolver"
+require "habarico/resolvers/filter_params_resolver"
+require "habarico/resolvers/record_params_resolver"
+
+# *****************************************************************************
 # Search
 # *****************************************************************************
 
 # Free per-resource search. The global spotlight search and its highlighter are a paid feature and
 # are not required here - habarico-enterprise loads them and registers itself through
 # `Config.search_highlighter_class` (HAB-812).
-require "habarico/search/field_resolver"
 require "habarico/search/search_matcher"
 
 # *****************************************************************************
@@ -240,8 +247,6 @@ require "habarico/definition/definition"
 # *****************************************************************************
 
 # Controller
-require "habarico/resolvers/filter_params_resolver"
-require "habarico/resolvers/record_params_resolver"
 require "habarico/queries/records_query"
 require "habarico/controller"
 

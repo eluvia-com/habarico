@@ -5,10 +5,12 @@ require "test_helper"
 # the refactoring had to leave untouched.
 class SortingHelperTest < Minitest::Test
 
+  Column = Struct.new(:type)
+
   def build_model(columns: %w[id name valid_from valid_to], range_attrs: {}, associations: {})
     model = Class.new(ActiveRecord::Base)
     model.define_singleton_method(:name) { 'Product' }
-    model.define_singleton_method(:columns_hash) { columns.index_with { |_column| Object.new } }
+    model.define_singleton_method(:columns_hash) { columns.index_with { |_column| Column.new(:string) } }
     model.define_singleton_method(:attribute_names) { columns }
     model.define_singleton_method(:reflect_on_association) { |name| associations[name.to_sym] }
 
@@ -78,6 +80,20 @@ class SortingHelperTest < Minitest::Test
 
     assert_equal 'author__name',
       Habarico::SortingHelper.descriptor_sort_by(model, field_reference(name: 'author__name'))
+  end
+
+  def test_a_column_two_associations_away_is_not_sortable
+    country = build_model(columns: %w[id code])
+    address = build_model(associations: { country: association_to(country) })
+    model = build_model(associations: { address: association_to(address) })
+
+    assert_nil Habarico::SortingHelper.descriptor_sort_by(model, field_reference(name: 'address__country__code'))
+  end
+
+  def test_an_association_name_that_is_no_column_is_not_sortable
+    model = build_model(associations: { author: association_to(build_model(columns: %w[id name])) })
+
+    assert_nil Habarico::SortingHelper.descriptor_sort_by(model, field_reference(name: 'author__nickname'))
   end
 
   def test_a_name_no_association_backs_falls_through_to_the_declaration

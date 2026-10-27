@@ -10,6 +10,8 @@ module Habarico
   # *****************************************************************************
   class ControllerOrderByTest < Minitest::Test
 
+    Column = Struct.new(:type)
+
     # Minimal ActiveRecord double. Only the class-level reflection the sorting whitelist reads is
     # answered, so no database connection is involved - what matters is that the class really is an
     # ActiveRecord::Base descendant, since that is what switches the whitelist on.
@@ -18,7 +20,7 @@ module Habarico
       model = Class.new(ActiveRecord::Base)
       model.define_singleton_method(:name) { 'Product' }
       model.define_singleton_method(:primary_key) { 'id' }
-      model.define_singleton_method(:columns_hash) { columns.index_with { |_column| Object.new } }
+      model.define_singleton_method(:columns_hash) { columns.index_with { |_column| Column.new(:string) } }
       model.define_singleton_method(:column_names) { columns }
       model.define_singleton_method(:attribute_names) { columns }
       model.define_singleton_method(:reflect_on_association) { |name| associations[name.to_sym] }

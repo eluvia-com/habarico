@@ -9,7 +9,7 @@ module Habarico
     # `Config.search_unaccent_enabled` govern matching and highlighting consistently.
     #
     # Semantics mirror the Python matcher: AND across query words, OR across fields. Per field the
-    # leaf type (from FieldResolver) decides the match:
+    # leaf type (from `Habarico::FieldPathResolver`) decides the match:
     #
     # - text    -> `lower([unaccent](col)) LIKE %word%`
     # - choices -> the word is matched against the human-readable enum labels; the resulting raw
@@ -60,7 +60,7 @@ module Habarico
       # Primary keys of records where any field matches `word` (OR across fields).
       def ids_for_word(scope, word)
         @search_fields.each_with_object([]) do |path, acc|
-          leaf = FieldResolver.resolve(@model, path)
+          leaf = Habarico::FieldPathResolver.resolve(@model, path)
           next if leaf.nil?
 
           relation = field_relation(scope, path, leaf, word)
@@ -89,7 +89,7 @@ module Habarico
 
       # Left-joins the relation hops of `path` so a leaf on a related table can be referenced.
       def join_for(scope, path)
-        hops = path.to_s.split(FieldResolver::RELATION_SEPARATOR)[0..-2].map(&:to_sym)
+        hops = path.to_s.split(Habarico::FieldPathResolver::RELATION_SEPARATOR)[0..-2].map(&:to_sym)
         return scope if hops.empty?
 
         association = hops.reverse.reduce { |nested, hop| { hop => nested } }

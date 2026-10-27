@@ -42,15 +42,20 @@ module Habarico
     # FieldReference declares for itself.
     def self.descriptor_sort_by(model, field_reference)
       name = field_reference.name.to_s
-      if Habarico::ReflectionHelper.is_active_record_class?(model) && name.include?('__')
-        split_name = name.split('__')
-        if split_name.size == 2
-          reflection = model.reflect_on_association(split_name[0].to_sym)
-          return name if reflection && reflection.klass.columns_hash[split_name[1]]
-        end
-      end
+      return name if association_column_path?(model, name)
 
       field_reference.sort_by
+    end
+
+    # Whether `name` is `association__column` - one ActiveRecord association hop to a column, the
+    # depth `order_2` sorts by.
+    def self.association_column_path?(model, name)
+      return false unless Habarico::ReflectionHelper.is_active_record_class?(model)
+
+      hops = name.split(Habarico::FieldPathResolver::RELATION_SEPARATOR)
+      return false unless hops.size == 2 && model.reflect_on_association(hops.first.to_sym)
+
+      Habarico::FieldPathResolver.resolve(model, name)&.column.present?
     end
 
     # Every value this resource accepts in `order_by`, or nil when it has no whitelist to offer -
