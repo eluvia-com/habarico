@@ -35,7 +35,7 @@ scopes [:active, :visible]
 
 Each scope name is called as `.public_send(scope)` on the relation. Scopes are applied after `policy_scope` and before filters.
 
-**`default_filter`** — merge a fixed set of filter params into every index query:
+**`default_filter`** — merge a fixed set of filter params into every index query and every single-record lookup:
 
 ```ruby
 default_filter({ status: 'active' })

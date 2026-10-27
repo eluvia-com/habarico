@@ -255,7 +255,7 @@ module Habarico
         ScopedRelation.new(@ids & ids)
       end
 
-      def filter_2(_default_filter)
+      def filter_2(_default_filter, current_user: nil) # rubocop:disable Lint/UnusedMethodArgument -- keyword name must match the real filter_2 interface
         self
       end
 

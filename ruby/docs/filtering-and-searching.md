@@ -12,7 +12,7 @@ default_sorting 'placed_at:desc'
 default_filter({ status: 'active' })
 ```
 
-`default_filter` is merged into every index query and accepts a hash of filter params.
+`default_filter` is merged into every index query and into the lookup of a single record (`show`, `update`, `destroy`, detail actions), so a record it excludes answers 404. It accepts a hash of filter params, evaluated with the `current_user` of the request.
 
 For per-view filter customization, use `Habarico::FilterReference` inside a `Habarico::ListView`. The `filters:` array populates the collapsible filter drawer; `toolbar_filters:` populates the always-visible toolbar row:
 

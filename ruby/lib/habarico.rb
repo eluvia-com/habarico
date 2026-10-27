@@ -24,7 +24,6 @@ require "habarico/helpers/action_helper"
 require "habarico/helpers/attributes_helper"
 require "habarico/helpers/box_helper"
 require "habarico/helpers/callable_helper"
-require "habarico/helpers/filter_params_helper"
 require "habarico/helpers/order_by_helper"
 require "habarico/helpers/reflection_helper"
 require "habarico/helpers/sorting_helper"
@@ -241,6 +240,8 @@ require "habarico/definition/definition"
 # *****************************************************************************
 
 # Controller
+require "habarico/queries/filter_params"
+require "habarico/queries/records_query"
 require "habarico/controller"
 
 # Serializer

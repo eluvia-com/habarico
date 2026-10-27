@@ -19,7 +19,7 @@ module Habarico
     end
 
     # Filter-string parsing itself (the two search transport forms, JSON decoding, term stripping)
-    # is covered by FilterParamsHelperTest; here we only exercise the controller's list highlights.
+    # is covered by FilterParamsTest; here we only exercise the controller's list highlights.
     #
     # Match highlighting is a paid feature (HAB-812): the free gem registers no highlighter, so
     # these tests cover the graceful degradation and the hook itself, while the highlighter's own

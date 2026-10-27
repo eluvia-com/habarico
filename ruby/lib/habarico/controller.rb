@@ -25,56 +25,12 @@ module Habarico
       # the resource explicitly opts into ID-based reads via `allow_read_by_id`.
       raise Eluvia::Errors::Forbidden.new('List not allowed.') unless read_allowed || definition.allow_read_by_id
 
-      filter_params = sanitize_filter_params.to_h.symbolize_keys
-      if read_allowed
-        # Habarico owns the typed fulltext search over `search_fields` (see SearchMatcher), so the
-        # search term is pulled out and applied separately - it must not reach the base library
-        # `filter_2!`, whose `apply_search` uses a different field list and always unaccents.
-        filter_params = extract_search!(filter_params)
-      else
-        # `allow_read_by_id` without read permission: only allow filtering by IDs, and set empty
-        # result if no IDs provided. This supports references across multiple services with limited
-        # permissions - a caller holding an ID(s) of the object may see its data, but not list all
-        # objects (this is what `ReferenceField` on the frontend uses).
-        filter_params = definition.model.parse_filter_term(filter_params[:filter].to_s, raise_on_invalid: false).symbolize_keys if filter_params.key?(:filter)
-        filter_params = { id__in: [] }.merge(filter_params.slice(:id__in))
-      end
-      @records = definition.model.all
-
-      # Policy scope
-      if definition.policy_scope.present?
-        @records = definition.policy_scope.call(@records, context)
-      end
-
-      # Scopes
-      if definition.scopes.present? && !definition.scopes.empty?
-        definition.scopes.each do |scope|
-          @records = @records.public_send(scope) if @records.respond_to?(scope)
-        end
-      end
-
-      # Filtering (filter_2!, typed fulltext search, default filter)
-      @records = apply_filtering(@records, filter_params)
-
-      # Includes
-      if definition.includes.present? && !definition.includes.empty?
-        @records = @records.includes(*definition.includes)
-      end
-
-      # Ordering
-      @records = if @records.respond_to?(:order_2)
-                   @records.order_2(@order_by)
-                 else
-                   @records.order(@order_by)
-                 end
-
-      # Pagination
-      @records = @records.page(@page).per(@limit).padding(@padding)
-
-      # Custom prefetch
-      if definition.prefetch.respond_to?(:call)
-        definition.prefetch.call(@records)
-      end
+      filter_params = Habarico::FilterParams.new(definition, params, read_allowed: read_allowed)
+      @search_query = filter_params.search_query
+      @records = Habarico::RecordsQuery.new(definition, context).list(
+        filter_params.filters,
+        search_query: @search_query, order_by: @order_by, page: @page, limit: @limit, padding: @padding
+      )
 
       render_list
     end
@@ -123,7 +79,7 @@ module Habarico
     # *************************************************************************
 
     # `fields` defaults straight from the query string — kept out of
-    # `sanitize_filter_params`/`filter_2!` entirely, the same way `search` is
+    # `Habarico::FilterParams`/`filter_2!` entirely, the same way `search` is
     # held apart from filter term validation, since it controls serialization
     # rather than which records are returned.
     def serialize_record(view_type, record, fields: params[:fields])
@@ -168,35 +124,6 @@ module Habarico
 
       result['meta'] = meta.compact
       result
-    end
-
-    # Applies filter_2!, the typed fulltext search and the resource default filter to `scope`.
-    def apply_filtering(scope, filter_params)
-      scope = scope.filter_2!(filter_params, current_user: current_user) if scope.respond_to?(:filter_2!)
-
-      # Typed fulltext search (owned by Habarico, see SearchMatcher) - applied after the other
-      # filters so it further narrows the already-filtered set (AND semantics).
-      scope = apply_search_scope(scope)
-
-      # Default filter - applied after filter_2! so it is never dropped when a :filter string param
-      # is present (filter_2! discards non-:filter keys in that branch, which would silently bypass
-      # default_filter).
-      if definition.default_filter.present? && scope.respond_to?(:filter_2)
-        scope = scope.filter_2(definition.default_filter, current_user: current_user)
-      end
-
-      scope
-    end
-
-    # Narrows `scope` with the typed fulltext SearchMatcher when a search is active; otherwise
-    # returns it unchanged.
-    def apply_search_scope(scope)
-      return scope if @search_query.blank? || definition.search_fields.blank?
-
-      Habarico::Search::SearchMatcher.new(
-        model: definition.model,
-        search_fields: definition.search_fields
-      ).apply(scope, @search_query)
     end
 
     # Full-value highlights for a list record, or nil when there is no active search query, no
@@ -389,18 +316,9 @@ module Habarico
 
     def set_record
       @pk = params[:id]
-      scope = definition.model.all
-
-      # Policy scope - applied unconditionally, same as index, so a record outside the Pundit
-      # scope (other tenant, soft-deleted, ...) 404s. Built from a fresh, non-memoized context
-      # since `context` is memoized on first call and must reflect the actual @record once found.
-      scope = definition.policy_scope.call(scope, _context(nil)) if definition.policy_scope.present?
-
-      @record = if scope.respond_to?(:filter_2)
-                  scope.filter_2(definition.default_filter).find(@pk)
-                else
-                  scope.find(@pk)
-                end
+      # Built from a fresh, non-memoized context since `context` is memoized on first call and must
+      # reflect the actual @record once found.
+      @record = Habarico::RecordsQuery.new(definition, _context(nil)).find(@pk)
     end
 
     # *************************************************************************
@@ -435,44 +353,6 @@ module Habarico
 
     def complement_record_params
       {} # override in subclasses if needed
-    end
-
-    def sanitize_filter_params
-      pk = definition.model.primary_key.to_sym
-      filters = definition.filters + [pk, :"#{pk}__in"]
-
-      permitted_params = definition.model.permitted_filter_params
-      selected_params = permitted_params.select { |f| filters.include?(filter_param_to_sym(f)) }
-      selected_keys = selected_params.map { |p| filter_param_to_sym(p) }
-
-      disallowed = (params.keys.map(&:to_sym) & permitted_params.map { |p| filter_param_to_sym(p) }) - selected_keys - %i[filter search]
-      raise_filter_errors(disallowed) if disallowed.any?
-
-      if params.key?(:filter)
-        filter_term_keys = definition.model.parse_filter_term(params[:filter].to_s, raise_on_invalid: false).symbolize_keys.keys
-        disallowed_terms = filter_term_keys.map(&:to_sym) - selected_keys - [:search]
-        raise_filter_errors(disallowed_terms) if disallowed_terms.any?
-      end
-
-      params.permit(selected_params + %i[filter search])
-    end
-
-    def filter_param_to_sym(param)
-      param.is_a?(Hash) ? param.keys.first : param.to_sym
-    end
-
-    # Pulls the search out of the filter params: stashes the effective query in `@search_query` and
-    # returns the params with the search removed (so it never reaches the base library's `filter_2!`). Both
-    # transport forms (`:search` param and a `search="..."` term in the `:filter` string) are handled
-    # by `Habarico::FilterParamsHelper`.
-    def extract_search!(filter_params)
-      @search_query = Habarico::FilterParamsHelper.extract(filter_params, :search)
-      Habarico::FilterParamsHelper.strip(filter_params, :search)
-    end
-
-    def raise_filter_errors(keys)
-      errors = keys.to_h { |k| [k.to_s, I18n.t('habarico.errors.filter.unknown_term', default: 'Unknown filter term.')] }
-      raise Eluvia::Errors::UnprocessableEntity.new(errors)
     end
 
     # *************************************************************************

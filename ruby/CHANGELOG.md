@@ -16,11 +16,17 @@ version and date when a release is finalized.
 - `endpoint_record_pk` on `Habarico::Action` and `Habarico::Controller#build_action_schema(action, record:, record_pk:, reference:)` - a trigger action can now open a view of, or call an endpoint on, another resource and another record, in both channels (the `meta.trigger_action` of a serialized record and the response of a custom action). `build_action_schema` takes a declared action's name or an action object and returns the complete `ActionSchema`, built by the new `trigger_action_schema_generator`, which replaces the `ResourceService` plus generator boilerplate a `get_trigger_action_schema` override used to need; the manual way keeps working (HAB-955).
 - `Habarico::Response#data` - data rendered next to `meta` in the action result, as the contract's `ActionResult` allows (HAB-955).
 - `after_save` on `Habarico::SaveAction`, `upload_images_data` on `Habarico::UploadImagesAction` and `view_choices` on `Habarico::ViewAction`, with `Types::AFTER_SAVE_TYPE` - schema attributes the contract and the Python library already had (HAB-955).
+- `Habarico::FilterParams` and `Habarico::RecordsQuery` - the validated filter params and the record scopes of a resource (`filtered`, `list`, `find`), for an extension that selects records the way `index` does (HAB-1062).
 
 ### Changed
 
 - **BREAKING:** A custom action's response now follows the contract's `ActionResult`: `message`, `state` and `trigger_action` are nested under `meta` instead of sitting at the top level, and `Habarico::Response#data` is merged beside it. `meta` is the only place the frontend has ever read them from, so none of the three used to reach the UI - including `state: running` for a background action, which left `Habarico::Response#action` dead code. A client reading the old top-level keys must switch to `meta` (HAB-955).
 - `Habarico::Response#action` takes a `Habarico::Action` built on the spot, or a complete `Habarico::ActionSchema`, besides the name of an action declared in `actions`. A name that is not declared now raises an error listing the declared ones instead of silently sending no trigger action (HAB-955).
+
+### Removed
+
+- **BREAKING:** The protected controller methods `sanitize_filter_params`, `apply_filtering`, `apply_search_scope`, `extract_search!`, `raise_filter_errors` and `filter_param_to_sym`; use `Habarico::FilterParams` and `Habarico::RecordsQuery`. `habarico-enterprise` up to 7.2 calls `sanitize_filter_params` in its `aggregate` action and needs the release that switches to them (HAB-1062).
+- **BREAKING:** `Habarico::FilterParamsHelper`; `Habarico::FilterParams` separates the search from the filter params itself (HAB-1062).
 
 ### Fixed
 
@@ -28,6 +34,7 @@ version and date when a release is finalized.
 - A `view` or `resource` action whose name is a standard one (`show`, `create`, `update`, `delete`) but which names its own target through `endpoint_reference` / `endpoint_record_pk` now keeps its endpoint - and, for a resource action, its path - in the generated schema. The target used to be dropped, leaving the frontend on the resource and record the action ran on (HAB-955).
 - The `preferences.dashboard` widget layout validates the optional `stackedH`, `minW` and `minH`
   as integers of at least 1, matching the `WidgetLayout` contract schema (HAB-1007).
+- `default_filter` receives `current_user` on the detail endpoints (`show`, `update`, `destroy` and custom detail actions) as it does on the list, so a filter depending on the user no longer lets a record the list hides be reached by its ID (HAB-1062).
 
 ## [7.2.0] — 2026-10-19
 
