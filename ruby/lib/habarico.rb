@@ -35,6 +35,7 @@ require "habarico/file_validations"
 
 require "habarico/resolvers/field_path_resolver"
 require "habarico/resolvers/filter_params_resolver"
+require "habarico/resolvers/order_by_params_resolver"
 require "habarico/resolvers/record_params_resolver"
 
 # *****************************************************************************

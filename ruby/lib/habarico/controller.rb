@@ -136,47 +136,8 @@ module Habarico
                 .generate(action, record ? _context(record) : context, record_pk: record_pk, reference: reference)
     end
 
-    # Checks the `order_by` query parameter against what this resource offers for sorting.
-    #
-    # The notation itself - `field:direction`, exactly one `:`, a lower-case `asc`/`desc` - and the
-    # name of the parameter in camel-case mode belong to `set_pagination`, which runs first and
-    # answers its own 422 (HAB-915). What is left here is the field whitelist, the part only
-    # habarico knows: the `sort_by` values its schema advertises.
     def validate_order_by_param
-      # Forced sorting is not read off the request at all, so refusing the parameter here would
-      # refuse a request the backend is about to serve.
-      return if definition.force_sorting
-
-      order_by_param = params[Eluvia::PaginationHandler.order_by_param_name]
-      return if order_by_param.blank?
-
-      # Every unknown field at once, the way the Python backend answers - a client correcting one
-      # column per request is the alternative.
-      errors = {}
-      Habarico::OrderByHelper.parse(order_by_param).map(&:first).each do |field_name|
-        next if valid_order_by_field?(field_name)
-
-        errors["order_by__#{field_name}"] = I18n.t('habarico.errors.order_by.unknown_field', default: 'Unknown field name.')
-      end
-
-      raise Eluvia::Errors::UnprocessableEntity.new(errors) if errors.present?
-    end
-
-    def valid_order_by_field?(field_name)
-      order_by_whitelist.nil? || order_by_whitelist.include?(field_name)
-    end
-
-    # Values this resource accepts in `order_by`, or nil when it exposes no whitelist at all - see
-    # `Habarico::SortingHelper`. Resolved once per request, the definition does not change under it.
-    #
-    # The tiebreaker is added here rather than in the helper so that a controller overriding
-    # `list_order_by_tiebreaker` does not have to repeat itself: what the list is ordered by anyway
-    # is what a client may ask for.
-    def order_by_whitelist
-      return @order_by_whitelist if defined?(@order_by_whitelist)
-
-      allowed_fields = Habarico::SortingHelper.allowed_order_by_fields(definition)
-      @order_by_whitelist = allowed_fields && (allowed_fields + list_order_by_tiebreaker.map(&:to_s)).uniq
+      Habarico::OrderByParamsResolver.new(definition, tiebreaker: list_order_by_tiebreaker).resolve(params)
     end
 
     # *************************************************************************

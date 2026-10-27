@@ -55,7 +55,7 @@ module Habarico
       hops = name.split(Habarico::FieldPathResolver::RELATION_SEPARATOR)
       return false unless hops.size == 2 && model.reflect_on_association(hops.first.to_sym)
 
-      Habarico::FieldPathResolver.resolve(model, name)&.column.present?
+      Habarico::FieldPathResolver.new(model).resolve(name)&.column.present?
     end
 
     # Every value this resource accepts in `order_by`, or nil when it has no whitelist to offer -

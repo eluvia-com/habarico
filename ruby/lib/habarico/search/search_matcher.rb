@@ -59,8 +59,9 @@ module Habarico
 
       # Primary keys of records where any field matches `word` (OR across fields).
       def ids_for_word(scope, word)
+        resolver = Habarico::FieldPathResolver.new(@model)
         @search_fields.each_with_object([]) do |path, acc|
-          leaf = Habarico::FieldPathResolver.resolve(@model, path)
+          leaf = resolver.resolve(path)
           next if leaf.nil?
 
           relation = field_relation(scope, path, leaf, word)

@@ -39,20 +39,24 @@ module Habarico
   # leaf must be an ActiveRecord column or an enum attribute. Unresolvable paths yield `nil`
   # (mirrors the Python behaviour, so a stale entry never crashes the request); use `resolve!`
   # to raise instead - handy for catching typos in tests.
-  module FieldPathResolver
+  class FieldPathResolver
 
     RELATION_SEPARATOR = '__'.freeze
     NUMERIC_COLUMN_TYPES = %i[integer float decimal].freeze
 
-    # Returns a LeafField for `path` on `model`, or nil when it cannot be resolved.
-    def self.resolve(model, path)
-      return nil if model.nil? || path.nil?
+    def initialize(model)
+      @model = model
+    end
+
+    # Returns a LeafField for `path`, or nil when it cannot be resolved.
+    def resolve(path)
+      return nil if @model.nil? || path.nil?
 
       # Negative limit keeps trailing empty segments so `title__` is rejected too.
       parts = path.to_s.split(RELATION_SEPARATOR, -1)
       return nil if parts.empty? || parts.any?(&:empty?)
 
-      current = model
+      current = @model
       parts[0..-2].each do |part|
         current = step_into_relation(current, part)
         return nil if current.nil?
@@ -62,13 +66,15 @@ module Habarico
     end
 
     # Like `resolve`, but raises ArgumentError when the path cannot be resolved.
-    def self.resolve!(model, path)
-      resolve(model, path) || raise(ArgumentError, "Cannot resolve field path #{path.inspect} on #{model.inspect}")
+    def resolve!(path)
+      resolve(path) || raise(ArgumentError, "Cannot resolve field path #{path.inspect} on #{@model.inspect}")
     end
+
+    private
 
     # Follows one relation hop, returning the associated model class or nil when `part` is not a
     # traversable relation. Prefers ActiveRecord associations, falls back to Habarico references.
-    def self.step_into_relation(model, part)
+    def step_into_relation(model, part)
       if model.respond_to?(:reflect_on_association)
         reflection = model.reflect_on_association(part.to_sym)
         return reflection_klass(reflection) if reflection
@@ -83,14 +89,14 @@ module Habarico
 
     # The target class of an ActiveRecord reflection, or nil for polymorphic associations that
     # have no single class.
-    def self.reflection_klass(reflection)
+    def reflection_klass(reflection)
       reflection.klass
     rescue StandardError
       nil
     end
 
     # The target class of a Habarico reference descriptor (`class_name` may be a Class or String).
-    def self.reference_klass(reference)
+    def reference_klass(reference)
       return nil if reference.nil?
 
       class_name = reference[:class_name]
@@ -99,7 +105,7 @@ module Habarico
       nil
     end
 
-    def self.build_leaf(model, name, path)
+    def build_leaf(model, name, path)
       type = detect_type(model, name)
       return nil if type.nil?
 
@@ -108,7 +114,7 @@ module Habarico
 
     # Classifies the leaf field. Enum attributes are choices (regardless of their underlying
     # column type); otherwise the ActiveRecord column type decides. An unknown leaf yields nil.
-    def self.detect_type(model, name)
+    def detect_type(model, name)
       return :choices if enum?(model, name)
 
       column = column_for(model, name)
@@ -121,11 +127,11 @@ module Habarico
       end
     end
 
-    def self.enum?(model, name)
+    def enum?(model, name)
       model.respond_to?(:has_enum_attr?) && model.has_enum_attr?(name)
     end
 
-    def self.column_for(model, name)
+    def column_for(model, name)
       return nil unless model.respond_to?(:columns_hash)
 
       model.columns_hash[name.to_s]

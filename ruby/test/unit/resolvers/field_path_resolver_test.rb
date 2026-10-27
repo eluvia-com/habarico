@@ -46,7 +46,7 @@ module Habarico
 
     def test_resolves_text_column
       model = build_model(columns: { title: :string })
-      leaf = FieldPathResolver.resolve(model, 'title')
+      leaf = FieldPathResolver.new(model).resolve('title')
       refute_nil leaf
       assert_equal model, leaf.model
       assert_equal 'title', leaf.name
@@ -57,39 +57,39 @@ module Habarico
 
     def test_resolves_text_column_from_symbol_path
       model = build_model(columns: { title: :text })
-      leaf = FieldPathResolver.resolve(model, :title)
+      leaf = FieldPathResolver.new(model).resolve(:title)
       refute_nil leaf
       assert_equal :text, leaf.type
     end
 
     def test_resolves_boolean_column
       model = build_model(columns: { active: :boolean })
-      leaf = FieldPathResolver.resolve(model, 'active')
+      leaf = FieldPathResolver.new(model).resolve('active')
       assert_equal :boolean, leaf.type
       assert leaf.boolean?
     end
 
     def test_resolves_integer_column_as_numeric
       model = build_model(columns: { count: :integer })
-      assert_equal :numeric, FieldPathResolver.resolve(model, 'count').type
+      assert_equal :numeric, FieldPathResolver.new(model).resolve('count').type
     end
 
     def test_resolves_decimal_column_as_numeric
       model = build_model(columns: { price: :decimal })
-      leaf = FieldPathResolver.resolve(model, 'price')
+      leaf = FieldPathResolver.new(model).resolve('price')
       assert_equal :numeric, leaf.type
       assert leaf.numeric?
     end
 
     def test_uuid_and_datetime_columns_are_text
       model = build_model(columns: { external_id: :uuid, created_at: :datetime })
-      assert_equal :text, FieldPathResolver.resolve(model, 'external_id').type
-      assert_equal :text, FieldPathResolver.resolve(model, 'created_at').type
+      assert_equal :text, FieldPathResolver.new(model).resolve('external_id').type
+      assert_equal :text, FieldPathResolver.new(model).resolve('created_at').type
     end
 
     def test_enum_field_is_choices
       model = build_model(columns: { status: :string }, enums: [:status])
-      leaf = FieldPathResolver.resolve(model, 'status')
+      leaf = FieldPathResolver.new(model).resolve('status')
       assert_equal :choices, leaf.type
       assert leaf.choices?
     end
@@ -97,7 +97,7 @@ module Habarico
     def test_enum_takes_precedence_over_column_type
       # An enum backed by an integer column is still classified as choices.
       model = build_model(columns: { level: :integer }, enums: [:level])
-      assert_equal :choices, FieldPathResolver.resolve(model, 'level').type
+      assert_equal :choices, FieldPathResolver.new(model).resolve('level').type
     end
 
     # -----------------------------------------------------------------------
@@ -107,7 +107,7 @@ module Habarico
     def test_resolves_path_through_ar_association
       author = build_model(columns: { name: :string })
       model = build_model(associations: { author: reflection(author) })
-      leaf = FieldPathResolver.resolve(model, 'author__name')
+      leaf = FieldPathResolver.new(model).resolve('author__name')
       refute_nil leaf
       assert_equal author, leaf.model
       assert_equal 'name', leaf.name
@@ -120,7 +120,7 @@ module Habarico
       address = build_model(associations: { country: reflection(country) })
       author = build_model(associations: { address: reflection(address) })
       model = build_model(associations: { author: reflection(author) })
-      leaf = FieldPathResolver.resolve(model, 'author__address__country__code')
+      leaf = FieldPathResolver.new(model).resolve('author__address__country__code')
       assert_equal country, leaf.model
       assert_equal 'code', leaf.name
       assert_equal :text, leaf.type
@@ -129,7 +129,7 @@ module Habarico
     def test_resolves_path_through_attributes_model_reference
       author = build_model(columns: { name: :string })
       model = build_model(references: { author: { reference_name: :author, type: :has_one, class_name: author } })
-      leaf = FieldPathResolver.resolve(model, 'author__name')
+      leaf = FieldPathResolver.new(model).resolve('author__name')
       refute_nil leaf
       assert_equal author, leaf.model
       assert_equal :text, leaf.type
@@ -141,32 +141,32 @@ module Habarico
 
     def test_unknown_leaf_field_returns_nil
       model = build_model(columns: { title: :string })
-      assert_nil FieldPathResolver.resolve(model, 'missing')
+      assert_nil FieldPathResolver.new(model).resolve('missing')
     end
 
     def test_unknown_leaf_on_associated_model_returns_nil
       author = build_model(columns: { name: :string })
       model = build_model(associations: { author: reflection(author) })
-      assert_nil FieldPathResolver.resolve(model, 'author__missing')
+      assert_nil FieldPathResolver.new(model).resolve('author__missing')
     end
 
     def test_non_relation_intermediate_hop_returns_nil
       model = build_model(columns: { title: :string, name: :string })
       # `title` is a plain column, not an association -> cannot be traversed.
-      assert_nil FieldPathResolver.resolve(model, 'title__name')
+      assert_nil FieldPathResolver.new(model).resolve('title__name')
     end
 
     def test_blank_path_segments_return_nil
       model = build_model(columns: { title: :string })
-      assert_nil FieldPathResolver.resolve(model, 'title__')
-      assert_nil FieldPathResolver.resolve(model, '__title')
-      assert_nil FieldPathResolver.resolve(model, '')
+      assert_nil FieldPathResolver.new(model).resolve('title__')
+      assert_nil FieldPathResolver.new(model).resolve('__title')
+      assert_nil FieldPathResolver.new(model).resolve('')
     end
 
     def test_nil_model_or_path_returns_nil
       model = build_model(columns: { title: :string })
-      assert_nil FieldPathResolver.resolve(nil, 'title')
-      assert_nil FieldPathResolver.resolve(model, nil)
+      assert_nil FieldPathResolver.new(nil).resolve('title')
+      assert_nil FieldPathResolver.new(model).resolve(nil)
     end
 
     # -----------------------------------------------------------------------
@@ -175,12 +175,12 @@ module Habarico
 
     def test_resolve_bang_returns_leaf_for_valid_path
       model = build_model(columns: { title: :string })
-      assert_equal 'title', FieldPathResolver.resolve!(model, 'title').name
+      assert_equal 'title', FieldPathResolver.new(model).resolve!('title').name
     end
 
     def test_resolve_bang_raises_for_invalid_path
       model = build_model(columns: { title: :string })
-      assert_raises(ArgumentError) { FieldPathResolver.resolve!(model, 'missing') }
+      assert_raises(ArgumentError) { FieldPathResolver.new(model).resolve!('missing') }
     end
 
     # -----------------------------------------------------------------------
@@ -189,13 +189,13 @@ module Habarico
 
     def test_label_uses_human_attribute_name
       model = build_model(columns: { title: :string }, labels: { title: 'Headline' })
-      assert_equal 'Headline', FieldPathResolver.resolve(model, 'title').label
+      assert_equal 'Headline', FieldPathResolver.new(model).resolve('title').label
     end
 
     def test_label_is_taken_from_leaf_model
       author = build_model(columns: { name: :string }, labels: { name: 'Author name' })
       model = build_model(associations: { author: reflection(author) })
-      assert_equal 'Author name', FieldPathResolver.resolve(model, 'author__name').label
+      assert_equal 'Author name', FieldPathResolver.new(model).resolve('author__name').label
     end
 
   end
