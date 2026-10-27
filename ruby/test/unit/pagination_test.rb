@@ -232,7 +232,7 @@ module Habarico
 
         attr_reader :rendered_meta
 
-        def render_list
+        def render_list(_search_query = nil)
           @rendered_meta = { limit: @limit, offset: @offset, total_count: @records.total_count }
         end
       end

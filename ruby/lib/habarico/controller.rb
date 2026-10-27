@@ -26,13 +26,12 @@ module Habarico
       raise Eluvia::Errors::Forbidden.new('List not allowed.') unless read_allowed || definition.allow_read_by_id
 
       filter_params = Habarico::FilterParams.new(definition, params, read_allowed: read_allowed)
-      @search_query = filter_params.search_query
       @records = Habarico::RecordsQuery.new(definition, context).list(
         filter_params.filters,
-        search_query: @search_query, order_by: @order_by, page: @page, limit: @limit, padding: @padding
+        search_query: filter_params.search_query, order_by: @order_by, page: @page, limit: @limit, padding: @padding
       )
 
-      render_list
+      render_list(filter_params.search_query)
     end
 
     def show
@@ -78,87 +77,33 @@ module Habarico
     # Renderers
     # *************************************************************************
 
-    # `fields` defaults straight from the query string — kept out of
-    # `Habarico::FilterParams`/`filter_2!` entirely, the same way `search` is
-    # held apart from filter term validation, since it controls serialization
-    # rather than which records are returned.
-    def serialize_record(view_type, record, fields: params[:fields])
-      context = _context(record)
-
-      # Tags
-      tags = definition.tags.respond_to?(:call) ? definition.tags.call(context) : []
-
-      # Representation
-      representation = record.respond_to?(:representation) ? record.representation : record.to_s
-
-      # Schema
-      schema = Habarico::SchemaService.instance.get_object_schema(controller_name, view_type, context).as_json
-
-      # Trigger action
-      trigger_action_schema = get_trigger_action_schema(record)
-      trigger_action = trigger_action_schema ? trigger_action_schema.as_json.deep_compact(compactable: [nil, {}].freeze) : nil
-
-      meta_data = {
-        'repr' => representation,
-        'schema' => schema,
-        'tags' => tags,
-        'trigger_action' => trigger_action
-      }
-
-      finalize_meta(record_serializer.serialize(record, meta_data, fields: fields), view_type, record)
-    end
-
-    def finalize_meta(result, view_type, record)
-      return result unless result.key?('meta')
-
-      meta = result['meta']
-      meta['schema'] = meta['schema'].deep_compact(compactable: [nil, {}].freeze) if meta['schema']
-
-      # Search highlights sidecar: present only on list responses when a search is active and at
-      # least one `search_fields` path matched. Full (untrimmed) field value, mirroring the Python
-      # `meta.highlights` (MR !198). Bypasses `fields=meta(...)` pruning, same as before HAB-614.
-      if view_type == :list
-        highlights = list_search_highlights(record)
-        meta['highlights'] = highlights if highlights
-      end
-
-      result['meta'] = meta.compact
-      result
-    end
-
-    # Full-value highlights for a list record, or nil when there is no active search query, no
-    # `search_fields` path matched, or no highlighter is registered.
-    #
-    # Match highlighting is a paid feature: the free gem leaves `Config.search_highlighter_class`
-    # at nil and the `highlights` key is simply absent, while per-resource search keeps working
-    # (HAB-812). `habarico-enterprise` registers its `SearchHighlighter` there.
-    def list_search_highlights(record)
-      return nil if @search_query.blank? || definition.search_fields.blank?
-
-      highlighter_class = Habarico::Config.search_highlighter_class!
-      return nil if highlighter_class.nil?
-
-      entries = highlighter_class.new(
-        model: definition.model,
-        search_fields: definition.search_fields
-      ).highlight(record, @search_query, full: true)
-
-      entries.presence
-    end
-
     def render_detail
-      render json: serialize_record(:detail, @record)
+      render json: record_serializer.serialize(:detail, @record)
     end
 
-    def render_list
+    def render_list(search_query = nil)
+      list_serializer = record_serializer(search_query: search_query)
       render json: {
         meta: {
           limit: @limit,
           offset: @offset,
           total_count: @records.total_count,
         },
-        objects: @records.map { |record| serialize_record(:list, record) }
+        objects: @records.map { |record| list_serializer.serialize(:list, record) }
       }
+    end
+
+    # `fields` comes straight from the query string and is kept out of `Habarico::FilterParams`,
+    # since it controls serialization rather than which records are returned.
+    def record_serializer(search_query: nil)
+      Habarico::Serializers::RecordSerializer.new(
+        definition: definition,
+        resource_name: controller_name,
+        context_for: method(:_context),
+        trigger_action_for: method(:get_trigger_action_schema),
+        fields: params[:fields],
+        search_query: search_query
+      )
     end
 
     # Renders an `ActionResult`: `message`, `state` and `trigger_action` live under `meta`, and the
@@ -168,7 +113,7 @@ module Habarico
       meta = {
         'message' => response.message,
         'state' => response.state,
-        'trigger_action' => build_action_schema(response.action)&.as_json&.deep_compact(compactable: [nil, {}].freeze)
+        'trigger_action' => build_action_schema(response.action)&.as_json&.deep_compact(compactable: Habarico::Serializers::RecordSerializer::COMPACTABLE)
       }.compact
       render json: { 'meta' => meta }.merge(response.data.presence || {})
     end
@@ -392,18 +337,6 @@ module Habarico
       self.class.definition
     end
 
-    def serializer
-      self.class.serializer
-    end
-
-    def meta_serializer
-      self.class.meta_serializer
-    end
-
-    def record_serializer
-      self.class.record_serializer
-    end
-
     class_methods do
 
       # ***********************************************************************
@@ -419,22 +352,6 @@ module Habarico
           definition.send("#{attr}=", value) unless value.nil?
           definition.send("#{attr}=", block) unless block.nil?
         end
-      end
-
-      # ***********************************************************************
-      # Serializer
-      # ***********************************************************************
-
-      def serializer
-        @serializer ||= Habarico::Serializers::Serializer.new(definition)
-      end
-
-      def meta_serializer
-        @meta_serializer ||= Habarico::Serializers::MetaSerializer.new
-      end
-
-      def record_serializer
-        @record_serializer ||= Habarico::Serializers::RecordSerializer.new(serializer: serializer, meta_serializer: meta_serializer)
       end
 
       # ***********************************************************************

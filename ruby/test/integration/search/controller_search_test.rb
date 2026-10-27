@@ -15,24 +15,32 @@ module Habarico
       Article.delete_all
       Author.delete_all
       @author = Author.create!(name: 'Alice')
-      @controller = TestArticlesController.new
+    end
+
+    def highlights(article, search_query)
+      Habarico::Serializers::RecordSerializer.new(
+        definition: TestArticlesController.definition,
+        resource_name: 'test_articles',
+        context_for: ->(_record) {},
+        trigger_action_for: ->(_record) {},
+        search_query: search_query
+      ).highlights(article)
     end
 
     # Filter-string parsing itself (the two search transport forms, JSON decoding, term stripping)
-    # is covered by FilterParamsTest; here we only exercise the controller's list highlights.
+    # is covered by FilterParamsTest; here we only exercise the list highlights of `RecordSerializer`.
     #
     # Match highlighting is a paid feature (HAB-812): the free gem registers no highlighter, so
     # these tests cover the graceful degradation and the hook itself, while the highlighter's own
     # behaviour is tested in habarico-enterprise.
 
-    # --- list_search_highlights: free core ------------------------------------
+    # --- highlights: free core ------------------------------------
 
-    def test_list_search_highlights_nil_without_registered_highlighter
-      @controller.instance_variable_set(:@search_query, 'Alice')
+    def test_highlights_nil_without_registered_highlighter
       article = Article.create!(title: 'x', content: 'b', status: 'draft', author: @author)
 
       assert_nil Habarico::Config.search_highlighter_class
-      assert_nil @controller.send(:list_search_highlights, article)
+      assert_nil highlights(article, 'Alice')
     end
 
     def test_search_still_filters_without_a_highlighter
@@ -47,7 +55,7 @@ module Habarico
       assert_equal ['Alpha'], scope.pluck(:title)
     end
 
-    # --- list_search_highlights: with a registered highlighter ----------------
+    # --- highlights: with a registered highlighter ----------------
 
     # Stands in for habarico-enterprise's SearchHighlighter - the hook must accept any class with
     # this shape, which is what lets the paid gem plug in without the free gem knowing it.
@@ -65,10 +73,9 @@ module Habarico
 
     def test_registered_highlighter_is_used
       Habarico::Config.search_highlighter_class = StubHighlighter
-      @controller.instance_variable_set(:@search_query, 'Alice')
       article = Article.create!(title: 'x', content: 'b', status: 'draft', author: @author)
 
-      entries = @controller.send(:list_search_highlights, article)
+      entries = highlights(article, 'Alice')
 
       assert_equal [{ name: 'title', value: '<mark>Alice</mark>', label: 'title', offsets: [[0, 5]] }], entries
     ensure
@@ -78,26 +85,23 @@ module Habarico
     def test_registered_highlighter_may_be_given_as_a_string
       Habarico::Config.search_highlighter_class =
         'Habarico::ControllerSearchTest::StubHighlighter'
-      @controller.instance_variable_set(:@search_query, 'Alice')
       article = Article.create!(title: 'x', content: 'b', status: 'draft', author: @author)
 
-      assert_equal 1, @controller.send(:list_search_highlights, article).length
+      assert_equal 1, highlights(article, 'Alice').length
     ensure
       Habarico::Config.search_highlighter_class = nil
     end
 
-    def test_list_search_highlights_nil_without_query
-      @controller.instance_variable_set(:@search_query, nil)
+    def test_highlights_nil_without_query
       article = Article.create!(title: 'x', content: 'b', status: 'draft', author: @author)
 
-      assert_nil @controller.send(:list_search_highlights, article)
+      assert_nil highlights(article, nil)
     end
 
-    def test_list_search_highlights_nil_when_no_match
-      @controller.instance_variable_set(:@search_query, 'zzznomatch')
+    def test_highlights_nil_when_no_match
       article = Article.create!(title: 'x', content: 'b', status: 'draft', author: @author)
 
-      assert_nil @controller.send(:list_search_highlights, article)
+      assert_nil highlights(article, 'zzznomatch')
     end
 
   end

@@ -32,6 +32,9 @@ module Habarico
                   :can, :can_read, :can_create, :can_update, :can_delete, :allow_read_by_id,
                   :policy_scope,
 
+                  # Class reading the field values of a record, `Habarico::Serializers::FieldsSerializer`
+                  :fields_serializer,
+
                   # Generator classes - action
                   :link_action_parameters_generator, :resource_action_endpoint_parameters_generator,
                   :resource_action_parameters_generator, :save_action_parameters_generator, :action_schema_generator,
@@ -64,6 +67,7 @@ module Habarico
                   :view_endpoint_parameters_generator, :list_view_parameters_generator, :view_schema_generator
 
     def initialize
+      @fields_serializer = Habarico::Serializers::FieldsSerializer
 
       # No column is assumed to exist. Without a declaration the list is ordered by the primary
       # key alone, which `Habarico::Controller#append_order_by_tiebreaker` appends anyway

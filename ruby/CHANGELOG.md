@@ -17,15 +17,18 @@ version and date when a release is finalized.
 - `Habarico::Response#data` - data rendered next to `meta` in the action result, as the contract's `ActionResult` allows (HAB-955).
 - `after_save` on `Habarico::SaveAction`, `upload_images_data` on `Habarico::UploadImagesAction` and `view_choices` on `Habarico::ViewAction`, with `Types::AFTER_SAVE_TYPE` - schema attributes the contract and the Python library already had (HAB-955).
 - `Habarico::FilterParams` and `Habarico::RecordsQuery` - the validated filter params and the record scopes of a resource (`filtered`, `list`, `find`), for an extension that selects records the way `index` does (HAB-1062).
+- `fields_serializer` on the resource definition - the class reading the field values of a record, `Habarico::Serializers::FieldsSerializer` by default; a subclass adding a computed field opts it in through `serializable?` (HAB-1062).
 
 ### Changed
 
 - **BREAKING:** A custom action's response now follows the contract's `ActionResult`: `message`, `state` and `trigger_action` are nested under `meta` instead of sitting at the top level, and `Habarico::Response#data` is merged beside it. `meta` is the only place the frontend has ever read them from, so none of the three used to reach the UI - including `state: running` for a background action, which left `Habarico::Response#action` dead code. A client reading the old top-level keys must switch to `meta` (HAB-955).
 - `Habarico::Response#action` takes a `Habarico::Action` built on the spot, or a complete `Habarico::ActionSchema`, besides the name of an action declared in `actions`. A name that is not declared now raises an error listing the declared ones instead of silently sending no trigger action (HAB-955).
+- **BREAKING:** `Habarico::Serializers::Serializer` is renamed to `Habarico::Serializers::FieldsSerializer` (HAB-1062).
 
 ### Removed
 
-- **BREAKING:** The protected controller methods `sanitize_filter_params`, `apply_filtering`, `apply_search_scope`, `extract_search!`, `raise_filter_errors` and `filter_param_to_sym`; use `Habarico::FilterParams` and `Habarico::RecordsQuery`. `habarico-enterprise` up to 7.2 calls `sanitize_filter_params` in its `aggregate` action and needs the release that switches to them (HAB-1062).
+- **BREAKING:** The protected controller methods `sanitize_filter_params`, `apply_filtering`, `apply_search_scope`, `extract_search!`, `raise_filter_errors` and `filter_param_to_sym`; use `Habarico::FilterParams` and `Habarico::RecordsQuery`. Likewise `serialize_record`, `finalize_meta` and `list_search_highlights`, now part of `Habarico::Serializers::RecordSerializer`; an override of `render_list` takes the search query as its argument. `habarico-enterprise` up to 7.2 calls `sanitize_filter_params` in its `aggregate` action and needs the release that switches to them (HAB-1062).
+- **BREAKING:** The controller class methods `serializer`, `meta_serializer` and `record_serializer`. A controller replacing the field serializer declares `fields_serializer MyFieldsSerializer` instead; one overriding `record_serializer` to let a computed field through overrides `FieldsSerializer#serializable?`. `Habarico::Serializers::RecordSerializer` is built per request by the instance method `record_serializer`, takes the definition and the request instead of a ready `meta`, builds `meta` itself and owns its `MetaSerializer` (HAB-1062).
 - **BREAKING:** `Habarico::FilterParamsHelper`; `Habarico::FilterParams` separates the search from the filter params itself (HAB-1062).
 
 ### Fixed

@@ -2,7 +2,7 @@ require "test_helper"
 require "minitest/mock"
 
 # Top-level so `Habarico::ResourceService` resolves the `products` resource to it by name, the way
-# a host app's controller is resolved. `serialize_record` below needs that resolution.
+# a host app's controller is resolved. `record_serializer` below needs that resolution.
 class ProductsController < ActionController::Base
   include Habarico::Controller
 
@@ -264,7 +264,7 @@ module Habarico
 
     def serialize_record(controller, record)
       Habarico::SchemaService.instance.stub(:get_object_schema, OBJECT_SCHEMA) do
-        controller.send(:serialize_record, :detail, record)
+        controller.send(:record_serializer).serialize(:detail, record)
       end
     end
 

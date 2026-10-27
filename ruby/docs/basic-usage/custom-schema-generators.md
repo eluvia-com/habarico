@@ -41,6 +41,36 @@ The endpoint one is `endpoints_schema_generator` — plural. It generates the wh
 block (one `MethodSchema` per HTTP method), which is why the name is not `endpoint_…`.
 :::
 
+## Field values
+
+The values of a record are read the same way, by the class in `fields_serializer`
+(`Habarico::Serializers::FieldsSerializer` by default). It answers foreign keys for `belongs_to`
+and `has_one`, the value of an enum and the plain attribute otherwise. A subclass can add a computed
+field; `serializable?` lets it into the response although the record has no method of that name:
+
+```ruby
+class ProductFieldsSerializer < Habarico::Serializers::FieldsSerializer
+  def readable_fields
+    super + ['price_with_vat']
+  end
+
+  def serializable?(record, field_name)
+    field_name == 'price_with_vat' || super
+  end
+
+  def read_attribute(record, field_name)
+    field_name == 'price_with_vat' ? record.price * 1.21 : super
+  end
+end
+
+class Apps::Admin::ProductsController < ApplicationController
+  include Habarico::Controller
+
+  model Product
+  fields_serializer ProductFieldsSerializer
+end
+```
+
 ## See also
 
 - [Controller setup](./controller-setup.md) — where these attributes are set

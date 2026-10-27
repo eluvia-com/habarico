@@ -245,7 +245,7 @@ require "habarico/queries/records_query"
 require "habarico/controller"
 
 # Serializer
-require "habarico/serializers/serializer"
+require "habarico/serializers/fields_serializer"
 require "habarico/serializers/meta_serializer"
 require "habarico/serializers/record_serializer"
 
