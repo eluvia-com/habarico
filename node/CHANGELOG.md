@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Every input draws its border in the theme's `palette.divider`. The date, date-time and time
+  pickers used MUI X's own grey (and a different one when disabled); `InputLayout`
+  (`UploadInput`, `TreeArrayInput`), `SchemaWrappedFields` and `SchemaRangeInput` each used a grey of
+  their own. The pickers take the color and the field tint from new `MuiPickersOutlinedInput` and
+  `MuiPickersInputBase` theme overrides. (HAB-1018)
+
 ## [7.2.0] — 2026-10-19
 
 ### Changed
