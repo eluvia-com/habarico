@@ -39,6 +39,7 @@ version and date when a release is finalized.
 - A `view` or `resource` action whose name is a standard one (`show`, `create`, `update`, `delete`) but which names its own target through `endpoint_reference` / `endpoint_record_pk` now keeps its endpoint - and, for a resource action, its path - in the generated schema. The target used to be dropped, leaving the frontend on the resource and record the action ran on (HAB-955).
 - The `preferences.dashboard` widget layout validates the optional `stackedH`, `minW` and `minH`
   as integers of at least 1, matching the `WidgetLayout` contract schema (HAB-1007).
+- The resource schema endpoints (`/{resource}/schema`, `/{resource}/{pk}/schema`, `/{resource}/{action}/schema`) answer 404 for a resource the gem does not know, as `contract/openapi.yaml` declares, instead of failing with a 500 (HAB-1062).
 - `default_filter` receives `current_user` on the detail endpoints (`show`, `update`, `destroy` and custom detail actions) as it does on the list, so a filter depending on the user no longer lets a record the list hides be reached by its ID (HAB-1062).
 
 ## [7.2.0] — 2026-10-19

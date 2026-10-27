@@ -74,7 +74,7 @@ module Habarico
     protected
 
     # *************************************************************************
-    # Serializer
+    # Serializers
     # *************************************************************************
 
     # `fields` comes straight from the query string and is kept out of `Habarico::FilterParamsResolver`,

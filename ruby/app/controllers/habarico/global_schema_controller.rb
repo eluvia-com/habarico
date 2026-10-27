@@ -4,7 +4,7 @@ module Habarico
     def index
       # Prepare context and generate schema
       context = Habarico::Context.new(current_user: current_user)
-      render json: Habarico::SchemaService.instance.get_global_schema(context).as_json.deep_compact(compactable: [nil, {}].freeze)
+      render_schema(Habarico::SchemaService.instance.get_global_schema(context))
     end
 
   end
