@@ -16,7 +16,7 @@ version and date when a release is finalized.
 - `endpoint_record_pk` on `Habarico::Action` and `Habarico::Controller#build_action_schema(action, record:, record_pk:, reference:)` - a trigger action can now open a view of, or call an endpoint on, another resource and another record, in both channels (the `meta.trigger_action` of a serialized record and the response of a custom action). `build_action_schema` takes a declared action's name or an action object and returns the complete `ActionSchema`, built by the new `trigger_action_schema_generator`, which replaces the `ResourceService` plus generator boilerplate a `get_trigger_action_schema` override used to need; the manual way keeps working (HAB-955).
 - `Habarico::Response#data` - data rendered next to `meta` in the action result, as the contract's `ActionResult` allows (HAB-955).
 - `after_save` on `Habarico::SaveAction`, `upload_images_data` on `Habarico::UploadImagesAction` and `view_choices` on `Habarico::ViewAction`, with `Types::AFTER_SAVE_TYPE` - schema attributes the contract and the Python library already had (HAB-955).
-- `Habarico::FilterParams` and `Habarico::RecordsQuery` - the validated filter params and the record scopes of a resource (`filtered`, `list`, `find`), for an extension that selects records the way `index` does (HAB-1062).
+- `Habarico::FilterParamsResolver` and `Habarico::RecordsQuery` - the validated filter params and the record scopes of a resource (`filtered`, `list`, `find`), for an extension that selects records the way `index` does; `Habarico::RecordParamsResolver` - the writable params of a create or update and the 422 for a record that failed validation (HAB-1062).
 - `fields_serializer` on the resource definition - the class reading the field values of a record, `Habarico::Serializers::FieldsSerializer` by default; a subclass adding a computed field opts it in through `serializable?` (HAB-1062).
 
 ### Changed
@@ -27,9 +27,9 @@ version and date when a release is finalized.
 
 ### Removed
 
-- **BREAKING:** The protected controller methods `sanitize_filter_params`, `apply_filtering`, `apply_search_scope`, `extract_search!`, `raise_filter_errors` and `filter_param_to_sym`; use `Habarico::FilterParams` and `Habarico::RecordsQuery`. Likewise `serialize_record`, `finalize_meta` and `list_search_highlights`, now part of `Habarico::Serializers::RecordSerializer`; an override of `render_list` takes the search query as its argument. `habarico-enterprise` up to 7.2 calls `sanitize_filter_params` in its `aggregate` action and needs the release that switches to them (HAB-1062).
+- **BREAKING:** The protected controller methods `sanitize_filter_params`, `apply_filtering`, `apply_search_scope`, `extract_search!`, `raise_filter_errors` and `filter_param_to_sym`; use `Habarico::FilterParamsResolver` and `Habarico::RecordsQuery`. Likewise `serialize_record`, `finalize_meta` and `list_search_highlights`, now part of `Habarico::Serializers::RecordSerializer`, and `sanitize_record_params`, `record_param_permit_spec` and `throw_validation_error`, now `Habarico::RecordParamsResolver`; an override of `render_list` takes the search query as its argument. `habarico-enterprise` up to 7.2 calls `sanitize_filter_params` in its `aggregate` action and needs the release that switches to them (HAB-1062).
 - **BREAKING:** The controller class methods `serializer`, `meta_serializer` and `record_serializer`. A controller replacing the field serializer declares `fields_serializer MyFieldsSerializer` instead; one overriding `record_serializer` to let a computed field through overrides `FieldsSerializer#serializable?`. `Habarico::Serializers::RecordSerializer` is built per request by the instance method `record_serializer`, takes the definition and the request instead of a ready `meta`, builds `meta` itself and owns its `MetaSerializer` (HAB-1062).
-- **BREAKING:** `Habarico::FilterParamsHelper`; `Habarico::FilterParams` separates the search from the filter params itself (HAB-1062).
+- **BREAKING:** `Habarico::FilterParamsHelper`; `Habarico::FilterParamsResolver` separates the search from the filter params itself (HAB-1062).
 
 ### Fixed
 

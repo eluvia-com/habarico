@@ -240,7 +240,8 @@ require "habarico/definition/definition"
 # *****************************************************************************
 
 # Controller
-require "habarico/queries/filter_params"
+require "habarico/resolvers/filter_params_resolver"
+require "habarico/resolvers/record_params_resolver"
 require "habarico/queries/records_query"
 require "habarico/controller"
 

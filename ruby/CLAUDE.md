@@ -91,7 +91,8 @@ Plain Ruby objects (no ActiveRecord) that mirror the structure of the JSON API r
 
 ### 6. Supporting Components
 - **Serializer** (`lib/habarico/serializer.rb`) — converts ActiveRecord records to JSON using schema metadata
-- **Queries** (`lib/habarico/queries/`) — `FilterParams` validates list filter params, `RecordsQuery` builds the list and detail scopes; the controller only wires them up
+- **Resolvers** (`lib/habarico/resolvers/`) — `FilterParamsResolver` and `RecordParamsResolver` check request params against the resource
+- **Queries** (`lib/habarico/queries/`) — `RecordsQuery` builds the list and detail scopes
 - **Context** (`lib/habarico/context.rb`) — per-request object holding user, record, permissions
 - **Config** (`lib/habarico/config.rb`) — global gem config (resources array, URL prefix, routing scope, currency)
 - **Helpers** (`lib/habarico/helpers/`) — `ActionHelper`, `AttributesHelper`, `BoxHelper`, `CallableHelper`, `ReflectionHelper`

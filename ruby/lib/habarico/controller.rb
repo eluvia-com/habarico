@@ -25,13 +25,13 @@ module Habarico
       # the resource explicitly opts into ID-based reads via `allow_read_by_id`.
       raise Eluvia::Errors::Forbidden.new('List not allowed.') unless read_allowed || definition.allow_read_by_id
 
-      filter_params = Habarico::FilterParams.new(definition, params, read_allowed: read_allowed)
+      resolved = Habarico::FilterParamsResolver.new(definition).resolve(params, read_allowed: read_allowed)
       @records = Habarico::RecordsQuery.new(definition, context).list(
-        filter_params.filters,
-        search_query: filter_params.search_query, order_by: @order_by, page: @page, limit: @limit, padding: @padding
+        resolved.filters,
+        search_query: resolved.search_query, order_by: @order_by, page: @page, limit: @limit, padding: @padding
       )
 
-      render_list(filter_params.search_query)
+      render_list(resolved.search_query)
     end
 
     def show
@@ -46,21 +46,21 @@ module Habarico
     def create
       raise Eluvia::Errors::Forbidden.new('Create not allowed.') unless context.can?(:create)
       raise Eluvia::Errors::BadRequest.new('Create not possible.') unless is_create_possible?
-      @record = definition.model.new(sanitize_record_params.merge(complement_record_params))
+      @record = definition.model.new(record_params_resolver.resolve(params).merge(complement_record_params))
       if @record.save
         render_detail
       else
-        throw_validation_error
+        raise record_params_resolver.validation_error(@record)
       end
     end
 
     def update
       raise Eluvia::Errors::Forbidden.new('Update not allowed.') unless context.can?(:update)
       raise Eluvia::Errors::BadRequest.new('Update not possible.') unless is_update_possible?(@record)
-      if @record.update(sanitize_record_params.merge(complement_record_params))
+      if @record.update(record_params_resolver.resolve(params).merge(complement_record_params))
         render_detail
       else
-        throw_validation_error
+        raise record_params_resolver.validation_error(@record)
       end
     end
 
@@ -93,7 +93,7 @@ module Habarico
       }
     end
 
-    # `fields` comes straight from the query string and is kept out of `Habarico::FilterParams`,
+    # `fields` comes straight from the query string and is kept out of `Habarico::FilterParamsResolver`,
     # since it controls serialization rather than which records are returned.
     def record_serializer(search_query: nil)
       Habarico::Serializers::RecordSerializer.new(
@@ -173,17 +173,6 @@ module Habarico
 
       allowed_fields = Habarico::SortingHelper.allowed_order_by_fields(definition)
       @order_by_whitelist = allowed_fields && (allowed_fields + list_order_by_tiebreaker.map(&:to_s)).uniq
-    end
-
-    def throw_validation_error
-      errors = @record.errors.to_hash
-      errors_with_variants = {}
-      errors.each do |attr_name, error|
-        Habarico::AttributesHelper.generate_attr_variants(definition.model, attr_name).each do |attr_name_variant|
-          errors_with_variants[attr_name_variant] = error
-        end
-      end
-      raise Eluvia::Errors::UnprocessableEntity.new(errors_with_variants)
     end
 
     # *************************************************************************
@@ -267,33 +256,11 @@ module Habarico
     end
 
     # *************************************************************************
-    # Sanitizers
+    # Record params
     # *************************************************************************
 
-    def sanitize_record_params
-      write_fields = (definition.fields + definition.write_only_fields).uniq
-      # `ActionController::Parameters#permit` silently drops a Hash value for a bare field name
-      # (e.g. a `file_attr`'s `{filename:, content:}` or `{upload_key:}` payload) unless its
-      # nested keys are explicitly permitted - expand those fields into a nested permit spec.
-      permit_spec = write_fields.map { |field| record_param_permit_spec(field) }
-      params.permit(*permit_spec)
-    end
-
-    def record_param_permit_spec(field)
-      # Hash entries (`{ name => subfields }`) are already a nested permit spec - keep intact.
-      return field if field.is_a?(::Hash)
-
-      # Normalize Symbol/String/FieldReference entries so `permit` never receives a FieldReference.
-      name = Habarico::AttributesHelper.field_name(field)
-      # `ActionController::Parameters#permit` only allows scalar values for a bare field name -
-      # a Hash value (e.g. a `file_attr` field's base64 `{filename:, content:}` or chunked-upload
-      # `{upload_key:}` payload) is silently dropped unless its nested keys are explicitly
-      # permitted. Expand file_attr fields into a nested permit spec; leave every other field as-is.
-      if definition.model.respond_to?(:has_file_attr?) && definition.model.has_file_attr?(name)
-        { name => %i[filename content upload_key] }
-      else
-        name
-      end
+    def record_params_resolver
+      @record_params_resolver ||= Habarico::RecordParamsResolver.new(definition)
     end
 
     def complement_record_params

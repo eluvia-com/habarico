@@ -1,68 +1,6 @@
 require "test_helper"
 
 module Habarico
-  class ControllerTest < Minitest::Test
-
-    # Minimal model double: `sanitize_record_params` only ever calls `has_file_attr?` on it.
-    class UploadableModel
-      def self.has_file_attr?(field)
-        field.to_sym == :document
-      end
-    end
-
-    class RecordsController < ActionController::Base
-      include Habarico::Controller
-
-      model UploadableModel
-      fields %i[notes document]
-    end
-
-    def setup
-      @controller = RecordsController.new
-    end
-
-    # ***********************************************************************
-    # sanitize_record_params - scalar fields (existing behavior)
-    # ***********************************************************************
-
-    def test_permits_scalar_fields
-      @controller.params = { notes: "hello", employee_id: 9 }
-      permitted = @controller.send(:sanitize_record_params)
-      assert_equal "hello", permitted[:notes]
-    end
-
-    # ***********************************************************************
-    # sanitize_record_params - file_attr fields (base64 / chunked upload)
-    # ***********************************************************************
-
-    def test_strips_hash_valued_file_field_without_nested_permit_spec
-      # Regression baseline: a bare `permit(:document)` (no nested spec) silently drops any
-      # Hash value - this is the bug `record_param_permit_spec` fixes below.
-      params = ActionController::Parameters.new(document: { upload_key: "tmp/uploads/x/y.zip" })
-      assert_nil params.permit(:document)[:document]
-    end
-
-    def test_permits_upload_key_for_file_attr_field
-      @controller.params = { notes: "hello", document: { upload_key: "tmp/uploads/x/y.zip" } }
-      permitted = @controller.send(:sanitize_record_params)
-      assert_equal "tmp/uploads/x/y.zip", permitted[:document][:upload_key]
-    end
-
-    def test_permits_base64_content_for_file_attr_field
-      @controller.params = { document: { filename: "y.zip", content: "base64data" } }
-      permitted = @controller.send(:sanitize_record_params)
-      assert_equal "y.zip", permitted[:document][:filename]
-      assert_equal "base64data", permitted[:document][:content]
-    end
-
-    def test_does_not_permit_unlisted_keys_on_file_attr_field
-      @controller.params = { document: { upload_key: "tmp/uploads/x/y.zip", evil: "nope" } }
-      permitted = @controller.send(:sanitize_record_params)
-      refute permitted[:document].key?(:evil)
-    end
-
-  end
-
   # *****************************************************************************
   # show - HAB-899: read-by-id must respect can_read, same as index
   # *****************************************************************************

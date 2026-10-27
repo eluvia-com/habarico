@@ -1,23 +1,22 @@
 module Habarico
-  # The filter params of a list request, checked against the resource: the terms handed to
+  # Resolves the filter params of a list request against the resource: the terms handed to
   # `filter_2!` and the fulltext search query, which Habarico applies itself.
-  class FilterParams
-    attr_reader :filters, :search_query
+  class FilterParamsResolver
+    Result = Struct.new(:filters, :search_query, keyword_init: true)
+
+    def initialize(definition)
+      @definition = definition
+    end
 
     # Raises `Eluvia::Errors::UnprocessableEntity` for a filter term the resource does not offer.
-    def initialize(definition, params, read_allowed:)
-      @definition = definition
+    def resolve(params, read_allowed:)
       filter_params = permit(params).to_h.symbolize_keys
+      return Result.new(filters: ids_only(filter_params)) unless read_allowed
 
-      if read_allowed
-        # Habarico owns the typed fulltext search over `search_fields` (see SearchMatcher), so the
-        # search term is pulled out and applied separately - it must not reach the base library
-        # `filter_2!`, whose `apply_search` uses a different field list and always unaccents.
-        @search_query = extract_search(filter_params)
-        @filters = strip_search(filter_params)
-      else
-        @filters = ids_only(filter_params)
-      end
+      # Habarico owns the typed fulltext search over `search_fields` (see SearchMatcher), so the
+      # search term is pulled out and applied separately - it must not reach the base library
+      # `filter_2!`, whose `apply_search` uses a different field list and always unaccents.
+      Result.new(filters: strip_search(filter_params), search_query: extract_search(filter_params))
     end
 
     private

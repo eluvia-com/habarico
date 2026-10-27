@@ -1,7 +1,7 @@
 require "test_helper"
 
 module Habarico
-  class FilterParamsTest < Minitest::Test
+  class FilterParamsResolverTest < Minitest::Test
 
     # Same `field=<json>` grammar as the base library, lenient like `raise_on_invalid: false`.
     class FilterableModel
@@ -35,7 +35,7 @@ module Habarico
     end
 
     def parse(params, read_allowed: true)
-      FilterParams.new(definition, ActionController::Parameters.new(params), read_allowed: read_allowed)
+      FilterParamsResolver.new(definition).resolve(ActionController::Parameters.new(params), read_allowed: read_allowed)
     end
 
     def test_passes_offered_filters_through
