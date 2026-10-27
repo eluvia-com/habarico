@@ -22,6 +22,7 @@ export const MenuItemWithPopper = ({children, onClick, ...rest}: MenuItemWithPop
   const isOverSubMenuRef = useRef(false);
   const openTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const closeTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const openedByClickRef = useRef(false);
 
   const closeIfNotOver = useCallback(() => {
     clearTimeout(closeTimeoutRef.current);
@@ -37,9 +38,26 @@ export const MenuItemWithPopper = ({children, onClick, ...rest}: MenuItemWithPop
     isOverMenuRef.current = true;
     const target = e.currentTarget as HTMLButtonElement;
     openTimeoutRef.current = setTimeout(() => {
+      openedByClickRef.current = false;
       setAnchorEl(target);
     }, POPOVER_OPEN_DEBOUNCE);
   }, []);
+
+  // A click opens the sub-menu at once, without the hover debounce — the only way to open it on a
+  // touch screen, where there is no hover. A second click closes it, unless hovering opened it: the
+  // click that follows a hover is meant to open, not to shut what the cursor just revealed.
+  const togglePopper = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      clearTimeout(openTimeoutRef.current);
+      clearTimeout(closeTimeoutRef.current);
+      const target = e.currentTarget as HTMLButtonElement;
+      const close = Boolean(anchorEl) && openedByClickRef.current;
+      openedByClickRef.current = !close;
+      setAnchorEl(close ? null : target);
+      onClick?.(e);
+    },
+    [anchorEl, onClick]
+  );
 
   // --------------------------------------------------------------------------
   // Render
@@ -55,7 +73,8 @@ export const MenuItemWithPopper = ({children, onClick, ...rest}: MenuItemWithPop
           isOverMenuRef.current = false;
           closeIfNotOver();
         }}
-        onClick={onClick}
+        onClick={togglePopper}
+        expanded={Boolean(anchorEl)}
       />
       <Popper
         onMouseEnter={() => {
