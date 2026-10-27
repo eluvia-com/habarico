@@ -3,7 +3,7 @@
 Tracks changes shared across all packages: OpenAPI schema (`contract/openapi.yaml`) and project-level documentation.
 
 For package-specific changes see:
-- [node/CHANGELOG.md](node/CHANGELOG.md) — `@eluvia/habarico` (JS)
+- [node/CHANGELOG.md](node/CHANGELOG.md) — `habarico` (JS)
 - [python/CHANGELOG.md](python/CHANGELOG.md) — `habarico` (Python)
 - [ruby/CHANGELOG.md](ruby/CHANGELOG.md) — `habarico` (Ruby)
 

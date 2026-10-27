@@ -412,5 +412,7 @@ every pull request that touches `*/docs/**`.
 
 ## Local Development
 
-For local development against a checkout of this library, use `pnpm link` — the steps are in the
-[installation page](https://docs.habarico.com/node/installation) of the documentation site.
+To run a project against this checkout, `pnpm link <this>/node` in the project and `npm run watch`
+here. Peers must resolve to the project's copies or React loads twice: render the override template
+with `PROJECT_PATH=<project> envsubst < pnpm-workspace.yaml.tmp > pnpm-workspace.yaml && pnpm install`
+(the output is gitignored); delete it and `pnpm install` again to unlink.

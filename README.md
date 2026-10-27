@@ -21,11 +21,11 @@ The `contract/openapi.yaml` file contains the OpenAPI 3.0.3 specification that s
 ## License
 
 **The repository is not licensed as a whole** — `node/`, `python/` and `ruby/` each carry their own
-`LICENSE` file and are **MIT** (see HAB-842).
+`LICENSE` file and are **MIT**.
 
 The paid `habarico-enterprise` packages are **commercial and proprietary** — use, copying and
 distribution only under a valid licence agreement with Eluvia.land s.r.o. They are developed and
-released from a repository of their own (HAB-846).
+released from a repository of their own.
 
 The free packages never reference the paid ones: a paid package registers itself through runtime
 extension points resolved by name, so the split is enforced in code, not only on paper.
@@ -48,8 +48,9 @@ from `contract/openapi.yaml`, and the shared concepts:
 
 The pages live beside the code they document, in `node/docs/`, `python/docs/` and `ruby/docs/`;
 write documentation there, not in the READMEs. Each library's README is a quick start — install, a
-minimal example, and a link to the site. The site itself is built and published by `hab-docs`,
-which clones these pages and the paid ones from `habarico-enterprise` into one site.
+minimal example, and a link to the site. The site itself is built from a separate, private
+repository, so contributors change the pages here and the published site follows with the next
+release.
 
 ## Versioning
 
@@ -61,7 +62,12 @@ All packages follow [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PAT
 | **MINOR** | New backward-compatible feature or schema addition |
 | **PATCH** | Bug fix, performance improvement, or internal refactor with no API change |
 
-Each package is **versioned independently** — a change in one package does not require a version bump in the others unless it affects the shared schema contract or cross-package compatibility.
+The three libraries share **MAJOR.MINOR**: a new minor or major moves all of them, even one with no
+changes of its own, and they are released together. Only patch releases are made per library.
+Each release is tagged `<dir>@X.Y.Z` (`node@7.3.0`).
+
+The paid `habarico-enterprise` packages share MAJOR.MINOR with the free package of their language —
+`habarico-enterprise` 7.3.x is the release for `habarico` 7.3.x.
 
 **Version file locations:**
 
@@ -69,11 +75,9 @@ Each package is **versioned independently** — a change in one package does not
 |---------|------|
 | `habarico` (JS) | `node/package.json` → `"version"` |
 | `habarico` (Python) | `python/pyproject.toml` → `version` |
-| `habarico` (Ruby) | `ruby/version.json` → `"version"` |
+| `habarico` (Ruby) | `ruby/VERSION` |
 
 **OpenAPI schema (`contract/openapi.yaml`)** is versioned via its `info.version` field and must be bumped together with any package that introduces a schema-level change.
-
-**Major version alignment:** all three packages should share the same MAJOR version. When a breaking change bumps the MAJOR in one package, the others must follow in the same release cycle, even if they have no other changes.
 
 ## Changelog
 
