@@ -110,16 +110,8 @@ module Habarico
       }
     end
 
-    # Renders an `ActionResult`: `message`, `state` and `trigger_action` live under `meta`, and the
-    # response's own `data` is merged next to it. This is the shape the contract prescribes and the
-    # only one the frontend reads - it looks at `resp.data.meta` and nowhere else.
     def render_response(response)
-      meta = {
-        'message' => response.message,
-        'state' => response.state,
-        'trigger_action' => build_action_schema(response.action)&.as_json&.deep_compact(compactable: Habarico::Serializers::RecordSerializer::COMPACTABLE)
-      }.compact
-      render json: { 'meta' => meta }.merge(response.data.presence || {})
+      render json: Habarico::Serializers::ResponseSerializer.new(action_schema_for: method(:build_action_schema)).serialize(response)
     end
 
     def get_trigger_action_schema(_record)

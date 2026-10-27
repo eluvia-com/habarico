@@ -17,6 +17,7 @@ version and date when a release is finalized.
 - `Habarico::Response#data` - data rendered next to `meta` in the action result, as the contract's `ActionResult` allows (HAB-955).
 - `after_save` on `Habarico::SaveAction`, `upload_images_data` on `Habarico::UploadImagesAction` and `view_choices` on `Habarico::ViewAction`, with `Types::AFTER_SAVE_TYPE` - schema attributes the contract and the Python library already had (HAB-955).
 - `Habarico::FilterParamsResolver` and `Habarico::RecordsQuery` - the validated filter params and the record scopes of a resource (`filtered`, `list`, `find`), for an extension that selects records the way `index` does; `Habarico::RecordParamsResolver` - the writable params of a create or update and the 422 for a record that failed validation; `Habarico::OrderByParamsResolver` - the `order_by` fields checked against what the resource sorts by (HAB-1062).
+- `Habarico::Serializers::ResponseSerializer` - the `ActionResult` of a custom action, which `render_response` renders (HAB-1062).
 - `fields_serializer` on the resource definition - the class reading the field values of a record, `Habarico::Serializers::FieldsSerializer` by default; a subclass adding a computed field opts it in through `serializable?` (HAB-1062).
 
 ### Changed

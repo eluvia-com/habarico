@@ -252,9 +252,11 @@ require "habarico/queries/records_query"
 require "habarico/controller"
 
 # Serializer
+require "habarico/serializers/compact_json"
 require "habarico/serializers/fields_serializer"
 require "habarico/serializers/meta_serializer"
 require "habarico/serializers/record_serializer"
+require "habarico/serializers/response_serializer"
 
 # *****************************************************************************
 # Services

@@ -7,7 +7,6 @@ module Habarico
       include Eluvia::Serializers::FieldsetSerializer
 
       META_FIELD = 'meta'.freeze
-      COMPACTABLE = [nil, {}].freeze
 
       # `context_for` and `trigger_action_for` are called with the record - the controller's
       # `_context` and `get_trigger_action_schema`, so overrides of either keep applying.
@@ -50,7 +49,7 @@ module Habarico
 
       def meta(view_type, record, sub_fieldset)
         meta = @meta_serializer.serialize(meta_data(view_type, record), fields: sub_fieldset&.to_s)
-        meta['schema'] = meta['schema'].deep_compact(compactable: COMPACTABLE) if meta['schema']
+        meta['schema'] = Serializers.compact_json(meta['schema']) if meta['schema']
 
         # Highlights carry the full field value, like the Python `meta.highlights`, and are added
         # after the fieldset so `fields=meta(...)` never prunes them.
@@ -70,7 +69,7 @@ module Habarico
           'repr' => record.respond_to?(:representation) ? record.representation : record.to_s,
           'schema' => Habarico::SchemaService.instance.get_object_schema(@resource_name, view_type, context).as_json,
           'tags' => @definition.tags.respond_to?(:call) ? @definition.tags.call(context) : [],
-          'trigger_action' => trigger_action&.as_json&.deep_compact(compactable: COMPACTABLE)
+          'trigger_action' => Serializers.compact_json(trigger_action)
         }
       end
 
