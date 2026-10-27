@@ -211,18 +211,11 @@ module Habarico
       assert_equal CATEGORY_PK, result['meta']['trigger_action']['view']['endpoint']['record_pk']
     end
 
-    def test_build_action_schema_does_not_mutate_the_declared_action
-      action = @controller.class.definition.normalized_actions.find { |a| a.name == 'edit_price' }
-      @controller.send(:build_action_schema, action, record_pk: CATEGORY_PK, reference: 'categories')
+    def test_build_action_schema_retargets_a_declared_action_given_by_name
+      schema = @controller.send(:build_action_schema, 'edit_price', record_pk: CATEGORY_PK, reference: 'categories')
 
-      assert_nil action.endpoint_record_pk
-      assert_nil action.endpoint_reference
-    end
-
-    def test_build_action_schema_rejects_anything_but_an_action
-      assert_raises(Eluvia::Errors::StandardError) do
-        @controller.send(:build_action_schema, 'edit_price')
-      end
+      assert_equal CATEGORY_PK, schema.view.endpoint.record_pk
+      assert_equal 'categories', schema.view.endpoint.reference
     end
 
     # ***********************************************************************

@@ -45,7 +45,7 @@ These hooks run after permissions are checked and before the write is committed.
 def get_trigger_action_schema(record)
   return nil unless record.needs_review?
 
-  build_action_schema(find_declared_action!('review'), record: record)
+  build_action_schema('review', record: record)
 end
 ```
 
@@ -53,7 +53,7 @@ end
 
 | Argument | Description |
 |----------|-------------|
-| `action` | The `Habarico::Action` to build the schema of. It does not have to be declared in `actions` — an action built on the spot works just as well. `find_declared_action!(name)` looks up a declared one and raises when the name is not there |
+| `action` | The name of an action declared in `actions`, or a `Habarico::Action` built on the spot. A name that is not declared raises an error listing the declared ones |
 | `record` | Record the context is built from. Pass the hook's own `record`: the hook runs once per serialized record, while the controller's `context` holds only the record of the current request (none at all on a list) |
 | `record_pk` | Target record, when it is not the one in the context |
 | `reference` | Target resource, when it is not the current one |

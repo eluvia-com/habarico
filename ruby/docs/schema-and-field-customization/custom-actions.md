@@ -151,7 +151,7 @@ Habarico::Response.new(
 ```
 
 `Habarico::Controller#build_action_schema(action, record:, record_pk:, reference:)` builds the same
-schema from a `Habarico::Action` and returns it — it is what the
+schema from a declared action's name or a `Habarico::Action` and returns it — it is what the
 [`get_trigger_action_schema` hook](./controller-hooks.md) returns, and what form 3 above uses.
 
 ---

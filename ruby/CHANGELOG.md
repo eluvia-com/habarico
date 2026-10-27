@@ -13,7 +13,7 @@ version and date when a release is finalized.
 
 ### Added
 
-- `endpoint_record_pk` on `Habarico::Action` and `Habarico::Controller#build_action_schema(action, record:, record_pk:, reference:)` - a trigger action can now open a view of, or call an endpoint on, another resource and another record, in both channels (the `meta.trigger_action` of a serialized record and the response of a custom action). `build_action_schema` returns the complete `ActionSchema`, which replaces the `ResourceService` plus generator boilerplate a `get_trigger_action_schema` override used to need; the manual way keeps working (HAB-955).
+- `endpoint_record_pk` on `Habarico::Action` and `Habarico::Controller#build_action_schema(action, record:, record_pk:, reference:)` - a trigger action can now open a view of, or call an endpoint on, another resource and another record, in both channels (the `meta.trigger_action` of a serialized record and the response of a custom action). `build_action_schema` takes a declared action's name or an action object and returns the complete `ActionSchema`, built by the new `trigger_action_schema_generator`, which replaces the `ResourceService` plus generator boilerplate a `get_trigger_action_schema` override used to need; the manual way keeps working (HAB-955).
 - `Habarico::Response#data` - data rendered next to `meta` in the action result, as the contract's `ActionResult` allows (HAB-955).
 - `after_save` on `Habarico::SaveAction`, `upload_images_data` on `Habarico::UploadImagesAction` and `view_choices` on `Habarico::ViewAction`, with `Types::AFTER_SAVE_TYPE` - schema attributes the contract and the Python library already had (HAB-955).
 
