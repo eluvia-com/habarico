@@ -159,7 +159,7 @@ module Habarico
     def set_list_pagination
       options = {
         default_order_by: definition.default_sorting,
-        fallback_order_by: Habarico::SortingHelper.primary_key_order_by(definition.model),
+        fallback_order_by: Habarico::OrderByHelper.build(Habarico::SortingHelper.primary_key_fields(definition.model), :asc),
         force_order_by: definition.force_sorting
       }
 

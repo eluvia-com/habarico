@@ -111,4 +111,19 @@ class SortingHelperTest < Minitest::Test
       Habarico::SortingHelper.descriptor_sort_by(model, field_reference(name: 'product', sort_by: 'products.name'))
   end
 
+  # ***************************************************************************
+  # primary_key_fields - what every list is finally ordered by
+  # ***************************************************************************
+
+  def test_primary_key_fields_cover_a_composite_key
+    model = build_model
+    model.define_singleton_method(:primary_key) { %w[tenant_id id] }
+
+    assert_equal %w[tenant_id id], Habarico::SortingHelper.primary_key_fields(model)
+  end
+
+  def test_a_model_without_a_primary_key_has_no_primary_key_fields
+    assert_equal [], Habarico::SortingHelper.primary_key_fields(Class.new)
+  end
+
 end

@@ -29,7 +29,7 @@ module Habarico
     def allowed_fields
       return @allowed_fields if defined?(@allowed_fields)
 
-      @allowed_fields = Habarico::SortingHelper.allowed_order_by_fields(@definition)
+      @allowed_fields = Habarico::SortingHelper.sortable_fields(@definition)
     end
 
     private

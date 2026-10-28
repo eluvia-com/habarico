@@ -1,5 +1,6 @@
 module Habarico
-  # The one definition of what a resource offers for sorting.
+  # The one definition of what a resource offers for sorting - the `sort_by` values its schema
+  # advertises. The `field:direction` notation a client writes them in is `Habarico::OrderByHelper`.
   #
   # A field schema's `sort_by` is the value a client puts in `order_by` to sort by that field, so
   # the schema generators and the `order_by` validator have to agree on it. They used to decide
@@ -58,10 +59,10 @@ module Habarico
       Habarico::FieldPathResolver.new(model).resolve(name)&.column.present?
     end
 
-    # Every value this resource accepts in `order_by`, or nil when it has no whitelist to offer -
-    # a model without ActiveRecord reflection exposes no columns to check a field name against, so
-    # the field names are left to the model itself.
-    def self.allowed_order_by_fields(definition)
+    # Every `sort_by` value this resource offers - what a client may ask for in `order_by` - or nil
+    # when it has no whitelist to offer: a model without ActiveRecord reflection exposes no columns
+    # to check a field name against, so the field names are left to the model itself.
+    def self.sortable_fields(definition)
       # What the resource tells the frontend to sort by. The list view schema publishes a
       # `default_sorting` - the resource's, or the view's own - and the frontend puts exactly that
       # in `order_by` on the first request, so refusing it would refuse the backend's own answer.
@@ -93,13 +94,9 @@ module Habarico
       names.compact.map { |name| normalize(name) }.uniq
     end
 
-    # The primary key of `model` in `order_by` notation (`id:asc`, every column of a composite key),
-    # or `''` for a model without one - what every list is finally ordered by, so records tying on
-    # the sorted column keep a stable position and a page neither repeats nor skips one.
-    def self.primary_key_order_by(model)
-      primary_key_fields(model).map { |field_name| "#{field_name}:asc" }.join(',')
-    end
-
+    # Columns of the primary key of `model` (every one of a composite key), none for a model without
+    # one - what every list is finally ordered by, so records tying on the sorted column keep a
+    # stable position and a page neither repeats nor skips one.
     def self.primary_key_fields(model)
       Array(model.try(:primary_key)).map(&:to_s)
     end

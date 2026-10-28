@@ -1,10 +1,7 @@
 module Habarico
-  # The one place that reads the `field:direction` notation, shared by the `order_by` query
-  # parameter and the `default_sorting` declarations.
-  #
-  # `Eluvia::PaginationHandler#set_pagination` reads the query parameter exactly this way and
-  # answers 422 for anything that does not match, so by the time habarico looks at the parameter
-  # every entry is known to be well formed. This helper has to stay in step with it.
+  # The one place that reads and writes the `field:direction` notation, shared by the `order_by`
+  # query parameter and the `default_sorting` declarations. `order_by` names only this notation;
+  # what a resource offers to sort by is `Habarico::SortingHelper`.
   module OrderByHelper
 
     DIRECTIONS = %w[asc desc].freeze
@@ -28,6 +25,11 @@ module Habarico
       return nil if field_name.blank? || !DIRECTIONS.include?(direction)
 
       [field_name, direction]
+    end
+
+    # `field_names` in the notation, every one in `direction` (`id:asc,tenant_id:asc`); `''` for none.
+    def self.build(field_names, direction)
+      field_names.map { |field_name| "#{field_name}:#{direction}" }.join(',')
     end
 
     # Field names of a whole value, tolerating an entry written without a direction the way a

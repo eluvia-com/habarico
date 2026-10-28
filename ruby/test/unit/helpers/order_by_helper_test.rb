@@ -56,4 +56,16 @@ class OrderByHelperTest < Minitest::Test
     assert_equal 'asc', Habarico::OrderByHelper.direction('created_at:asc:desc')
   end
 
+  # ***************************************************************************
+  # build
+  # ***************************************************************************
+
+  def test_builds_every_field_in_the_direction
+    assert_equal 'tenant_id:asc,id:asc', Habarico::OrderByHelper.build(%w[tenant_id id], :asc)
+  end
+
+  def test_builds_nothing_out_of_no_fields
+    assert_equal '', Habarico::OrderByHelper.build([], :asc)
+  end
+
 end
