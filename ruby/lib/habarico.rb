@@ -15,6 +15,7 @@ require "habarico/authenticatable"
 # *****************************************************************************
 
 require "habarico/active_model/references"
+require "habarico/active_model/extensible_enum"
 
 # *****************************************************************************
 # Helpers
@@ -53,7 +54,6 @@ require "habarico/search/search_matcher"
 
 # Shared enum types
 require "habarico/schema/types"
-require "habarico/schema/extensible_enum"
 
 # Action schema models
 require "habarico/schema/action/link_action_parameters"

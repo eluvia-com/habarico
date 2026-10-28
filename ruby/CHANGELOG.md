@@ -13,7 +13,7 @@ version and date when a release is finalized.
 
 ### Added
 
-- `endpoint_record_pk` on `Habarico::Action` and `Habarico::Controller#generate_trigger_action_schema(action, record:, record_pk:, reference:)` - a trigger action can now open a view of, or call an endpoint on, another resource and another record, in both channels (the `meta.trigger_action` of a serialized record and the response of a custom action). `generate_trigger_action_schema` takes a declared action's name or an action object and returns the complete `ActionSchema`, built by the new `trigger_action_schema_generator`, which replaces the `ResourceService` plus generator boilerplate a `get_trigger_action_schema` override used to need; the manual way keeps working (HAB-955).
+- `endpoint_record_pk` on `Habarico::Action` and `Habarico::Controller#trigger_action_schema(action, record:, record_pk:, reference:)` - a trigger action can now open a view of, or call an endpoint on, another resource and another record, in both channels (the `meta.trigger_action` of a serialized record and the response of a custom action). `trigger_action_schema` takes a declared action's name or an action object and returns the complete `ActionSchema`, built by the new `trigger_action_schema_generator`, which replaces the `ResourceService` plus generator boilerplate a `get_trigger_action_schema` override used to need; the manual way keeps working (HAB-955).
 - `Habarico::Response#data` - data rendered next to `meta` in the action result, as the contract's `ActionResult` allows (HAB-955).
 - `after_save` on `Habarico::SaveAction`, `upload_images_data` on `Habarico::UploadImagesAction` and `view_choices` on `Habarico::ViewAction`, with `Types::AFTER_SAVE_TYPE` - schema attributes the contract and the Python library already had (HAB-955).
 - `Habarico::FilterParamsResolver` and `Habarico::RecordsQuery` - the validated filter params and the record scopes of a resource (`filtered`, `list`, `find`), for an extension that selects records the way `index` does; `Habarico::RecordParamsResolver` - the writable params of a create or update and the 422 for a record that failed validation; `Habarico::OrderByParamsResolver` - the `order_by` fields checked against what the resource sorts by (HAB-1062).
@@ -26,6 +26,7 @@ version and date when a release is finalized.
 - `Habarico::Response#action` takes a `Habarico::Action` built on the spot, or a complete `Habarico::ActionSchema`, besides the name of an action declared in `actions`. A name that is not declared now raises an error listing the declared ones instead of silently sending no trigger action (HAB-955).
 - **BREAKING:** `Habarico::Serializers::Serializer` is renamed to `Habarico::Serializers::FieldsSerializer` (HAB-1062).
 - **BREAKING:** `Habarico::Search::FieldResolver` and `Habarico::Search::LeafField` are renamed to `Habarico::FieldPathResolver` and `Habarico::LeafField`, and the resolver is a class like the other resolvers: `FieldPathResolver.new(model).resolve(path)` instead of `FieldResolver.resolve(model, path)`. It walks any relation path, and the `sort_by` of an `association__column` field is resolved by it too (HAB-1062).
+- **BREAKING:** `Habarico::ExtensibleEnum` is `Habarico::ActiveModel::ExtensibleEnum`, and `extensible_enum_attr` takes the list of choices itself (`extensible_enum_attr :type, Types::BOX_TYPE`) instead of its name in `Habarico::Types`; the declarations made from a list are kept by the module, so `Habarico::Types.consumers` is gone. `extensible_intended_for_types` does the same for `intended_for_types`. `Habarico::Types.register` is unchanged (HAB-1062).
 - `get_trigger_action_schema(record)` may answer a declared action's name or a `Habarico::Action` as well as a complete `Habarico::ActionSchema`, like `Habarico::Response.new(action: …)`; the schema is generated in the context of that record (HAB-1062).
 
 ### Removed
@@ -41,6 +42,7 @@ version and date when a release is finalized.
 - The `preferences.dashboard` widget layout validates the optional `stackedH`, `minW` and `minH`
   as integers of at least 1, matching the `WidgetLayout` contract schema (HAB-1007).
 - The resource schema endpoints (`/{resource}/schema`, `/{resource}/{pk}/schema`, `/{resource}/{action}/schema`) answer 404 for a resource the gem does not know, as `contract/openapi.yaml` declares, instead of failing with a 500 (HAB-1062).
+- A box type added through `Habarico::Types.register(:BOX_TYPE, …)` is one `Habarico::BoxSchema` is intended for, so a box of that type is read as a box rather than as a field (HAB-1062).
 - `default_filter` receives `current_user` on the detail endpoints (`show`, `update`, `destroy` and custom detail actions) as it does on the list, so a filter depending on the user no longer lets a record the list hides be reached by its ID (HAB-1062).
 
 ## [7.2.0] — 2026-10-19

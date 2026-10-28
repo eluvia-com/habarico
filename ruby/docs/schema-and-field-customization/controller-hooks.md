@@ -48,9 +48,9 @@ end
 ```
 
 To point the trigger at another record or another resource, build the schema yourself with
-`generate_trigger_action_schema` — nested objects and, for a resource action, the endpoint path included.
+`trigger_action_schema` — nested objects and, for a resource action, the endpoint path included.
 
-`generate_trigger_action_schema(action, record:, record_pk:, reference:)`:
+`trigger_action_schema(action, record:, record_pk:, reference:)`:
 
 | Argument | Description |
 |----------|-------------|
@@ -66,7 +66,7 @@ opens the detail of the category it belongs to, in a side panel:
 def get_trigger_action_schema(record)
   return nil unless params[:show_category].present?
 
-  generate_trigger_action_schema(
+  trigger_action_schema(
     Habarico::ViewAction.new(name: 'show', view_name: 'show', view_mode: :sidepanel, is_detail: true),
     record: record,
     reference: 'categories',

@@ -205,14 +205,14 @@ module Habarico
 
     def test_trigger_action_targets_another_record_of_the_same_resource
       action = @controller.class.definition.normalized_actions.find { |a| a.name == 'edit_price' }
-      schema = @controller.send(:generate_trigger_action_schema, action, record_pk: CATEGORY_PK)
+      schema = @controller.send(:trigger_action_schema, action, record_pk: CATEGORY_PK)
       result = render(Habarico::Response.new(action: schema))
 
       assert_equal CATEGORY_PK, result['meta']['trigger_action']['view']['endpoint']['record_pk']
     end
 
-    def test_generate_trigger_action_schema_retargets_a_declared_action_given_by_name
-      schema = @controller.send(:generate_trigger_action_schema, 'edit_price', record_pk: CATEGORY_PK, reference: 'categories')
+    def test_trigger_action_schema_retargets_a_declared_action_given_by_name
+      schema = @controller.send(:trigger_action_schema, 'edit_price', record_pk: CATEGORY_PK, reference: 'categories')
 
       assert_equal CATEGORY_PK, schema.view.endpoint.record_pk
       assert_equal 'categories', schema.view.endpoint.reference
@@ -271,7 +271,7 @@ module Habarico
     def test_get_trigger_action_schema_reaches_the_meta_of_a_serialized_record
       controller = Class.new(ProductsController) do
         def get_trigger_action_schema(record)
-          generate_trigger_action_schema(
+          trigger_action_schema(
             Habarico::ViewAction.new(name: 'show', view_name: 'show', view_mode: :dialog, is_detail: true),
             record: record,
             reference: 'categories',

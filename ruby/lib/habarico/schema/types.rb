@@ -71,15 +71,8 @@ module Habarico
     EXTENSIBLE = %i[FIELD_TYPE FIELD_FORMAT_TYPE BOX_TYPE ACTION_TYPE].freeze
 
     class << self
-      # Schema classes whose `enum_attr` was declared from a list, as
-      # `{ list_name => [[klass, attr_name], ...] }`. Filled by `ExtensibleEnum`.
-      def consumers
-        @consumers ||= Hash.new { |hash, key| hash[key] = [] }
-      end
-
-      # Add values to an extensible list and re-declare the enum on every schema class built from
-      # it. The re-declaration is what makes this work at all: `enum_attr` copies the choices into
-      # the class when it is called, so appending to the array alone would change nothing.
+      # Add values to an extensible list; `Habarico::ActiveModel::ExtensibleEnum` re-declares the
+      # enum on every schema class built from it.
       #
       #   Habarico::Types.register(:FIELD_FORMAT_TYPE, :signature)
       #
@@ -95,9 +88,7 @@ module Habarico
         duplicates = values & list
         raise ArgumentError, "#{list_name} already contains #{duplicates.join(', ')}." if duplicates.any?
 
-        list.concat(values)
-        consumers[list_name].each { |klass, attr_name| klass.enum_attr(attr_name, list) }
-        list
+        Habarico::ActiveModel::ExtensibleEnum.add_values(list, values)
       end
     end
 

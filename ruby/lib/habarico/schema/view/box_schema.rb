@@ -3,13 +3,13 @@ module Habarico
     include ::ActiveModel::Model
     include Eluvia::ActiveModel::Attributes
     include Eluvia::ActiveModel::EnumAttribute
-    include Habarico::ExtensibleEnum
+    include Habarico::ActiveModel::ExtensibleEnum
 
-    intended_for_types *Types::BOX_TYPE
+    extensible_intended_for_types Types::BOX_TYPE
 
     # Type of the box
     string_attr :type
-    extensible_enum_attr :type, :BOX_TYPE
+    extensible_enum_attr :type, Types::BOX_TYPE
 
     # Name of the box
     string_attr :name
