@@ -27,7 +27,6 @@ require "habarico/helpers/box_helper"
 require "habarico/helpers/callable_helper"
 require "habarico/helpers/order_by_helper"
 require "habarico/helpers/reflection_helper"
-require "habarico/helpers/sorting_helper"
 
 # *****************************************************************************
 # Resolvers
@@ -37,6 +36,7 @@ require "habarico/resolvers/field_path_resolver"
 require "habarico/resolvers/file_rules_resolver"
 require "habarico/resolvers/filter_params_resolver"
 require "habarico/resolvers/record_params_resolver"
+require "habarico/resolvers/sorting_resolver"
 
 # *****************************************************************************
 # Search

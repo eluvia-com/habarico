@@ -2,7 +2,7 @@ module Habarico
   # Reads and writes the `field:direction` notation of the `default_sorting` declarations and the
   # `fallback_order_by` habarico hands to `set_pagination`, which parses the `order_by` query
   # parameter itself. `order_by` names only this notation; what a resource offers to sort by is
-  # `Habarico::SortingHelper`.
+  # `Habarico::SortingResolver` and `Habarico::OrderByValidator`.
   module OrderByHelper
 
     # `field_names` in the notation, every one in `direction` (`id:asc,tenant_id:asc`); `''` for none.

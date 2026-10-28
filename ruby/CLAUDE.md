@@ -91,12 +91,12 @@ Plain Ruby objects (no ActiveRecord) that mirror the structure of the JSON API r
 
 ### 6. Supporting Components
 - **Serializer** (`lib/habarico/serializer.rb`) — converts ActiveRecord records to JSON using schema metadata
-- **Resolvers** (`lib/habarico/resolvers/`) — `FilterParamsResolver` and `RecordParamsResolver` check request params against the resource; `FieldPathResolver` resolves an `a__b` relation path to its leaf field, `FileRulesResolver` the upload rules of a `file_attr`
+- **Resolvers** (`lib/habarico/resolvers/`) — `FilterParamsResolver` and `RecordParamsResolver` check request params against the resource; `FieldPathResolver` resolves an `a__b` relation path to its leaf field, `FileRulesResolver` the upload rules of a `file_attr`, `SortingResolver` the `sort_by` a field advertises
 - **Queries** (`lib/habarico/queries/`) — `RecordsQuery` builds the list and detail scopes
 - **Validators** (`lib/habarico/validators/`) — `OrderByValidator` checks the fields a list is ordered by against what the resource sorts by
 - **Context** (`lib/habarico/context.rb`) — per-request object holding user, record, permissions
 - **Config** (`lib/habarico/config.rb`) — global gem config (resources array, URL prefix, routing scope, currency)
-- **Helpers** (`lib/habarico/helpers/`) — `ActionHelper`, `AttributesHelper`, `BoxHelper`, `CallableHelper`, `ReflectionHelper`
+- **Helpers** (`lib/habarico/helpers/`) — `ActionHelper`, `AttributesHelper`, `BoxHelper`, `CallableHelper`, `OrderByHelper`, `ReflectionHelper`
 
 ### Data Flow
 
