@@ -1,7 +1,7 @@
 require "test_helper"
 
 module Habarico
-  class OrderByParamsResolverTest < Minitest::Test
+  class OrderByValidatorTest < Minitest::Test
 
     Column = Struct.new(:type)
 
@@ -19,20 +19,20 @@ module Habarico
       end
     end
 
-    def resolve(order_by, definition: build_definition)
-      OrderByParamsResolver.new(definition).resolve(ActionController::Parameters.new(order_by: order_by))
+    def validate!(field_names, definition: build_definition)
+      OrderByValidator.new(definition).validate!(field_names)
     end
 
-    def test_returns_the_requested_field_names
-      assert_equal %w[name price], resolve('name:asc,price:desc')
+    def test_accepts_the_fields_the_resource_sorts_by
+      assert_nil validate!(%w[name price])
     end
 
-    def test_no_order_by_requests_nothing
-      assert_equal [], resolve(nil)
+    def test_accepts_no_fields
+      assert_nil validate!([])
     end
 
     def test_rejects_every_unknown_field_at_once
-      error = assert_raises(Eluvia::Errors::UnprocessableEntity) { resolve('secret:asc,name:asc,cost:desc') }
+      error = assert_raises(Eluvia::Errors::UnprocessableEntity) { validate!(%w[secret name cost]) }
 
       assert_equal %w[order_by__cost order_by__secret], error.messages.keys.sort
     end
@@ -42,11 +42,11 @@ module Habarico
       definition.model.define_singleton_method(:primary_key) { 'sku' }
       definition.fields = %i[name price]
 
-      assert_equal %w[sku], resolve('sku:asc', definition: definition)
+      assert_nil validate!(%w[sku], definition: definition)
     end
 
-    def test_forced_sorting_ignores_the_parameter
-      assert_equal [], resolve('secret:asc', definition: build_definition(force_sorting: 'name:asc'))
+    def test_forced_sorting_is_not_checked
+      assert_nil validate!(%w[secret], definition: build_definition(force_sorting: 'name:asc'))
     end
 
   end

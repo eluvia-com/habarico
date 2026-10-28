@@ -36,7 +36,6 @@ require "habarico/helpers/sorting_helper"
 require "habarico/resolvers/field_path_resolver"
 require "habarico/resolvers/file_rules_resolver"
 require "habarico/resolvers/filter_params_resolver"
-require "habarico/resolvers/order_by_params_resolver"
 require "habarico/resolvers/record_params_resolver"
 
 # *****************************************************************************
@@ -249,6 +248,7 @@ require "habarico/definition/definition"
 
 # Controller
 require "habarico/queries/records_query"
+require "habarico/validators/order_by_validator"
 require "habarico/controller"
 
 # Serializer

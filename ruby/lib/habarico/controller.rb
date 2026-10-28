@@ -7,11 +7,7 @@ module Habarico
       include Eluvia::PaginationHandler
       include Habarico::Authenticatable
 
-      # Order matters: `set_list_pagination` hands the `order_by` parameter to `set_pagination`,
-      # which refuses anything that is not `field:direction`, so the validator below only ever
-      # sees well-formed entries and is left with the field names (HAB-915).
       before_action :set_list_pagination, only: [:index]
-      before_action :validate_order_by_param, only: [:index]
       before_action :set_record, only: %i[show update destroy]
     end
 
@@ -146,16 +142,13 @@ module Habarico
       render json: response_serializer.serialize(response)
     end
 
-    def validate_order_by_param
-      Habarico::OrderByParamsResolver.new(definition).resolve(params)
-    end
-
     # *************************************************************************
     # Pagination
     # *************************************************************************
 
-    # Hands the ordering and the page limits of `index` to `set_pagination`. A limit neither the
-    # resource nor `Habarico::Config` sets is left out, so eluvia-base decides it.
+    # Hands the ordering and the page limits of `index` to `set_pagination`, then checks the fields
+    # it ordered by against what the resource sorts by. A limit neither the resource nor
+    # `Habarico::Config` sets is left out, so eluvia-base decides it.
     def set_list_pagination
       options = {
         default_order_by: definition.default_sorting,
@@ -170,6 +163,7 @@ module Habarico
       options[:max_limit] = max_limit unless max_limit.nil?
 
       set_pagination(**options)
+      Habarico::OrderByValidator.new(definition).validate!(@order_by.keys)
     end
 
     # The resource's limit - a number or a callable taking the context - or `configured` when the

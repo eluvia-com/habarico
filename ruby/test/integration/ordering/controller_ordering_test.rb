@@ -78,8 +78,8 @@ module Habarico
       @author = Author.create!(name: 'Alice')
     end
 
-    # Runs the real `before_action` chain of the index action, so the order of `set_pagination`
-    # and `validate_order_by_param` is exercised rather than assumed.
+    # Runs the real `before_action` chain of the index action rather than calling the callback
+    # directly.
     def run_index_callbacks(params)
       controller = RecordsController.new
       controller.params = ActionController::Parameters.new(params)

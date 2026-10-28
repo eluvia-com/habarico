@@ -65,11 +65,10 @@ module Habarico
       controller
     end
 
-    # The two `before_action` hooks of `index`, in the order the controller declares them.
+    # The `before_action` of `index`: `set_pagination`, then the field whitelist.
     def order_by(params = {}, model: nil, &body)
       controller = build_controller(params, model: model, &body)
       controller.send(:set_list_pagination)
-      controller.send(:validate_order_by_param)
       controller
     end
 
