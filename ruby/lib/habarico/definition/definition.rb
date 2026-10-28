@@ -17,8 +17,8 @@ module Habarico
                   # Fields and filters
                   :sorting_fields, :read_only_fields, :write_only_fields, :filters,
 
-                  # Pagination (per resource; `nil` falls back to `Habarico::Config` and then to
-                  # the eluvia-base defaults - see `Habarico::Controller#set_list_pagination`)
+                  # Pagination: a number or a callable taking the context; `nil` falls back to
+                  # `Habarico::Config` and then to the eluvia-base defaults
                   :default_page_limit, :max_page_limit,
 
                   # Aggregation and dashboard are paid: habarico-enterprise adds

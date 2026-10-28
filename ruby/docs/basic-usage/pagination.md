@@ -27,8 +27,8 @@ end
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `default_page_limit` | `Integer` | `nil` | Page size for a request that sends no `limit`. `nil` falls back to the application configuration. `0` is a valid value — see [Meta-only requests](#meta-only-requests). |
-| `max_page_limit` | `Integer` | `nil` | Largest `limit` this resource accepts; above it the request is refused with `422`. `nil` falls back to the application configuration. |
+| `default_page_limit` | `Integer`, `Proc` | `nil` | Page size for a request that sends no `limit`. `nil` falls back to the application configuration. `0` is a valid value — see [Meta-only requests](#meta-only-requests). |
+| `max_page_limit` | `Integer`, `Proc` | `nil` | Largest `limit` this resource accepts; above it the request is refused with `422`. `nil` falls back to the application configuration. |
 
 ## Application configuration
 
@@ -57,9 +57,9 @@ resource declares a number or nothing at all; only the base configuration can re
 
 ## Per-request limits
 
-Both values are also plain controller methods, so a rule that depends on the request — a larger
-ceiling for an internal client, a smaller page for a heavy report — is an override in the
-controller:
+Either option also takes a callable, called with the [context](./context-object.md) of the
+request, so a rule that depends on the request — a larger ceiling for an internal client, a smaller
+page for a heavy report — stays in the declaration:
 
 ```ruby
 class OrdersController < ApplicationController
@@ -67,16 +67,13 @@ class OrdersController < ApplicationController
 
   model Order
 
-  def list_pagination_max_limit
-    current_user.internal? ? 1000 : 100
-  end
+  max_page_limit ->(context) { context.current_user.internal? ? 1000 : 100 }
 end
 ```
 
-`list_pagination_max_limit` and `list_pagination_default_limit` are what habarico resolves from
-the DSL and from `Habarico::Config`; overriding either replaces that resolution for this
-controller. Overriding `pagination_max_limit` — the hook `eluvia-base` offers every controller —
-works too, and a `max_page_limit` declared in the DSL still wins over it.
+A callable answering `nil` falls back to the application configuration, the same as an option not
+declared at all. Overriding `pagination_max_limit` — the hook `eluvia-base` offers every
+controller — works too, and a `max_page_limit` declared in the DSL still wins over it.
 
 ## Rejected requests
 

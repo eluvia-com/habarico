@@ -154,18 +154,8 @@ module Habarico
     # Pagination
     # *************************************************************************
 
-    # Resolves the page size of `index` and hands it to the base library (HAB-946).
-    #
-    # Each limit is passed as a keyword only when habarico has an opinion about it. What is left
-    # out falls through to `set_pagination` itself - its `default_limit: 20` and its
-    # `pagination_max_limit`, which an application controller may have overridden and which is
-    # also the only place the ceiling can be removed altogether
-    # (`Eluvia::Base::Config.max_page_limit = nil`).
-    #
-    # Note the method names: `Eluvia::PaginationHandler` is included into the controller *after*
-    # this concern, so its `pagination_max_limit` shadows anything of that name declared here -
-    # which is why habarico resolves its own limits under distinct names and passes them in
-    # explicitly instead of overriding the handler's method.
+    # Hands the ordering and the page limits of `index` to `set_pagination`. A limit neither the
+    # resource nor `Habarico::Config` sets is left out, so eluvia-base decides it.
     def set_list_pagination
       options = {
         default_order_by: definition.default_sorting,
@@ -173,23 +163,20 @@ module Habarico
         force_order_by: definition.force_sorting
       }
 
-      default_limit = list_pagination_default_limit
+      default_limit = page_limit(definition.default_page_limit, Habarico::Config.default_page_limit)
       options[:default_limit] = default_limit unless default_limit.nil?
 
-      max_limit = list_pagination_max_limit
+      max_limit = page_limit(definition.max_page_limit, Habarico::Config.max_page_limit)
       options[:max_limit] = max_limit unless max_limit.nil?
 
       set_pagination(**options)
     end
 
-    # Page size for a request without a `limit`, or nil to leave it to the base library.
-    def list_pagination_default_limit
-      definition.default_page_limit || Habarico::Config.default_page_limit
-    end
-
-    # Ceiling for `limit`, or nil to leave it to the base library.
-    def list_pagination_max_limit
-      definition.max_page_limit || Habarico::Config.max_page_limit
+    # The resource's limit - a number or a callable taking the context - or `configured` when the
+    # resource sets none.
+    def page_limit(declared, configured)
+      limit = declared.respond_to?(:call) ? declared.call(context) : declared
+      limit.nil? ? configured : limit
     end
 
     # *************************************************************************
