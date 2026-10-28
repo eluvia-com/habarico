@@ -110,7 +110,7 @@ class Product < ApplicationRecord
 end
 ```
 
-`Habarico::FileValidations.for_model` is the reader (`content_type:` -> `accept`, the upper bound
+`Habarico::FileRulesResolver` is the reader (`content_type:` -> `accept`, the upper bound
 of `size:` -> `max_size`); neither replaces backend validation, which `active_storage_validations`
 still enforces on save regardless. With `habarico_enterprise/uploads` installed, `max_size`
 additionally folds in the project-wide `Config.max_upload_size` ceiling for a field a

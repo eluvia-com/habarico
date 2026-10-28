@@ -28,13 +28,13 @@ require "habarico/helpers/callable_helper"
 require "habarico/helpers/order_by_helper"
 require "habarico/helpers/reflection_helper"
 require "habarico/helpers/sorting_helper"
-require "habarico/file_validations"
 
 # *****************************************************************************
 # Resolvers
 # *****************************************************************************
 
 require "habarico/resolvers/field_path_resolver"
+require "habarico/resolvers/file_rules_resolver"
 require "habarico/resolvers/filter_params_resolver"
 require "habarico/resolvers/order_by_params_resolver"
 require "habarico/resolvers/record_params_resolver"
