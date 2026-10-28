@@ -147,7 +147,7 @@ module Habarico
     end
 
     def validate_order_by_param
-      Habarico::OrderByParamsResolver.new(definition, tiebreaker: list_order_by_tiebreaker).resolve(params)
+      Habarico::OrderByParamsResolver.new(definition).resolve(params)
     end
 
     # *************************************************************************
@@ -168,10 +168,8 @@ module Habarico
     # explicitly instead of overriding the handler's method.
     def set_list_pagination
       options = {
-        # No fallback for `set_pagination` to concatenate - habarico appends its own behind the
-        # resolved ordering instead, see `append_order_by_tiebreaker`.
         default_order_by: definition.default_sorting,
-        fallback_order_by: '',
+        fallback_order_by: Habarico::SortingHelper.primary_key_order_by(definition.model),
         force_order_by: definition.force_sorting
       }
 
@@ -182,31 +180,6 @@ module Habarico
       options[:max_limit] = max_limit unless max_limit.nil?
 
       set_pagination(**options)
-      append_order_by_tiebreaker
-    end
-
-    # Orders by the primary key behind whatever else the list is ordered by, so that two records
-    # comparing equal keep a stable position and a page neither repeats nor skips one (HAB-915).
-    #
-    # This is what `fallback_order_by` is for, but handing the key to `set_pagination` cannot do
-    # the job: that string is concatenated onto the ordering before it is parsed into a hash keyed
-    # by field name, so a fallback of `id:asc` would overwrite the direction of a request already
-    # sorting by `id` - `?order_by=id:desc` would answer ascending. Appending afterwards leaves a
-    # field the ordering already names alone.
-    def append_order_by_tiebreaker
-      list_order_by_tiebreaker.each { |field_name| @order_by[field_name.to_s] ||= :asc }
-    end
-
-    # Field names appended to the ordering of `index` to break ties. The primary key by default -
-    # it is unique and every model has one, `Array()` covering a composite key. A model with no
-    # primary key at all gets nothing, and so does a model without ActiveRecord reflection.
-    #
-    # Until HAB-915 this was `created_at:asc`, hardcoded: a model without that column answered 422
-    # (`order_by__created_at` - "Does not exist.") or a database error on *every* list request,
-    # and records sharing a timestamp could still swap places between two pages. Override to sort
-    # ties differently; to keep `created_at` in the ordering, name it in `default_sorting`.
-    def list_order_by_tiebreaker
-      Array(definition.model.try(:primary_key))
     end
 
     # Page size for a request without a `limit`, or nil to leave it to the base library.

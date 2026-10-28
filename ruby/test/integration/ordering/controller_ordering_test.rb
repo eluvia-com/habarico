@@ -107,8 +107,7 @@ module Habarico
       assert_equal 1, OrderingRecord.order_2(order_by_for(order_by: '')).to_a.length
     end
 
-    # `append_order_by_tiebreaker` leaves a field the ordering already names alone, so the
-    # primary key tie-breaker does not silently turn an explicit `id:desc` into ascending.
+    # The primary key behind the ordering never overrides a direction the request already sets.
     def test_explicit_direction_survives_the_tie_breaker
       assert_equal({ 'id' => :desc }, order_by_for(order_by: 'id:desc'))
     end

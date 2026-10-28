@@ -19,8 +19,8 @@ module Habarico
       end
     end
 
-    def resolve(order_by, definition: build_definition, tiebreaker: [])
-      OrderByParamsResolver.new(definition, tiebreaker: tiebreaker).resolve(ActionController::Parameters.new(order_by: order_by))
+    def resolve(order_by, definition: build_definition)
+      OrderByParamsResolver.new(definition).resolve(ActionController::Parameters.new(order_by: order_by))
     end
 
     def test_returns_the_requested_field_names
@@ -37,11 +37,12 @@ module Habarico
       assert_equal %w[order_by__cost order_by__secret], error.messages.keys.sort
     end
 
-    def test_accepts_the_tiebreaker
-      definition = build_definition(columns: %w[name price])
+    def test_accepts_the_primary_key
+      definition = build_definition(columns: %w[sku name price])
+      definition.model.define_singleton_method(:primary_key) { 'sku' }
+      definition.fields = %i[name price]
 
-      assert_raises(Eluvia::Errors::UnprocessableEntity) { resolve('sku:asc', definition: definition) }
-      assert_equal %w[sku], resolve('sku:asc', definition: definition, tiebreaker: [:sku])
+      assert_equal %w[sku], resolve('sku:asc', definition: definition)
     end
 
     def test_forced_sorting_ignores_the_parameter

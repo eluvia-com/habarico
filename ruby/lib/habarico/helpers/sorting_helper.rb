@@ -93,6 +93,17 @@ module Habarico
       names.compact.map { |name| normalize(name) }.uniq
     end
 
+    # The primary key of `model` in `order_by` notation (`id:asc`, every column of a composite key),
+    # or `''` for a model without one - what every list is finally ordered by, so records tying on
+    # the sorted column keep a stable position and a page neither repeats nor skips one.
+    def self.primary_key_order_by(model)
+      primary_key_fields(model).map { |field_name| "#{field_name}:asc" }.join(',')
+    end
+
+    def self.primary_key_fields(model)
+      Array(model.try(:primary_key)).map(&:to_s)
+    end
+
     # Field names of every ordering this resource advertises: the one the definition falls back to,
     # the one each of its list views publishes on top of that, and the primary key.
     def self.declared_sorting_fields(definition)
@@ -102,9 +113,8 @@ module Habarico
       names = sortings.flat_map { |sorting| Habarico::OrderByHelper.field_names(sorting) }
 
       # The primary key is advertised too, as `pk_field_name` on the resource schema: the frontend
-      # sorts by it whenever a list has no sorting of its own (`serializeOrderBy`). It is listed
-      # here rather than left to the tiebreaker, which a controller may point elsewhere.
-      names += Array(definition.model.try(:primary_key)).map(&:to_s)
+      # sorts by it whenever a list has no sorting of its own (`serializeOrderBy`).
+      names += primary_key_fields(definition.model)
 
       names.uniq
     end

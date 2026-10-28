@@ -6,10 +6,8 @@ module Habarico
   # answers its own 422. What is left here is the field whitelist, the part only habarico knows:
   # the `sort_by` values its schema advertises.
   class OrderByParamsResolver
-    # `tiebreaker` are the field names the list is ordered by anyway, so a client may ask for them.
-    def initialize(definition, tiebreaker: [])
+    def initialize(definition)
       @definition = definition
-      @tiebreaker = tiebreaker
     end
 
     # The requested field names; raises `Eluvia::Errors::UnprocessableEntity` listing every field
@@ -31,8 +29,7 @@ module Habarico
     def allowed_fields
       return @allowed_fields if defined?(@allowed_fields)
 
-      declared = Habarico::SortingHelper.allowed_order_by_fields(@definition)
-      @allowed_fields = declared && (declared + @tiebreaker.map(&:to_s)).uniq
+      @allowed_fields = Habarico::SortingHelper.allowed_order_by_fields(@definition)
     end
 
     private

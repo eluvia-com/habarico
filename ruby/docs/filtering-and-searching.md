@@ -100,8 +100,8 @@ end
 :::info
 Whatever the ordering ends up being — the client's `order_by` or `default_sorting` — the primary key
 is appended behind it. Two records tying on the sorted column would otherwise be free to swap places
-between two requests, which is how a paged list repeats one record and skips another.
-`list_order_by_tiebreaker` is the controller method behind the choice; to put a column such as
+between two requests, which is how a paged list repeats one record and skips another. A request
+that already sorts by the primary key keeps its own direction. To put a column such as
 `created_at` in the ordering, name it in `default_sorting` — nothing is assumed to exist on the
 model.
 :::

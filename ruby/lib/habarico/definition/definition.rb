@@ -70,8 +70,7 @@ module Habarico
       @fields_serializer = Habarico::Serializers::FieldsSerializer
 
       # No column is assumed to exist. Without a declaration the list is ordered by the primary
-      # key alone, which `Habarico::Controller#append_order_by_tiebreaker` appends anyway
-      # (HAB-915).
+      # key alone, which `Habarico::Controller#set_list_pagination` puts behind every ordering.
       @default_sorting = nil
       @force_sorting = false
       @default_filter = {}
