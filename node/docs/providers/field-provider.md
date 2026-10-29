@@ -80,6 +80,42 @@ text that the surrounding layout expects; a component that ignores them renders 
 isolation and wrongly inside a datagrid.
 :::
 
+### Rendering references as text
+
+The reference fields render the record they point at as a chip. To render every reference in the
+project as a text link instead, hand them `variant="link"` — the two branches below are the
+whole override, because anything this provider does not claim falls through to the default one:
+
+```tsx
+<SchemaAdmin
+  fieldProvider={({type, format, schema, props}) => {
+    if (format === 'relation' || format === 'tree-relation') {
+      return (
+        <SchemaReferenceField
+          variant="link"
+          reference={schema?.reference}
+          targetSource={schema?.targetSource}
+          options={schema?.options}
+          {...props}
+        />
+      );
+    }
+    if (type === 'array' && schema?.items?.reference) {
+      return (
+        <SchemaReferenceArrayField variant="link" items={schema.items} {...props} />
+      );
+    }
+  }}
+>
+  <SchemaResource name="eshop/product" />
+</SchemaAdmin>
+```
+
+Both branches mirror `defaultFieldProvider`'s own, so nothing but the look changes: the query, the
+field selection, the width cap in a datagrid and the schema's say over which view opens stay the
+field's. See
+[RecordRepresentation](../field-components/record-representation.mdx) for the form itself.
+
 ## Default mapping
 
 When no provider claims a field, `defaultFieldProvider` decides — its table is on the

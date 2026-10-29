@@ -24,7 +24,7 @@ and a [FieldProvider](../providers/field-provider.md) can override that choice.
 | [ChipArrayField](./chip-array-field.mdx)                                                         | An array of scalar values as chips                                                                     |
 | [SchemaReferenceField](./reference-field.mdx)                                                    | A foreign key as a chip linking to the related record                                                  |
 | [SchemaReferenceArrayField](./reference-array-field.mdx)                                         | An array of foreign keys as a row of linking chips                                                     |
-| [RecordRepresentationChip](./record-representation-chip.mdx)                                     | The chip those two render, on its own — plus `SchemaRecordLink`                                        |
+| [RecordRepresentation](./record-representation.mdx)                                             | The chip or text link those two render, on its own — plus `SchemaRecordLink`                           |
 | [CzechBankAccountField](../input-components/czech-local-flavor-inputs.mdx#czechbankaccountfield) | A Czech bank account formatted as `prefix-account/bankCode`; picked for `format: "czech-bank-account"` |
 
 ## Common props

@@ -30,6 +30,7 @@ On top of these it accepts the shared [field props](./index.md#common-props).
 | ------------------- | -------------------------------- | ------- | ---------------------------------------------------------------------------- |
 | `source` (required) | `string`                         | —       | Field on the record holding the array of foreign keys                        |
 | `items` (required)  | `ItemFieldSchema \| FieldSchema` | —       | Schema of a single element: its `reference`, `format` and `options.relation` |
+| `variant`           | `'chip' \| 'link'`               | `'chip'` | Render each element as a chip or as a text link                             |
 
 Everything that shapes the chips is read from `items`, not from props of its own:
 
@@ -42,8 +43,26 @@ Everything that shapes the chips is read from `items`, not from props of its own
 | `options.relation.sort`          | Order the data provider is asked for                                                          |
 | `options.relation.preserveOrder` | Keeps the order stored on the record; defaults to `true` unless `sort` is set                 |
 
-In a list the chips are truncated to the column width, so a long representation cannot widen the
+In a list the representations are truncated to the column width, so a long one cannot widen the
 column.
+
+## `variant`
+
+`'link'` swaps the chips for the text form of
+[RecordRepresentation](./record-representation.mdx) and stacks them one per line — a row of bare text links reads as a single run-on sentence, where chips
+carry a shape that keeps neighbours apart. The chip form keeps its wrapping row.
+
+```tsx
+<SchemaReferenceArrayField
+  source="category_ids"
+  items={itemSchema}
+  variant="link"
+/>
+```
+
+The stacking applies inside a datagrid cell too: the row has no fixed height, so it grows to fit
+rather than clipping everything below the first link. To switch every reference in a project at
+once, override [fieldProvider](../providers/field-provider.md#rendering-references-as-text).
 
 ## The tree branch
 
@@ -92,6 +111,7 @@ end
 ## See also
 
 - [SchemaReferenceField](./reference-field.mdx) — a single foreign key
-- [RecordRepresentationChip](./record-representation-chip.mdx) — the chip each element renders as
+- [RecordRepresentation](./record-representation.mdx) — the chip, or the text link, each element
+  renders as
 - [ChipArrayField](./chip-array-field.mdx) — arrays of scalars
 - [FieldSchema](../types-and-schemas/field-schema.md#fieldoptions) — the full `RelationFieldOptions` type

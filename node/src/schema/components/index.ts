@@ -40,11 +40,18 @@ export {SchemaFieldContent, type SchemaFieldContentProps} from './fields/SchemaF
 export {SchemaObjectArrayField} from './fields/SchemaObjectArrayField';
 export {SchemaObjectField} from './fields/SchemaObjectField';
 export {SchemaReferenceField, type SchemaReferenceFieldProps} from './fields/SchemaReferenceField';
+export {
+  SchemaReferenceArrayField,
+  type SchemaReferenceArrayFieldProps,
+} from './fields/SchemaReferenceArrayField';
+export type {ReferenceVariant} from './fields/referenceVariant';
 export {SchemaRangeField, type SchemaRangeFieldProps} from './fields/SchemaRangeField';
 export {
-  SchemaRecordRepresentationChip,
+  SchemaRecordRepresentation,
+  type SchemaRecordRepresentationProps,
   type SchemaRecordRepresentationChipProps,
-} from './fields/SchemaRecordRepresentationChip';
+  type SchemaRecordRepresentationLinkProps,
+} from './fields/SchemaRecordRepresentation';
 export {SchemaRecordLink} from './fields/SchemaRecordLink';
 
 // Inputs

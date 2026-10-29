@@ -31,6 +31,18 @@
   it to whether its `filters` prop is passed. New translation key `ra.action.reset_datagrid_filters`
   in every bundled locale. (VD-2875)
 
+- Reference fields gained a `variant?: 'chip' | 'link'` prop (default `'chip'`), so a
+  project can render the record a reference points at as a plain text link instead of a chip.
+  `SchemaReferenceField` and `SchemaReferenceArrayField` both take it; the array form also stacks
+  text links one per line (a row of bare links reads as one run-on sentence), in a detail view and
+  in a datagrid cell alike, while the chip form keeps its wrapping row. The representation behind
+  both forms, `RecordRepresentation` (and its schema-aware `SchemaRecordRepresentation`), is
+  exported for direct use as `children` of `ReferenceField` / `ReferenceArrayField`. The default is
+  unchanged, so existing projects look and behave exactly as before. `SchemaReferenceArrayField` is
+  now exported from the package, which it was not. Chosen by the application through a
+  `fieldProvider` override — the schema is untouched, and neither the contract nor the Python/Ruby
+  DSL changes.
+  (HAB-973)
 - `SchemaAdmin` gained an optional `rowTooltip?: boolean` prop (default `true`). `false` hides the
   gesture tooltip ("Double-click: Show") on list rows across the whole admin, while clicking and
   double-clicking a row still open it. The value reaches `SchemaDatagrid` through the new optional
@@ -279,6 +291,20 @@
   `SchemaRootContext` current from inside the React Admin context across sign-ins, sign-outs and
   impersonations. (HAB-971)
 
+### Changed
+
+- **BREAKING:** `RecordRepresentationChip` and `RecordRepresentationLink` are unified into a single
+  `RecordRepresentation`, whose new `variant?: 'chip' | 'link'` prop (default `'chip'`) chooses the
+  shape — the same vocabulary the reference fields' own `variant` already uses, now carried
+  unchanged all the way down. `SchemaRecordRepresentationChip` and `SchemaRecordRepresentationLink`
+  collapse into `SchemaRecordRepresentation` the same way. The MUI chip variant moves from
+  `variant` to **`chipVariant`**, which `variant` is now spent on; `size`, `color` and `icon` are
+  unchanged. Props are discriminated by `variant`, so the chip's look on `variant="link"` is a type
+  error rather than a prop that silently does nothing — `RecordRepresentationChipProps` /
+  `RecordRepresentationLinkProps` (and their `Schema` counterparts) name the two branches for a
+  component that only ever renders one of them, and `RecordRepresentationProps` is their union.
+  To migrate: rename the component, rename a `variant` meant for the chip to `chipVariant`, and add
+  `variant="link"` where the link form was used. Rendering and behaviour are unchanged. (HAB-973)
 - **BREAKING:** `SchemaRootContextProvider` no longer resolves the identity itself: its `value`
   takes `userIdentity` and `setUserIdentity`, which `SchemaAdmin` supplies from the identity it
   scopes the per-user store to. `SchemaAdmin` users are unaffected; a hand-assembled
@@ -446,6 +472,44 @@
 - The update-identity and change-password dialogs now show a subtitle (new
   `ra.auth.update_identity_subtitle` / `ra.auth.change_password_subtitle` keys, translated in every
   bundled locale). (HAB-883)
+### Fixed
+
+- The datagrid's row hint no longer stacks on top of a control that owns its own click. Hovering a
+  reference chip in a cell used to show two tooltips at once — the chip's "Show object" and the
+  row's "double-click for detail" — and the row's one promised the wrong action, since the click
+  about to happen was the chip's. `useDatagridRowTooltip` now treats a target inside
+  `a[href]`, `button` or `[role="button"]` the way it already treats the row-actions cell, which
+  also covers URL and e-mail fields and any control a project puts in a cell of its own. Decided
+  there rather than by having each control stop the event: a swallowed `mouseover` never reaches
+  the row, so a hint already on screen would stay. `RecordRepresentationLink` gained the button
+  semantics it was missing (`role`, `tabIndex`, Enter / Space) so the text representation is both
+  keyboard-operable and recognised by that test.
+  (HAB-973)
+- `ReferenceField` and `ReferenceArrayField` now merge a caller's `sx` with their own link reset
+  instead of dropping it. The reset sat before the `{...rest}` spread, so any caller passing `sx`
+  replaced it outright and got React Admin's anchor styling back on a field that only looked linked.
+  (HAB-973)
+- The drop area of `UploadInput` (and the `upload-images` dialog) lists the accepted formats as the
+  extensions users know, also when `accept` holds media types: `image/png` and `image/gif` read
+  "PNG, GIF" instead of "IMAGE/PNG, IMAGE/GIF", and the Office types read "DOC", "DOCX", "XLSX"…
+  JPEG reads "JPG (JPEG)" whether it is named `.jpg`, `.jpeg` or `image/jpeg`, so the default image
+  list no longer shows "JPG" and "JPEG" as two formats. A format named twice is listed once; a
+  wildcard (`image/*`) or a media type without a known extension is left out of the text, while the
+  file check still honours it. (HAB-988)
+- The bottom actions (e.g. Save) of a card-less box no longer sit flush against the content above
+  them — typically the card of a nested box. The footer of a card-less `simple` / `object` / `grid`
+  box is now spaced from its content like a tab box's footer already was. (VD-2852)
+
+- The active tab of a tab box, and the active step of a wizard box, now fill the box's height when
+  the box is last on its path, the same way a simple box stretches its nested box. A form in a tab
+  or a step placed beside a taller panel used to keep its natural height, while the same form
+  without tabs matched the panel beside it. (VD-2852)
+
+- The mobile navigation drawer of `DashboardLayout` (below the `lg` breakpoint) now closes after
+  every navigation. It used to close only on a click of a leaf menu item, so clicking the logo in
+  the drawer header or a menu item with children (which links to its first child) navigated but
+  left the drawer open over the new page. The layout now closes the drawer whenever the route
+  changes, which also covers an app-supplied `menu.Component` and redirects. (VD-2858)
 
 - `ChangePasswordDialog` and `UpdateIdentityDialog` are now built on `CustomDialog` /
   `CustomDialogTitle` instead of a bare MUI `Dialog` with a hand-rolled close `IconButton`, and

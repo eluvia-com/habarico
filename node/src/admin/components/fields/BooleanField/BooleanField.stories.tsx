@@ -5,7 +5,7 @@ import {BooleanField, BooleanFieldProps} from './BooleanField';
 /**
  * Read-only display for `boolean` values — React Admin's `BooleanField` restyled to render the value
  * as a small `Chip` ("Yes" / "No", translated via `ra.message.*`). `color` tints the chip green/red
- * for true/false (otherwise neutral `default`), and `chipVariant` picks the chip style
+ * for true/false (otherwise neutral `default`), and `variant` picks the chip style
  * (`soft` by default).
  */
 const meta = {
@@ -15,12 +15,12 @@ const meta = {
   parameters: {
     layout: 'centered',
     record: {active: true},
-    controls: {include: ['label', 'color', 'chipVariant']},
+    controls: {include: ['label', 'color', 'variant']},
   },
   argTypes: {
     label: {control: 'text'},
     color: {control: 'boolean'},
-    chipVariant: {control: 'select', options: ['text', 'filled', 'outlined', 'soft']},
+    variant: {control: 'select', options: ['text', 'filled', 'outlined', 'soft']},
   },
   args: {
     source: 'active',

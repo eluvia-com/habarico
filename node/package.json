@@ -155,7 +155,7 @@
   "allowScripts": {
     "@bicstone/ra-language-japanese@5.12.1": true,
     "esbuild@0.28.1": true,
-    "fsevents@2.3.3": true,
+    "fsevents@2.3.2 || 2.3.3": true,
     "esbuild@0.27.2": true,
     "unrs-resolver@1.12.2": true
   }

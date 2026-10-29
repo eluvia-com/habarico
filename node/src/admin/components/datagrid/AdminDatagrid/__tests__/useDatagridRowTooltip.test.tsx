@@ -18,11 +18,17 @@ const buildDom = () => {
   const row = document.createElement('tr');
   const contentCell = document.createElement('td');
   const contentText = document.createElement('span');
+  // A reference chip: MUI renders a clickable `Chip` as a `role="button"` div, with the label in a
+  // span of its own — which is what the pointer is actually over.
+  const chip = document.createElement('div');
+  chip.setAttribute('role', 'button');
+  const chipLabel = document.createElement('span');
+  chip.appendChild(chipLabel);
   const actionsCell = document.createElement('td');
   actionsCell.className = `RaDatagrid-rowCell ${ACTIONS_COLUMN_CLASS}`;
   const actionButton = document.createElement('button');
 
-  contentCell.appendChild(contentText);
+  contentCell.append(contentText, chip);
   actionsCell.appendChild(actionButton);
   row.append(contentCell, actionsCell);
   table.appendChild(row);
@@ -34,7 +40,7 @@ const buildDom = () => {
   const dialogPanel = document.createElement('div');
   dialog.appendChild(dialogPanel);
 
-  return {row, contentText, actionButton, dialogPanel};
+  return {row, contentText, chipLabel, actionButton, dialogPanel};
 };
 
 // The hook only ever reads `currentTarget` and `target`, so a cast keeps the test free of a full
@@ -132,6 +138,35 @@ describe('useDatagridRowTooltip', () => {
     expect(result.current.open).toBe(true);
 
     act(() => result.current.handleMouseDown());
+    expect(result.current.open).toBe(false);
+  });
+
+  // A control in a content cell speaks for itself — a reference chip even names its own action in a
+  // tooltip, so the row hint on top of it made two tooltips at once (and promised the row's action
+  // rather than the chip's).
+  it('does not open over a control that owns its own click', () => {
+    const {row, chipLabel} = buildDom();
+    const result = setup();
+
+    act(() => result.current.handleMouseOver(mouseOverOn(row, chipLabel)));
+    act(() => vi.advanceTimersByTime(TOOLTIP_ENTER_DELAY));
+
+    expect(result.current.open).toBe(false);
+  });
+
+  // Moving from cell text onto the chip has to *close* the hint, not merely fail to open it. This is
+  // why the decision lives here and not in a control that stops the event: a swallowed `mouseover`
+  // would never reach this handler, and the hint already on screen would simply stay there.
+  it('closes an already-open tooltip when the pointer moves onto such a control', () => {
+    const {row, contentText, chipLabel} = buildDom();
+    const result = setup();
+
+    act(() => result.current.handleMouseOver(mouseOverOn(row, contentText)));
+    act(() => vi.advanceTimersByTime(TOOLTIP_ENTER_DELAY));
+    expect(result.current.open).toBe(true);
+
+    act(() => result.current.handleMouseOver(mouseOverOn(row, chipLabel)));
+
     expect(result.current.open).toBe(false);
   });
 
