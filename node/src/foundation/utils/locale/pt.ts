@@ -316,13 +316,13 @@ export const ptMessages: LocaleMessages = {
       new_conversation: 'Nova conversa',
       error_message: 'Desculpe, ocorreu um erro ao comunicar com a IA. Por favor, tente novamente.',
     },
-    upload_images: {
-      dialog_title: 'Enviar fotos',
+    upload_files: {
+      dialog_title: 'Enviar arquivos',
       select_files: 'Selecionar arquivos',
-      remove_all_tooltip: 'Remover todas as fotos',
+      remove_all_tooltip: 'Remover todos os arquivos',
       remove_all: 'Remover tudo',
-      upload_success: 'Fotos enviadas com sucesso.',
-      upload_error: 'Ocorreu um erro ao enviar as fotos.',
+      upload_success: 'Arquivos enviados com sucesso.',
+      upload_error: 'Ocorreu um erro ao enviar os arquivos.',
       uploading: 'Enviando…',
       processing: 'Processando…',
       upload_count: 'Enviar (%{count})',

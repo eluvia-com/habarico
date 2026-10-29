@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {applyFileModifier} from '../file';
+import {applyFileModifier, isImageFilename} from '../file';
 
 const makeFile = (content: string, name: string, type: string) => new File([content], name, {type});
 
@@ -65,4 +65,20 @@ describe('applyFileModifier', () => {
       })
     ).rejects.toThrow('decode failed');
   });
+});
+
+describe('isImageFilename', () => {
+  it.each(['photo.jpg', 'photo.JPEG', 'logo.png', 'icon.svg', 'banner.webp', 'scan.v2.gif'])(
+    'treats %s as an image',
+    (filename) => {
+      expect(isImageFilename(filename)).toBe(true);
+    }
+  );
+
+  it.each(['contract.pdf', 'report.docx', 'archive.zip', 'photo.heic', 'scan.tiff', 'README', ''])(
+    'does not treat %s as an image',
+    (filename) => {
+      expect(isImageFilename(filename)).toBe(false);
+    }
+  );
 });

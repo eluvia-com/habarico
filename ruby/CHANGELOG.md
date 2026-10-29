@@ -20,6 +20,7 @@ version and date when a release is finalized.
 - `Habarico::Serializers::ResponseSerializer` - the `ActionResult` of a custom action, which `render_response` renders (HAB-1062).
 - `default_page_limit` and `max_page_limit` take a callable as well as a number; it is called with the request's context, and `nil` falls back to `Habarico::Config` (HAB-1062).
 - `fields_serializer` on the resource definition - the class reading the field values of a record, `Habarico::Serializers::FieldsSerializer` by default; a subclass adding a computed field opts it in through `serializable?` (HAB-1062).
+- `after_save` on `Habarico::SaveAction`, `upload_files_data` on `Habarico::UploadFilesAction` and `view_choices` on `Habarico::ViewAction`, with `Types::AFTER_SAVE_TYPE` - schema attributes the contract and the Python library already had (HAB-955).
 
 ### Changed
 
@@ -40,6 +41,27 @@ version and date when a release is finalized.
 - **BREAKING:** The protected controller methods `sanitize_filter_params`, `apply_filtering`, `apply_search_scope`, `extract_search!`, `raise_filter_errors` and `filter_param_to_sym`; use `Habarico::FilterParamsResolver` and `Habarico::RecordsQuery`. Likewise `serialize_record`, `finalize_meta` and `list_search_highlights`, now part of `Habarico::Serializers::RecordSerializer`, `sanitize_record_params`, `record_param_permit_spec` and `throw_validation_error`, now `Habarico::RecordParamsResolver`, and `validate_order_by_param`, `valid_order_by_field?` and `order_by_whitelist`, now `Habarico::OrderByValidator` called from `set_list_pagination`; an override of `render_list` takes the search query as its argument. `habarico-enterprise` up to 7.2 calls `sanitize_filter_params` in its `aggregate` action and needs the release that switches to them (HAB-1062).
 - **BREAKING:** The controller class methods `serializer`, `meta_serializer` and `record_serializer`. A controller replacing the field serializer declares `fields_serializer MyFieldsSerializer` instead; one overriding `record_serializer` to let a computed field through overrides `FieldsSerializer#serializable?`. `Habarico::Serializers::RecordSerializer` is built per request by the instance method `record_serializer`, takes the definition and the request instead of a ready `meta`, builds `meta` itself and owns its `MetaSerializer` (HAB-1062).
 - **BREAKING:** `Habarico::FilterParamsHelper`; `Habarico::FilterParamsResolver` separates the search from the filter params itself (HAB-1062).
+- **BREAKING:** The `upload-images` action is renamed to `upload-files`, following the contract: it
+  bulk-uploads documents (PDF, DOCX, XLSX, ZIP, …) as much as images. No alias keeps the old names;
+  rename them in the host app:
+  - `Habarico::UploadImagesAction` → `Habarico::UploadFilesAction` (its type is `:"upload-files"`);
+  - its attributes `upload_images_reference` → `upload_files_reference`, `upload_images_target` →
+    `upload_files_target`, `upload_images_accept` → `upload_files_accept`,
+    `upload_images_image_field` → `upload_files_file_field` and `upload_images_data` →
+    `upload_files_data`;
+  - the schema key `upload_images` → `upload_files` on `ActionSchema`, and
+    `Habarico::UploadImagesActionParameters` → `Habarico::UploadFilesActionParameters` with its
+    `image_field` → `file_field`;
+  - a custom generator — the `Definition` attribute `upload_images_action_parameters_generator` →
+    `upload_files_action_parameters_generator`, and a subclass of
+    `Habarico::UploadImagesActionParametersGenerator` now subclasses
+    `Habarico::UploadFilesActionParametersGenerator` and overrides `generate_file_field` instead of
+    `generate_image_field`.
+
+  `GalleryBox#image_field` keeps its name — a gallery does show images. The action works only with
+  a frontend that contains HAB-993: one that knows only `upload-images` renders no button and
+  reports no error, so upgrade the backend and the frontend together. Without `upload_files_accept`
+  the frontend still accepts images only; set it whenever the action uploads documents. (HAB-998)
 
 ### Fixed
 

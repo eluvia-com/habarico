@@ -18,7 +18,7 @@ ShowViewSchemaGenerator(box=Box(boxes=[
         reference="eshop/product-image",
         target="product",
         image_field="image",
-        toolbar_actions=["upload-images"],
+        toolbar_actions=["upload-files"],
     ),
 ]))
 ```

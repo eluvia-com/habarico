@@ -480,12 +480,12 @@ export const plMessages: LocaleMessages = {
       new_conversation: 'Nowa rozmowa',
       error_message: 'Przepraszamy, wystąpił błąd podczas komunikacji z AI. Spróbuj ponownie.',
     },
-    upload_images: {
-      dialog_title: 'Prześlij zdjęcia',
+    upload_files: {
+      dialog_title: 'Prześlij pliki',
       select_files: 'Wybierz pliki',
-      remove_all_tooltip: 'Usuń wszystkie zdjęcia',
+      remove_all_tooltip: 'Usuń wszystkie pliki',
       remove_all: 'Usuń wszystko',
-      upload_success: 'Zdjęcia zostały przesłane pomyślnie.',
+      upload_success: 'Pliki zostały przesłane pomyślnie.',
       upload_error: 'Wystąpił błąd podczas przesyłania.',
       uploading: 'Przesyłanie…',
       processing: 'Przetwarzanie…',

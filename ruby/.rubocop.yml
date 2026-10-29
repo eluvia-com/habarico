@@ -207,7 +207,7 @@ Bundler/OrderedGems:
 Gemspec/DevelopmentDependencies:
   Enabled: false
 
-# :"upload-images" must use double quotes because of the hyphen — cop is wrong here.
+# :"upload-files" must use double quotes because of the hyphen — cop is wrong here.
 Style/QuotedSymbols:
   Enabled: false
 

@@ -311,12 +311,12 @@ export const itMessages: LocaleMessages = {
       error_message:
         "Spiacenti, si è verificato un errore durante la comunicazione con l'IA. Riprova.",
     },
-    upload_images: {
-      dialog_title: 'Carica foto',
+    upload_files: {
+      dialog_title: 'Carica file',
       select_files: 'Seleziona file',
-      remove_all_tooltip: 'Rimuovi tutte le foto',
+      remove_all_tooltip: 'Rimuovi tutti i file',
       remove_all: 'Rimuovi tutto',
-      upload_success: 'Le foto sono state caricate con successo.',
+      upload_success: 'I file sono stati caricati con successo.',
       upload_error: 'Si è verificato un errore durante il caricamento.',
       uploading: 'Caricamento…',
       processing: 'Elaborazione…',

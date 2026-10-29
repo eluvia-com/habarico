@@ -245,21 +245,26 @@ saved record's detail) or `list` (go to the list). Either attribute on its own i
 Habarico::SaveAction.new(label: 'Save and publish', data: { 'status' => 'published' }, after_save: :show)
 ```
 
-**`Habarico::UploadImagesAction`** — an action that opens an image upload dialog:
+**`Habarico::UploadFilesAction`** — an action that opens a bulk upload dialog and creates one record per uploaded file — images or documents alike:
 
 ```ruby
-Habarico::UploadImagesAction.new(
-  name: 'upload_photos',
-  label: 'Upload photos',
-  icon: 'PhotoCamera',
-  upload_images_reference: 'unit_photos',       # target resource that stores the images
-  upload_images_target: 'unit',                 # foreign key name on the image resource
-  upload_images_accept: ['.png', '.jpg'],       # accepted file extensions (array, not a comma-separated string)
-  upload_images_image_field: 'photo',           # field on the image resource that holds the uploaded file (required)
-  upload_images_data: { 'source' => 'catalogue' }, # extra attributes set on every created image record
+Habarico::UploadFilesAction.new(
+  name: 'upload_attachments',
+  label: 'Upload attachments',
+  icon: 'UploadFile',
+  upload_files_reference: 'order_attachments',          # target resource that stores the files
+  upload_files_target: 'order',                         # foreign key name on the file resource
+  upload_files_accept: ['.pdf', '.docx', '.xlsx'],      # accepted file extensions (array, not a comma-separated string)
+  upload_files_file_field: 'file',                      # field on the file resource that holds the uploaded file (required)
+  upload_files_data: { 'source' => 'catalogue' },       # extra attributes set on every created file record
   permission: :update,
 )
 ```
+
+:::caution
+Without `upload_files_accept` the frontend falls back to its default `.png,.jpg,.jpeg,.bmp,.gif`,
+which admits images only — set it whenever the action uploads documents.
+:::
 
 **`Habarico::LinkAction`** — a simple URL link in the action bar:
 

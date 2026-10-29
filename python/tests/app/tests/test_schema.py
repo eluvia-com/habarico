@@ -16,8 +16,8 @@ from habarico.schema.actions import (
     ExportActionDescriptor,
     ExportActionParameters,
     SaveActionDescriptor,
-    UploadImagesActionDescriptor,
-    UploadImagesActionParameters,
+    UploadFilesActionDescriptor,
+    UploadFilesActionParameters,
 )
 from habarico.schema.boxes import Box, TabBox, TabItemBox, WizardBox
 from habarico.schema.fields import (
@@ -1359,93 +1359,93 @@ class TestSchemaConsistency:
                 assert "endpoint" in view
 
 
-class TestUploadImagesActionParameters:
-    """Tests for UploadImagesActionParameters serialization."""
+class TestUploadFilesActionParameters:
+    """Tests for UploadFilesActionParameters serialization."""
 
     def test_no_args_yields_none(self):
-        assert UploadImagesActionParameters().to_dict() is None
+        assert UploadFilesActionParameters().to_dict() is None
 
     def test_reference_in_dict(self):
-        result = UploadImagesActionParameters(reference="photos").to_dict()
-        assert result == {"reference": "photos"}
+        result = UploadFilesActionParameters(reference="attachments").to_dict()
+        assert result == {"reference": "attachments"}
 
     def test_target_in_dict(self):
-        result = UploadImagesActionParameters(target="article").to_dict()
+        result = UploadFilesActionParameters(target="article").to_dict()
         assert result == {"target": "article"}
 
     def test_accept_in_dict(self):
-        result = UploadImagesActionParameters(accept=[".png", ".jpg"]).to_dict()
-        assert result == {"accept": [".png", ".jpg"]}
+        result = UploadFilesActionParameters(accept=[".pdf", ".docx"]).to_dict()
+        assert result == {"accept": [".pdf", ".docx"]}
 
     def test_data_in_dict(self):
-        result = UploadImagesActionParameters(data={"public": True}).to_dict()
+        result = UploadFilesActionParameters(data={"public": True}).to_dict()
         assert result == {"data": {"public": True}}
 
-    def test_image_field_in_dict(self):
-        result = UploadImagesActionParameters(image_field="photo").to_dict()
-        assert result == {"image_field": "photo"}
+    def test_file_field_in_dict(self):
+        result = UploadFilesActionParameters(file_field="file").to_dict()
+        assert result == {"file_field": "file"}
 
     def test_all_params_in_dict(self):
-        result = UploadImagesActionParameters(
-            reference="photos", target="article", accept=[".png"], data={"public": True}, image_field="photo"
+        result = UploadFilesActionParameters(
+            reference="attachments", target="article", accept=[".pdf"], data={"public": True}, file_field="file"
         ).to_dict()
         assert result == {
-            "reference": "photos",
+            "reference": "attachments",
             "target": "article",
-            "accept": [".png"],
+            "accept": [".pdf"],
             "data": {"public": True},
-            "image_field": "photo",
+            "file_field": "file",
         }
 
 
-class TestUploadImagesActionDescriptor:
-    """Tests for UploadImagesActionDescriptor serialization."""
+class TestUploadFilesActionDescriptor:
+    """Tests for UploadFilesActionDescriptor serialization."""
 
     def test_default_name(self):
-        assert UploadImagesActionDescriptor().to_dict()["name"] == "upload-images"
+        assert UploadFilesActionDescriptor().to_dict()["name"] == "upload-files"
 
     def test_default_icon(self):
-        assert UploadImagesActionDescriptor().to_dict()["icon"] == "AddPhotoAlternate"
+        assert UploadFilesActionDescriptor().to_dict()["icon"] == "UploadFile"
 
     def test_has_label(self):
-        result = UploadImagesActionDescriptor().to_dict()
+        result = UploadFilesActionDescriptor().to_dict()
         assert "label" in result
         assert result["label"]
 
     def test_no_color_by_default(self):
-        assert "color" not in UploadImagesActionDescriptor().to_dict()
+        assert "color" not in UploadFilesActionDescriptor().to_dict()
 
-    def test_action_type_is_upload_images(self):
-        assert UploadImagesActionDescriptor().to_dict()["action"]["type"] == "upload-images"
+    def test_action_type_is_upload_files(self):
+        assert UploadFilesActionDescriptor().to_dict()["action"]["type"] == "upload-files"
 
-    def test_no_upload_images_params_when_empty(self):
-        assert "upload_images" not in UploadImagesActionDescriptor().to_dict()["action"]
+    def test_no_upload_files_params_when_empty(self):
+        assert "upload_files" not in UploadFilesActionDescriptor().to_dict()["action"]
 
     def test_accept_propagates_to_action(self):
-        result = UploadImagesActionDescriptor(accept=[".png", ".gif"]).to_dict()
-        assert result["action"]["upload_images"]["accept"] == [".png", ".gif"]
+        result = UploadFilesActionDescriptor(accept=[".pdf", ".xlsx"]).to_dict()
+        assert result["action"]["upload_files"]["accept"] == [".pdf", ".xlsx"]
 
     def test_reference_and_target_propagate(self):
-        result = UploadImagesActionDescriptor(reference="photos", target="article").to_dict()
-        upload = result["action"]["upload_images"]
-        assert upload["reference"] == "photos"
+        result = UploadFilesActionDescriptor(reference="attachments", target="article").to_dict()
+        upload = result["action"]["upload_files"]
+        assert upload["reference"] == "attachments"
         assert upload["target"] == "article"
 
     def test_data_propagates_to_action(self):
-        result = UploadImagesActionDescriptor(data={"public": True}).to_dict()
-        assert result["action"]["upload_images"]["data"] == {"public": True}
+        result = UploadFilesActionDescriptor(data={"public": True}).to_dict()
+        assert result["action"]["upload_files"]["data"] == {"public": True}
 
-    def test_image_field_propagates_to_action(self):
-        result = UploadImagesActionDescriptor(image_field="photo").to_dict()
-        assert result["action"]["upload_images"]["image_field"] == "photo"
+    def test_file_field_propagates_to_action(self):
+        result = UploadFilesActionDescriptor(file_field="file").to_dict()
+        assert result["action"]["upload_files"]["file_field"] == "file"
 
     def test_custom_name_overrides_default(self):
-        assert UploadImagesActionDescriptor(name="my-upload").to_dict()["name"] == "my-upload"
+        assert UploadFilesActionDescriptor(name="my-upload").to_dict()["name"] == "my-upload"
 
     def test_custom_color_in_dict(self):
         from habarico.schema.types import ColorType
 
-        result = UploadImagesActionDescriptor(color=ColorType.PRIMARY).to_dict()
+        result = UploadFilesActionDescriptor(color=ColorType.PRIMARY).to_dict()
         assert result["color"] == ColorType.PRIMARY
 
 

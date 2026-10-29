@@ -310,29 +310,30 @@ Action(
 )
 ```
 
-## Upload Images Action
+## Upload Files Action
 
-`UploadImagesActionDescriptor` renders an "Upload images" button that lets the user bulk-upload image
-files. By default it uploads to the current resource context, but it can be pointed at another resource
-and linked back to the current record.
+`UploadFilesActionDescriptor` renders an "Upload files" button that lets the user bulk-upload files —
+images as well as documents (PDF, DOCX, XLSX, ZIP, …) — creating one record per file. By default it
+uploads to the current resource context, but it can be pointed at another resource and linked back to
+the current record.
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `name` | `str` | Action name. Defaults to `upload-images`. |
-| `label` | `str` | Button label. Defaults to `Upload images`. |
-| `icon` | `str` | Button icon. Defaults to `AddPhotoAlternate`. |
+| `name` | `str` | Action name. Defaults to `upload-files`. |
+| `label` | `str` | Button label. Defaults to `Upload files`. |
+| `icon` | `str` | Button icon. Defaults to `UploadFile`. |
 | `color` | `Color` | Button color. When not set, the button inherits its color from the toolbar context. |
-| `reference` | `str` | Resource where images will be created. When set, the button uploads to this resource instead of the current resource context. |
-| `target` | `str` | Field name on the image model linking to the parent record. When set together with `reference`, the current record's ID is used as the target value. |
-| `accept` | `list[str]` | List of accepted file types (e.g. `[".png", ".jpg"]`). When not set, the frontend uses its own default (`.png,.jpg,.jpeg,.bmp,.gif`). |
-| `data` | `dict` | Additional data that will be added to each uploaded image record. |
-| `image_field` | `str` | Field name on the image model that holds the uploaded image file. When not set, the frontend uses its own default. |
+| `reference` | `str` | Resource where a record is created for each uploaded file. When set, the button uploads to this resource instead of the current resource context. |
+| `target` | `str` | Field name on the file model linking to the parent record. When set together with `reference`, the current record's ID is used as the target value. |
+| `accept` | `list[str]` | List of accepted file types (e.g. `[".pdf", ".docx"]`). When not set, the frontend uses its own default (`.png,.jpg,.jpeg,.bmp,.gif`), which accepts images only — set it whenever the action uploads other files. |
+| `data` | `dict` | Additional data that will be added to each uploaded file record. |
+| `file_field` | `str` | Field name on the file model that holds the uploaded file. There is no default: an action without it saves nothing. |
 
 ```python
 from habarico import ModelAdmin
-from habarico.schema.actions import UploadImagesActionDescriptor
+from habarico.schema.actions import UploadFilesActionDescriptor
 from habarico.schema.generators import ShowViewSchemaGenerator
 
 from .models import Product
@@ -344,20 +345,20 @@ class ProductAdmin(ModelAdmin):
     view_schema_generators = [
         ShowViewSchemaGenerator(
             actions=[
-                UploadImagesActionDescriptor(
-                    reference="photos",          # create images in the `photos` resource
-                    target="product",            # link each image to the current product
-                    accept=[".png", ".jpg"],     # restrict accepted file types
-                    data={"public": True},       # extra data added to every created image
-                    image_field="photo",         # field on the image model that holds the file
+                UploadFilesActionDescriptor(
+                    reference="attachments",     # create a record per file in the `attachments` resource
+                    target="product",            # link each record to the current product
+                    accept=[".pdf", ".docx"],    # accepted file types; the default admits images only
+                    data={"public": True},       # extra data added to every created record
+                    file_field="file",           # field on the file model that holds the file
                 ),
             ]
         ),
     ]
 ```
 
-In the generated schema these are nested under an `upload_images` object on the action, e.g.
-`{"type": "upload-images", "upload_images": {"reference": "photos", "target": "product", "accept": [".png", ".jpg"], "data": {"public": true}, "image_field": "photo"}}`.
+In the generated schema these are nested under an `upload_files` object on the action, e.g.
+`{"type": "upload-files", "upload_files": {"reference": "attachments", "target": "product", "accept": [".pdf", ".docx"], "data": {"public": true}, "file_field": "file"}}`.
 
 ## See also
 
