@@ -3,7 +3,7 @@
 Tracks changes shared across all packages: OpenAPI schema (`contract/openapi.yaml`) and project-level documentation.
 
 For package-specific changes see:
-- [node/CHANGELOG.md](node/CHANGELOG.md) — `@eluvia/habarico` (JS)
+- [node/CHANGELOG.md](node/CHANGELOG.md) — `habarico` (JS)
 - [python/CHANGELOG.md](python/CHANGELOG.md) — `habarico` (Python)
 - [ruby/CHANGELOG.md](ruby/CHANGELOG.md) — `habarico` (Ruby)
 
@@ -12,6 +12,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+
+- **BREAKING:** The `upload-images` action is renamed to `upload-files`: it is used to bulk-upload
+  documents (PDF, DOCX, XLSX, ZIP, …) as much as images, and the name said otherwise. The
+  `ActionType` value `upload-images` → `upload-files`, the `ActionSchema` slot `upload_images` →
+  `upload_files`, its schema `UploadImagesActionParameters` → `UploadFilesActionParameters` and the
+  parameter `image_field` → `file_field`; no alias keeps the old names. The `file_field`
+  description no longer claims a frontend default — there is none, and an action without it saves
+  nothing — and `accept` says its default admits images only. `GalleryBoxParameters.image_field`
+  and `ImageFieldOptions` keep their names: a gallery does show images. `info.version` 3.4.0 →
+  3.5.0; renamed in `contract/schema.drawio` and `contract/schema.svg` as well. The backends and
+  the frontend implementing it must be upgraded together — a backend sending `upload-files` to a
+  frontend that only knows `upload-images` (or the reverse) renders no button and reports no error.
+  (HAB-993)
 
 - The `filter` query parameter is written down, on the list endpoint that has always taken it and
   on the new export endpoint: the `field=<JSON value>` terms it carries as one percent-encoded
@@ -108,6 +121,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `habarico-enterprise` additionally folding the project-wide upload size ceiling into `max_size`
   for a field a chunked-upload provider serves. No wire change. `info.version` 3.3.3 -> 3.3.4.
   ([HAB-966](https://sparktech.myjetbrains.com/youtrack/issue/HAB-966))
+- `stackedH`, `minW` and `minH` on `WidgetLayout`, all optional integers of at least 1.
+  `stackedH` is the widget's height when a narrow dashboard stacks its widgets one below another,
+  so that height is kept apart from the `h` of the multi-column grid; without it the stacked
+  widget keeps `h`. `minW` / `minH` are the resize lower bounds the frontend already stored in
+  `preferences.dashboard` without the contract describing them. Additive, part of `info.version`
+  3.4.0. (HAB-1006)
 - `x-habarico-tier: enterprise` on every part of the contract that the paid `habarico-enterprise`
   package provides: the six endpoints (`uploads/initiate` / `complete` / `abort`, `search`,
   `{resource_name}/aggregate` and its `/schema`), the `search` query parameter, and the 25

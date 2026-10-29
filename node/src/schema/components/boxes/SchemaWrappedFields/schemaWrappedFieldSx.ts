@@ -1,4 +1,3 @@
-import {varAlpha} from '@design/theme';
 import {Theme} from '@mui/material';
 
 // `bare` = the group has no legend (a box's `PropertyItem` owns the label beside it). The negative
@@ -9,7 +8,7 @@ export const schemaWrappedFieldSx = (bare: boolean) => (theme: Theme) => ({
   minWidth: 150,
   width: '100%',
   border: 1,
-  borderColor: varAlpha(theme.palette.grey['500Channel'], 0.45),
+  borderColor: theme.palette.divider,
   borderRadius: 1,
   py: 0,
   px: '1px',

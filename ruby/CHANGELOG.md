@@ -9,6 +9,47 @@ Releases are cut through the CI `next` flow: merges to `next` publish beta
 pre-releases, and the `## [0.56.0] — 2026-08-03` section below is stamped with the
 version and date when a release is finalized.
 
+## [Unreleased]
+
+### Added
+
+- `endpoint_record_pk` on `Habarico::Action` and `Habarico::Controller#build_action_schema(action, record:, record_pk:, reference:)` - a trigger action can now open a view of, or call an endpoint on, another resource and another record, in both channels (the `meta.trigger_action` of a serialized record and the response of a custom action). `build_action_schema` takes a declared action's name or an action object and returns the complete `ActionSchema`, built by the new `trigger_action_schema_generator`, which replaces the `ResourceService` plus generator boilerplate a `get_trigger_action_schema` override used to need; the manual way keeps working (HAB-955).
+- `Habarico::Response#data` - data rendered next to `meta` in the action result, as the contract's `ActionResult` allows (HAB-955).
+- `after_save` on `Habarico::SaveAction`, `upload_files_data` on `Habarico::UploadFilesAction` and `view_choices` on `Habarico::ViewAction`, with `Types::AFTER_SAVE_TYPE` - schema attributes the contract and the Python library already had (HAB-955).
+
+### Changed
+
+- **BREAKING:** A custom action's response now follows the contract's `ActionResult`: `message`, `state` and `trigger_action` are nested under `meta` instead of sitting at the top level, and `Habarico::Response#data` is merged beside it. `meta` is the only place the frontend has ever read them from, so none of the three used to reach the UI - including `state: running` for a background action, which left `Habarico::Response#action` dead code. A client reading the old top-level keys must switch to `meta` (HAB-955).
+- `Habarico::Response#action` takes a `Habarico::Action` built on the spot, or a complete `Habarico::ActionSchema`, besides the name of an action declared in `actions`. A name that is not declared now raises an error listing the declared ones instead of silently sending no trigger action (HAB-955).
+- **BREAKING:** The `upload-images` action is renamed to `upload-files`, following the contract: it
+  bulk-uploads documents (PDF, DOCX, XLSX, ZIP, …) as much as images. No alias keeps the old names;
+  rename them in the host app:
+  - `Habarico::UploadImagesAction` → `Habarico::UploadFilesAction` (its type is `:"upload-files"`);
+  - its attributes `upload_images_reference` → `upload_files_reference`, `upload_images_target` →
+    `upload_files_target`, `upload_images_accept` → `upload_files_accept`,
+    `upload_images_image_field` → `upload_files_file_field` and `upload_images_data` →
+    `upload_files_data`;
+  - the schema key `upload_images` → `upload_files` on `ActionSchema`, and
+    `Habarico::UploadImagesActionParameters` → `Habarico::UploadFilesActionParameters` with its
+    `image_field` → `file_field`;
+  - a custom generator — the `Definition` attribute `upload_images_action_parameters_generator` →
+    `upload_files_action_parameters_generator`, and a subclass of
+    `Habarico::UploadImagesActionParametersGenerator` now subclasses
+    `Habarico::UploadFilesActionParametersGenerator` and overrides `generate_file_field` instead of
+    `generate_image_field`.
+
+  `GalleryBox#image_field` keeps its name — a gallery does show images. The action works only with
+  a frontend that contains HAB-993: one that knows only `upload-images` renders no button and
+  reports no error, so upgrade the backend and the frontend together. Without `upload_files_accept`
+  the frontend still accepts images only; set it whenever the action uploads documents. (HAB-998)
+
+### Fixed
+
+- `save` action parameters are generated from `after_save` alone, not only when `data` is set; the parameters used to be dropped whenever `data` was empty (HAB-955).
+- A `view` or `resource` action whose name is a standard one (`show`, `create`, `update`, `delete`) but which names its own target through `endpoint_reference` / `endpoint_record_pk` now keeps its endpoint - and, for a resource action, its path - in the generated schema. The target used to be dropped, leaving the frontend on the resource and record the action ran on (HAB-955).
+- The `preferences.dashboard` widget layout validates the optional `stackedH`, `minW` and `minH`
+  as integers of at least 1, matching the `WidgetLayout` contract schema (HAB-1007).
+
 ## [7.2.0] — 2026-10-19
 
 ### Changed

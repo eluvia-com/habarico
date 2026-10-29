@@ -41,6 +41,14 @@ class ActionSchemaGeneratorSaveTest < Minitest::Test
     assert_equal({ 'status' => 'active' }, result.data)
   end
 
+  def test_generate_save_returns_parameters_when_only_after_save_present
+    action = Habarico::SaveAction.new(after_save: :list)
+    result = build_generator.send(:generate_save, action, stub_context)
+    assert_instance_of Habarico::SaveActionParameters, result
+    assert_nil result.data
+    assert_equal 'list', result.after_save
+  end
+
   def test_generate_produces_schema_with_save_type
     action = Habarico::SaveAction.new
     schema = build_generator.generate(action, stub_context)

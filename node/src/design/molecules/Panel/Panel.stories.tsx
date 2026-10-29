@@ -43,19 +43,26 @@ const meta: Meta<typeof Panel> = {
           '`PanelContent` and `PanelFooter` inside it. The `Panel` owns only the surface style — ' +
           '`root` (12px, paper, shadow) or `nested` (6px, default background, flat) — and the ' +
           'collapse state, shared with its slots via context. Drag and resize are built-in ' +
-          'presentational affordances toggled by boolean props (no drag/resize logic). See ' +
+          'presentational affordances toggled by props (no drag/resize logic). See ' +
           '`PanelHeader` / `PanelContent` / `PanelFooter` for the slots.',
       },
     },
-    controls: {include: ['variant', 'collapsible', 'resizeHandle', 'emphasized']},
+    controls: {include: ['variant', 'collapsible', 'resizable', 'resizeHandle', 'emphasized']},
   },
   argTypes: {
     variant: {control: 'inline-radio', options: ['root', 'nested']},
     collapsible: {control: 'boolean'},
-    resizeHandle: {control: 'boolean'},
+    resizable: {control: 'boolean'},
+    resizeHandle: {control: 'inline-radio', options: ['corner', 'bottom'], if: {arg: 'resizable'}},
     emphasized: {control: 'boolean'},
   },
-  args: {variant: 'root', collapsible: false, resizeHandle: false, emphasized: false},
+  args: {
+    variant: 'root',
+    collapsible: false,
+    resizable: false,
+    resizeHandle: 'corner',
+    emphasized: false,
+  },
   decorators: [padDecorator],
 };
 
@@ -70,11 +77,12 @@ type Story = StoryObj<typeof Panel>;
  * and in `WithFooter` below.
  */
 export const Playground: Story = {
-  render: ({variant, collapsible, resizeHandle, emphasized}) => (
+  render: ({variant, collapsible, resizable, resizeHandle, emphasized}) => (
     <Box sx={{maxWidth: 460}}>
       <Panel
         variant={variant}
         collapsible={collapsible}
+        resizable={resizable}
         resizeHandle={resizeHandle}
         emphasized={emphasized}
       >
@@ -245,22 +253,40 @@ export const Emphasized: Story = {
   ),
 };
 
-/** Built-in drag and resize affordances (visual only; wiring is the dashboard's job). */
+/**
+ * Built-in drag and resize affordances (visual only; wiring is the dashboard's job). The corner
+ * handle is for a panel resized in both directions; the bottom-edge one for a panel that can only
+ * change its height, e.g. a dashboard widget stacked in a single column.
+ */
 export const Handles: Story = {
   parameters: {docs: {canvas: {sourceState: 'none'}}},
   render: () => (
-    <Box sx={{width: 460, height: 220}}>
-      <Panel resizeHandle sx={{height: '100%'}}>
-        <PanelHeader
-          label={'Orders by client'}
-          icon={IconType.BarChart}
-          dragHandle
-          actions={<MenuAction />}
-        />
-        <PanelContent>
-          <SampleBody />
-        </PanelContent>
-      </Panel>
-    </Box>
+    <Stack direction={'row'} spacing={2} sx={{flexWrap: 'wrap'}} useFlexGap>
+      <Box sx={{width: 460, height: 220}}>
+        <Panel resizable sx={{height: '100%'}}>
+          <PanelHeader
+            label={'Orders by client'}
+            icon={IconType.BarChart}
+            dragHandle
+            actions={<MenuAction />}
+          />
+          <PanelContent>
+            <SampleBody />
+          </PanelContent>
+        </Panel>
+      </Box>
+      <Box sx={{width: 460, height: 220}}>
+        <Panel resizable resizeHandle={'bottom'} sx={{height: '100%'}}>
+          <PanelHeader
+            label={'Orders by client'}
+            icon={IconType.BarChart}
+            actions={<MenuAction />}
+          />
+          <PanelContent>
+            <SampleBody />
+          </PanelContent>
+        </Panel>
+      </Box>
+    </Stack>
   ),
 };

@@ -271,25 +271,36 @@ type FilterDescriptor = {
 };
 ```
 
-## UploadImagesActionParameters
+## UploadFilesActionParameters
 
-Parameters of the `upload-images` action button (`SchemaUploadImagesButton`) — see
-[Action schema](./view-schema-and-action-schema.md).
+Parameters of the `upload-files` action button (`SchemaUploadFilesButton`) — see
+[Action schema](./view-schema-and-action-schema.md). The button bulk-uploads files, images and
+documents alike, and creates one record per file.
 
 ```typescript
-type UploadImagesActionParameters = {
-  reference?: string;              // Resource where images are created
-  target?: string;                 // FK field on the image model linking to the parent record
-  imageField: string;              // Field on the created record that holds the image
-  accept?: string[];               // Allowed extensions e.g. [".png", ".jpg"]; defaults to common image types
-  resizeWidth?: number;            // Client-side resize width in px before upload
-  cropAspectRatio?: number;        // Client-side crop ratio before upload
+type UploadFilesActionParameters = {
+  reference?: string;              // Resource where a record is created for each file
+  target?: string;                 // FK field on the file model linking to the parent record
+  fileField: string;               // Field on the created record that holds the file
+  accept?: string[];               // Allowed file types e.g. [".pdf", ".docx"]; defaults to common image types
+  resizeWidth?: number;            // Client-side resize width in px before upload (images only)
+  cropAspectRatio?: number;        // Client-side crop ratio before upload (images only)
   maxSize?: number;                // Max file size in bytes — rejected client-side
   maxFiles?: number;               // Max selectable files
   upload?: UploadFieldOptions;     // Chunked-upload config (auto-injected when a chunked provider is configured)
   data?: Record<string, string | number | boolean>;   // Extra fields sent with every created record
 };
 ```
+
+When `accept` or `upload` is not set, the button takes it from the options of `fileField` in the
+schema of the resource the records are created in. Without either, `accept` falls back to `.png`,
+`.jpg`, `.jpeg`, `.bmp` and `.gif`, and every other file is rejected.
+
+:::caution
+An action that uploads documents (PDF, DOCX, XLSX, ZIP, …) must set `accept`, here or on the
+options of `fileField` — the default admits images only. An action without `fileField` saves
+nothing.
+:::
 
 ## See also
 

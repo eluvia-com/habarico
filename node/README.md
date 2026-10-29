@@ -11,7 +11,7 @@ or 19.
 ## Installation
 
 ```bash
-pnpm add habarico
+npm install habarico
 ```
 
 Peer dependencies (React, React Admin, MUI) are not bundled — install them in the project at the
@@ -20,28 +20,6 @@ same versions the library declares.
 > **Router requirement:** the unsaved-changes guard uses React Router's `useBlocker`, which needs a
 > data router. Let `SchemaAdmin` create one itself, or wrap it in `createBrowserRouter` — a legacy
 > `<BrowserRouter>` silently disables the guard.
-
-## Local development against a checkout
-
-To run a project against your working copy instead of the published package, link it from the
-project directory — the free library first, the paid one second:
-
-```bash
-pydev link-library <path-to-libs>/habarico-base/node <path-to-libs>/habarico-enterprise/node-enterprise
-```
-
-`<path-to-libs>` is the directory holding your library checkouts — the same placeholder the Ruby services use in their compose files. Relative or absolute, both work.
-
-Link only what you develop; either package works on its own. When you link both, the order matters —
-`habarico-enterprise` resolves its own `habarico` through the project, so the free library
-has to be linked first or both end up with their own copy of React.
-
-```bash
-pnpm watch          # in the library you edit
-pydev unlink-library <same paths>
-```
-
-See [Installation](https://docs.habarico.com/node/installation) for the details.
 
 ## Quick start
 
@@ -77,7 +55,7 @@ is only a quick start.
 
 | Section | What it covers |
 | --- | --- |
-| [Installation](https://docs.habarico.com/node/installation) | Packages, the router requirement, local development against a checkout |
+| [Installation](https://docs.habarico.com/node/installation) | Peer dependencies and the router requirement |
 | [Base components](https://docs.habarico.com/node/base-components/) | `SchemaAdmin` and `SchemaResource` — every prop |
 | [View components](https://docs.habarico.com/node/view-components/) | List, show, create, edit and action views |
 | [Providers](https://docs.habarico.com/node/providers/) | Auth, data and schema providers, and the customisation registries |
@@ -90,10 +68,6 @@ The backends serving those schemas are documented at
 [docs.habarico.com/python/intro](https://docs.habarico.com/python/intro) and
 [docs.habarico.com/ruby/intro](https://docs.habarico.com/ruby/intro); the contract between them is the
 [API reference](https://docs.habarico.com/api).
-
-The architecture of the library itself — its four layers and what belongs where — is documented in
-`src/foundation/README.md`, `src/design/README.md`, `src/admin/README.md` and
-`src/schema/README.md`, next to the code they describe.
 
 ## License
 

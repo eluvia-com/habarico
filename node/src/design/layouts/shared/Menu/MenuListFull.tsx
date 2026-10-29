@@ -1,4 +1,5 @@
-import React from 'react';
+import React, {useState} from 'react';
+import {usePathname} from '@foundation/hooks/usePathname';
 import {Box, Collapse, ListItem, useTheme} from '@mui/material';
 import {varAlpha} from '../../../theme/utils';
 import {LayoutMenuItem} from '../../types';
@@ -16,8 +17,55 @@ const SUB_INDENT = 40; // left offset of a sub-item (px)
 const ELBOW_WIDTH = 16; // horizontal reach of the connector; the rail sits this far left of the item
 const ELBOW_RADIUS = 10;
 
-export const MenuListFull = ({items, level, onItemClick}: MenuListFullProps) => {
+type MenuListFullItemProps = {
+  item: LayoutMenuItem;
+  level: number;
+  onItemClick?: (item: LayoutMenuItem) => void;
+};
+
+// One row and, for a group, its sub-menu. A click on a group toggles it rather than navigating;
+// the group still opens by itself whenever the location moves into it.
+const MenuListFullItem = ({item, level, onItemClick}: MenuListFullItemProps) => {
   const {isActive, isExpanded} = useActiveExpanded();
+  const pathname = usePathname();
+  const routeExpanded = isExpanded(item);
+  const [open, setOpen] = useState(routeExpanded);
+  // Re-sync on navigation only, so a group the user closed stays closed until the location changes.
+  const [syncedPathname, setSyncedPathname] = useState(pathname);
+  if (syncedPathname !== pathname) {
+    setSyncedPathname(pathname);
+    if (routeExpanded) setOpen(true);
+  }
+
+  const active = isActive(item);
+  const isGroup = !!item.items?.length;
+  // Parent of an open sub-menu: emphasise it without the active box.
+  const highlighted = !active && isGroup && open;
+
+  return (
+    <>
+      <MenuItem
+        item={item}
+        active={active}
+        highlighted={highlighted}
+        expanded={isGroup ? open : undefined}
+        sub={level >= 1}
+        collapsed={false}
+        onClick={() => {
+          if (isGroup) setOpen((value) => !value);
+          onItemClick?.(item);
+        }}
+      />
+      {isGroup && (
+        <Collapse in={open}>
+          <MenuListFull items={item.items!} onItemClick={onItemClick} level={level + 1} />
+        </Collapse>
+      )}
+    </>
+  );
+};
+
+export const MenuListFull = ({items, level, onItemClick}: MenuListFullProps) => {
   const theme = useTheme();
   const isSub = level >= 1;
   const lineColor = varAlpha(theme.palette.grey['500Channel'], 0.32);
@@ -40,9 +88,6 @@ export const MenuListFull = ({items, level, onItemClick}: MenuListFullProps) => 
       }}
     >
       {items.map((item, index) => {
-        const active = isActive(item);
-        // Parent of an open sub-menu: emphasise it without the active box.
-        const highlighted = !active && !!item.items?.length && isExpanded(item);
         return (
           <ListItem
             key={index}
@@ -75,21 +120,7 @@ export const MenuListFull = ({items, level, onItemClick}: MenuListFullProps) => 
               }),
             }}
           >
-            <MenuItem
-              item={item}
-              active={active}
-              highlighted={highlighted}
-              sub={isSub}
-              collapsed={false}
-              onClick={() => {
-                onItemClick?.(item);
-              }}
-            />
-            {item.items && (
-              <Collapse in={isExpanded(item)}>
-                <MenuListFull items={item.items} onItemClick={onItemClick} level={level + 1} />
-              </Collapse>
-            )}
+            <MenuListFullItem item={item} level={level} onItemClick={onItemClick} />
           </ListItem>
         );
       })}

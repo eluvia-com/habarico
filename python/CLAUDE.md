@@ -12,7 +12,6 @@ Habarico is a Python/Django REST admin library that helps developers create admi
 - **Framework:** Django 4.2.2+, Django REST Framework 3.14+
 - **Package Manager:** Pipenv
 - **Testing:** pytest + pytest-django
-- **Version:** 4.21.1
 
 ## Directory Structure
 

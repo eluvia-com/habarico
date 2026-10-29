@@ -234,12 +234,12 @@ export const enMessages: LocaleMessages = {
       new_conversation: 'New conversation',
       error_message: 'Sorry, an error occurred while communicating with AI. Please try again.',
     },
-    upload_images: {
-      dialog_title: 'Upload photos',
+    upload_files: {
+      dialog_title: 'Upload files',
       select_files: 'Select files',
-      remove_all_tooltip: 'Remove all photos',
+      remove_all_tooltip: 'Remove all files',
       remove_all: 'Remove all',
-      upload_success: 'Photos uploaded successfully.',
+      upload_success: 'Files uploaded successfully.',
       upload_error: 'An error occurred during upload.',
       uploading: 'Uploading…',
       processing: 'Processing…',

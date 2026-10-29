@@ -169,11 +169,11 @@ class BoxSchemaGeneratorTest < Minitest::Test
   end
 
   def test_generate_toolbar_actions_returns_action_descriptors_for_simple_box
-    box = build_box(toolbar_actions: [Habarico::ActionReference.new(name: 'upload-images')])
+    box = build_box(toolbar_actions: [Habarico::ActionReference.new(name: 'upload-files')])
     result = build_generator.send(:generate_toolbar_actions, build_view, box, 0, stub_context)
     assert_equal 1, result.size
     assert_instance_of Habarico::ActionDescriptor, result.first
-    assert_equal 'upload-images', result.first.name
+    assert_equal 'upload-files', result.first.name
   end
 
   def test_generate_toolbar_actions_returns_box_root_descriptors_for_list_box
@@ -524,10 +524,10 @@ class BoxSchemaGeneratorTest < Minitest::Test
   end
 
   def test_generate_toolbar_actions_is_set_when_configured
-    box = build_box(toolbar_actions: [Habarico::ActionReference.new(name: 'upload-images')])
+    box = build_box(toolbar_actions: [Habarico::ActionReference.new(name: 'upload-files')])
     result = build_generator.generate(build_view, box, 0, stub_context)
     assert_equal 1, result.toolbar_actions.size
-    assert_equal 'upload-images', result.toolbar_actions.first.name
+    assert_equal 'upload-files', result.toolbar_actions.first.name
   end
 
   def test_generate_boxes_are_nil_when_no_boxes_defined

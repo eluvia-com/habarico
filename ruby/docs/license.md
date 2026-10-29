@@ -7,6 +7,9 @@ The `habarico` gem is released under the [MIT licence](https://opensource.org/li
 copyright © Eluvia.land s.r.o. — use, copy, modify and distribute it under the terms in the
 `LICENSE` file shipped with the gem.
 
-There is no paid Ruby package: everything documented here is part of the gem. The Python side
-splits into a free MIT library and a commercial `habarico-enterprise` package — see the
-[Python licence page](/python/license) if you also use that stack.
+The paid features — change history, global search with match highlighting, aggregations and
+chunked uploads — ship in the separate `habarico-enterprise` gem, which is commercial and
+proprietary: use, copying and distribution are permitted only under a valid licence agreement with
+Eluvia.land s.r.o. Installing it alongside the MIT gem does not place any part of it under MIT.
+[Installation](./installation.md#paid-features) lists what it adds; pages documenting a paid
+feature carry a **premium** badge.

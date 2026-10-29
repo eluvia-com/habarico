@@ -17,7 +17,7 @@ module Habarico
         resource: generate_resource(action, context),
         link: generate_link(action, context),
         save: generate_save(action, context),
-        upload_images: generate_upload_images(action, context)
+        upload_files: generate_upload_files(action, context)
       )
     end
 
@@ -39,8 +39,8 @@ module Habarico
       @link_action_parameters_generator ||= definition.link_action_parameters_generator.new(definition, resource_path)
     end
 
-    def upload_images_action_parameters_generator
-      @upload_images_action_parameters_generator ||= definition.upload_images_action_parameters_generator.new(definition, resource_path)
+    def upload_files_action_parameters_generator
+      @upload_files_action_parameters_generator ||= definition.upload_files_action_parameters_generator.new(definition, resource_path)
     end
 
     def confirm_dialog_properties_generator
@@ -97,14 +97,16 @@ module Habarico
 
     def generate_save(action, context)
       if action.type.to_sym == :save
+        # Either parameter on its own is worth sending: `after_save` changes where the form goes
+        # after the save, with no data to add to the record.
         data = Habarico::CallableHelper.resolve(action.data, context)
-        save_action_parameters_generator.generate(action, context) unless data.nil?
+        save_action_parameters_generator.generate(action, context) unless data.nil? && action.after_save.nil?
       end
     end
 
-    def generate_upload_images(action, context)
-      if action.type.to_sym == :'upload-images'
-        upload_images_action_parameters_generator.generate(action, context)
+    def generate_upload_files(action, context)
+      if action.type.to_sym == :'upload-files'
+        upload_files_action_parameters_generator.generate(action, context)
       end
     end
   end
