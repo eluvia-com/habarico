@@ -234,24 +234,30 @@ module Habarico
       }
     end
 
+    # Renders an `ActionResult`: `message`, `state` and `trigger_action` live under `meta`, and the
+    # response's own `data` is merged next to it. This is the shape the contract prescribes and the
+    # only one the frontend reads - it looks at `resp.data.meta` and nowhere else.
     def render_response(response)
-      if response.action
-        action = definition.normalized_actions.find { |a| a.name.to_s == response.action.to_s }
-        if action
-          resource_path = Habarico::ResourceService.instance.get_resource_path(controller_name)
-          action_schema_generator = definition.action_schema_generator.new(definition, resource_path)
-          trigger_action = action_schema_generator.generate(action, context).as_json.deep_compact(compactable: [nil, {}].freeze)
-        end
-      end
-      render json: {
-        state: response.state,
-        message: response.message,
-        trigger_action: trigger_action
-      }.deep_compact
+      meta = {
+        'message' => response.message,
+        'state' => response.state,
+        'trigger_action' => build_action_schema(response.action)&.as_json&.deep_compact(compactable: [nil, {}].freeze)
+      }.compact
+      render json: { 'meta' => meta }.merge(response.data.presence || {})
     end
 
     def get_trigger_action_schema(_record)
       nil # override in subclasses to return an ActionSchema instance
+    end
+
+    # Builds the complete `Habarico::ActionSchema` of `action` - a declared action's name or a
+    # `Habarico::Action` - for `get_trigger_action_schema` or `Habarico::Response.new(action: ...)`.
+    # `record` builds the context from that record, `record_pk` and `reference` retarget the action.
+    def build_action_schema(action, record: nil, record_pk: nil, reference: nil)
+      resource_path = Habarico::ResourceService.instance.get_resource_path(controller_name)
+      definition.trigger_action_schema_generator
+                .new(definition, resource_path)
+                .generate(action, record ? _context(record) : context, record_pk: record_pk, reference: reference)
     end
 
     # Checks the `order_by` query parameter against what this resource offers for sorting.

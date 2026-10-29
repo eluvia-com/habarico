@@ -20,7 +20,7 @@ export type {SearchObjectHighlight} from '@admin/utils/highlight';
 export type RequestMethodType = 'get' | 'post' | 'put' | 'patch' | 'delete';
 export type ViewType = 'edit' | 'create' | 'list' | 'show' | 'action';
 export type ActionType =
-  'view' | 'link' | 'resource' | 'save' | 'ai-assistant' | 'upload-images' | 'export';
+  'view' | 'link' | 'resource' | 'save' | 'ai-assistant' | 'upload-files' | 'export';
 // `ColorType` (a design-layer palette term) is re-exported so `@schema/types` stays the single
 // public source for the contract's colour enum. The `@design` barrel does not export it, so
 // there is no ambiguity at the package root.
@@ -114,7 +114,7 @@ type SaveActionParameters = {
   afterSave?: AfterSaveType;
 };
 
-export type UploadImagesActionParameters = {
+export type UploadFilesActionParameters = {
   reference?: string;
   target?: string;
   accept?: string[];
@@ -124,7 +124,7 @@ export type UploadImagesActionParameters = {
   maxFiles?: number;
   upload?: UploadFieldOptions;
   data?: Record<string, string | number | boolean>;
-  imageField: string;
+  fileField: string;
 };
 
 export type ExportActionParameters = {
@@ -497,7 +497,7 @@ export type ActionSchema = {
   link?: LinkActionParameters;
   resource?: ResourceActionParameters;
   save?: SaveActionParameters;
-  uploadImages?: UploadImagesActionParameters;
+  uploadFiles?: UploadFilesActionParameters;
   export?: ExportActionParameters;
 };
 

@@ -1,5 +1,121 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `DashboardGridPanelLayout` gained an optional `stackedH` — the panel's height in grid rows when
+  `DashboardGrid` stacks its panels into one column (container width at or below 996px). Without
+  it the stacked panel keeps its `h`, so existing layouts render unchanged. (HAB-1004)
+- `DashboardGrid` in `edit` mode on a narrow grid (container width at or below 996px) keeps the
+  panels stacked in one column and lets each be resized in height from its bottom edge; the panels
+  below move along. Panels cannot be dragged there. `onLayoutChange` reports the new height as the
+  panel's `stackedH` and passes `x`/`y`/`w`/`h` back unchanged, so the wide layout is left as it
+  was — a consumer that copies only `x`/`y`/`w`/`h` from it drops the change. (HAB-1004)
+- Reference fields gained a `variant?: 'chip' | 'link'` prop (default `'chip'`), so a
+  project can render the record a reference points at as a plain text link instead of a chip.
+  `SchemaReferenceField` and `SchemaReferenceArrayField` both take it; the array form also stacks
+  text links one per line (a row of bare links reads as one run-on sentence), in a detail view and
+  in a datagrid cell alike, while the chip form keeps its wrapping row. The representation behind
+  both forms, `RecordRepresentation` (and its schema-aware `SchemaRecordRepresentation`), is
+  exported for direct use as `children` of `ReferenceField` / `ReferenceArrayField`. The default is
+  unchanged, so existing projects look and behave exactly as before. `SchemaReferenceArrayField` is
+  now exported from the package, which it was not. Chosen by the application through a
+  `fieldProvider` override — the schema is untouched, and neither the contract nor the Python/Ruby
+  DSL changes.
+  (HAB-973)
+
+### Changed
+
+- **BREAKING:** `Panel`'s resize affordance is switched on by `resizable?: boolean` (default
+  `false`) and placed by `resizeHandle?: 'corner' | 'bottom'` (default `'corner'`): `bottom` draws
+  it in the middle of the bottom edge, for a panel resized in height only. `resizeHandle` is no
+  longer a boolean — replace `resizeHandle` with `resizable`. (HAB-1004)
+- `DashboardGrid` stacks its panels on a narrow grid in the reading order of the 12-column layout
+  — top to bottom, then left to right — instead of in the order of the `panels` array. A panel
+  placed at the top of the dashboard is now at the top of the stack too. (HAB-1004)
+- **BREAKING:** the `upload-images` action is renamed to `upload-files` — it bulk-uploads documents
+  (PDF, DOCX, XLSX, ZIP, …) as much as images, and the name said otherwise. No alias keeps the old
+  names:
+  - the `ActionType` value `'upload-images'` → `'upload-files'` and the `ActionSchema` slot
+    `uploadImages` → `uploadFiles`;
+  - the type `UploadImagesActionParameters` → `UploadFilesActionParameters`, its field
+    `imageField` → `fileField`;
+  - the button `SchemaUploadImagesButton` → `SchemaUploadFilesButton`, its prop `uploadImages` →
+    `uploadFiles`;
+  - the translation namespace `ra.upload_images.*` → `ra.upload_files.*`, in every locale. It is
+    shared by `UploadInput` and `useUploadAreaLabels`, so an application overriding these strings
+    must rename them even when it does not use the action. The renamed keys:
+    `dialog_title`, `select_files`, `remove_all_tooltip`, `remove_all`, `upload_success`,
+    `upload_error`, `uploading`, `processing`, `upload_count`, `drop_files`, `click_to_upload`,
+    `or_drag_and_drop`, `upload_complete`, `upload_failed`, `file_too_large`, `file_too_large_max`,
+    `file_type_not_allowed`, `image_processing_failed`, `unresolved_errors`,
+    `files_remaining_hint` and `try_again`. An override left under the old key is ignored without
+    an error: the built-in text shows instead.
+
+  The dialog title, the "remove all" tooltip, the success message and the generic upload error
+  speak of files instead of photos in every locale, and the button's default icon, shown when the
+  action carries no `icon`, is `UploadFile` instead of `AddPhotoAlternate` (`IconType` gained
+  `UploadFile`). The default `accept` still admits images only (`.png`, `.jpg`, `.jpeg`, `.bmp`,
+  `.gif`); an action uploading documents must set `accept`, in its parameters or on the options of
+  its `fileField`. The action works only with a backend that
+  sends `upload-files` (HAB-993) — against an older one, which sends `upload-images`, the button is
+  not rendered and no error is reported; upgrade the backend and the frontend together. To migrate,
+  rename `uploadImages` / `imageField` and the `ra.upload_images.*` overrides, and a custom
+  `buttonProvider` matching `'upload-images'`. (HAB-1000)
+- **BREAKING:** `RecordRepresentationChip` and `RecordRepresentationLink` are unified into a single
+  `RecordRepresentation`, whose new `variant?: 'chip' | 'link'` prop (default `'chip'`) chooses the
+  shape — the same vocabulary the reference fields' own `variant` already uses, now carried
+  unchanged all the way down. `SchemaRecordRepresentationChip` and `SchemaRecordRepresentationLink`
+  collapse into `SchemaRecordRepresentation` the same way. The MUI chip variant moves from
+  `variant` to **`chipVariant`**, which `variant` is now spent on; `size`, `color` and `icon` are
+  unchanged. Props are discriminated by `variant`, so the chip's look on `variant="link"` is a type
+  error rather than a prop that silently does nothing — `RecordRepresentationChipProps` /
+  `RecordRepresentationLinkProps` (and their `Schema` counterparts) name the two branches for a
+  component that only ever renders one of them, and `RecordRepresentationProps` is their union.
+  To migrate: rename the component, rename a `variant` meant for the chip to `chipVariant`, and add
+  `variant="link"` where the link form was used. Rendering and behaviour are unchanged. (HAB-973)
+- **BREAKING:** `BooleanField`'s `chipVariant` prop is renamed to **`variant`**, so the whole field
+  family names the MUI chip variant the same way. Its values (`'text' | 'filled' | 'outlined' |
+  'soft'`) and the `'soft'` default are unchanged; rename the prop at the call site. (HAB-973)
+
+### Fixed
+
+- Every input draws its border in the theme's `palette.divider`. The date, date-time and time
+  pickers used MUI X's own grey (and a different one when disabled); `InputLayout`
+  (`UploadInput`, `TreeArrayInput`), `SchemaWrappedFields` and `SchemaRangeInput` each used a grey of
+  their own. The pickers take the color and the field tint from new `MuiPickersOutlinedInput` and
+  `MuiPickersInputBase` theme overrides. (HAB-1018)
+- A click on a menu group (an item with sub-items) navigated to its first child and only then
+  expanded it. The group now opens or closes its sub-menu in place, and the page changes only once a
+  child is clicked; it is rendered as a button with `aria-expanded` rather than a link. A group
+  holding the current page still starts open and reopens whenever navigation leads into it. In the
+  collapsed rail a click opens the group's sub-menu at once, as hovering does, so it works on touch
+  screens too. The mobile drawer stays open while a group is expanded. (HAB-996)
+- The bottom-edge resize handle of a stacked `DashboardGrid` panel (edit mode at a container width
+  of 996px or less) is easy to hit with a finger: its hit area is a 96×44px target spanning the
+  panel's bottom edge and the gap below it, and dragging it resizes the panel instead of scrolling
+  the page. (HAB-1004)
+- A file row of `UploadInput` and of the `upload-files` dialog shows an uploaded document (PDF,
+  DOCX, ZIP, …) as its file-type tile instead of a broken-image thumbnail. Only a file whose name
+  has an image extension a browser can render (PNG, JPG, GIF, WebP, AVIF, SVG, BMP, ICO) gets a
+  thumbnail. (HAB-1000)
+- The datagrid's row hint no longer stacks on top of a control that owns its own click. Hovering a
+  reference chip in a cell used to show two tooltips at once — the chip's "Show object" and the
+  row's "double-click for detail" — and the row's one promised the wrong action, since the click
+  about to happen was the chip's. `useDatagridRowTooltip` now treats a target inside
+  `a[href]`, `button` or `[role="button"]` the way it already treats the row-actions cell, which
+  also covers URL and e-mail fields and any control a project puts in a cell of its own. Decided
+  there rather than by having each control stop the event: a swallowed `mouseover` never reaches
+  the row, so a hint already on screen would stay. `RecordRepresentationLink` gained the button
+  semantics it was missing (`role`, `tabIndex`, Enter / Space) so the text representation is both
+  keyboard-operable and recognised by that test.
+  (HAB-973)
+- `ReferenceField` and `ReferenceArrayField` now merge a caller's `sx` with their own link reset
+  instead of dropping it. The reset sat before the `{...rest}` spread, so any caller passing `sx`
+  replaced it outright and got React Admin's anchor styling back on a field that only looked linked.
+  (HAB-973)
+
 ## [7.2.0] — 2026-10-19
 
 ### Changed
@@ -510,44 +626,6 @@
 - The update-identity and change-password dialogs now show a subtitle (new
   `ra.auth.update_identity_subtitle` / `ra.auth.change_password_subtitle` keys, translated in every
   bundled locale). (HAB-883)
-### Fixed
-
-- The datagrid's row hint no longer stacks on top of a control that owns its own click. Hovering a
-  reference chip in a cell used to show two tooltips at once — the chip's "Show object" and the
-  row's "double-click for detail" — and the row's one promised the wrong action, since the click
-  about to happen was the chip's. `useDatagridRowTooltip` now treats a target inside
-  `a[href]`, `button` or `[role="button"]` the way it already treats the row-actions cell, which
-  also covers URL and e-mail fields and any control a project puts in a cell of its own. Decided
-  there rather than by having each control stop the event: a swallowed `mouseover` never reaches
-  the row, so a hint already on screen would stay. `RecordRepresentationLink` gained the button
-  semantics it was missing (`role`, `tabIndex`, Enter / Space) so the text representation is both
-  keyboard-operable and recognised by that test.
-  (HAB-973)
-- `ReferenceField` and `ReferenceArrayField` now merge a caller's `sx` with their own link reset
-  instead of dropping it. The reset sat before the `{...rest}` spread, so any caller passing `sx`
-  replaced it outright and got React Admin's anchor styling back on a field that only looked linked.
-  (HAB-973)
-- The drop area of `UploadInput` (and the `upload-images` dialog) lists the accepted formats as the
-  extensions users know, also when `accept` holds media types: `image/png` and `image/gif` read
-  "PNG, GIF" instead of "IMAGE/PNG, IMAGE/GIF", and the Office types read "DOC", "DOCX", "XLSX"…
-  JPEG reads "JPG (JPEG)" whether it is named `.jpg`, `.jpeg` or `image/jpeg`, so the default image
-  list no longer shows "JPG" and "JPEG" as two formats. A format named twice is listed once; a
-  wildcard (`image/*`) or a media type without a known extension is left out of the text, while the
-  file check still honours it. (HAB-988)
-- The bottom actions (e.g. Save) of a card-less box no longer sit flush against the content above
-  them — typically the card of a nested box. The footer of a card-less `simple` / `object` / `grid`
-  box is now spaced from its content like a tab box's footer already was. (VD-2852)
-
-- The active tab of a tab box, and the active step of a wizard box, now fill the box's height when
-  the box is last on its path, the same way a simple box stretches its nested box. A form in a tab
-  or a step placed beside a taller panel used to keep its natural height, while the same form
-  without tabs matched the panel beside it. (VD-2852)
-
-- The mobile navigation drawer of `DashboardLayout` (below the `lg` breakpoint) now closes after
-  every navigation. It used to close only on a click of a leaf menu item, so clicking the logo in
-  the drawer header or a menu item with children (which links to its first child) navigated but
-  left the drawer open over the new page. The layout now closes the drawer whenever the route
-  changes, which also covers an app-supplied `menu.Component` and redirects. (VD-2858)
 
 - `ChangePasswordDialog` and `UpdateIdentityDialog` are now built on `CustomDialog` /
   `CustomDialogTitle` instead of a bare MUI `Dialog` with a hand-rolled close `IconButton`, and

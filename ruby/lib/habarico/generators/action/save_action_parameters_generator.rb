@@ -8,7 +8,8 @@ module Habarico
 
       # Create model
       Habarico::SaveActionParameters.new(
-        data: generate_data(action, context)
+        data: generate_data(action, context),
+        after_save: generate_after_save(action, context)
       )
     end
 
@@ -20,6 +21,10 @@ module Habarico
 
     def generate_data(action, context)
       Habarico::CallableHelper.resolve(action.data, context)
+    end
+
+    def generate_after_save(action, _context)
+      action.after_save
     end
 
   end

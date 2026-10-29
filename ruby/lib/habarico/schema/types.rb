@@ -38,7 +38,7 @@ module Habarico
     VIEW_MODE_TYPE = %i[redirect dialog sidepanel].freeze
 
     # ActionType - kind of the action
-    ACTION_TYPE = %i[view link resource save upload-images]  # rubocop:disable Style/MutableConstant
+    ACTION_TYPE = %i[view link resource save upload-files]  # rubocop:disable Style/MutableConstant
 
     # MenuType - kind of the menu item
     MENU_TYPE = %i[link view text].freeze
@@ -52,6 +52,9 @@ module Habarico
     # LinkTargetType - where a link action opens
     LINK_TARGET_TYPE = %i[self blank].freeze
 
+    # AfterSaveType - where a save action goes once the record is saved
+    AFTER_SAVE_TYPE = %i[stay prev show list].freeze
+
     # TextAlignType - horizontal alignment of a field value
     TEXT_ALIGN_TYPE = %i[left center right].freeze
 
@@ -63,7 +66,7 @@ module Habarico
     # the OpenAPI contract (`doc/openapi.yaml`) that no gem may widen on its own.
     #
     # The whole vocabulary stays in the free core - including values with no Ruby implementation
-    # yet (`upload-images`, `ai`, `ai-text`). The names are a contract shared with the frontend;
+    # yet (`upload-files`, `ai`, `ai-text`). The names are a contract shared with the frontend;
     # what is paid is the implementation behind them, not the name.
     EXTENSIBLE = %i[FIELD_TYPE FIELD_FORMAT_TYPE BOX_TYPE ACTION_TYPE].freeze
 

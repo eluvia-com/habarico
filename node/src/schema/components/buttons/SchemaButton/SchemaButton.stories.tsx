@@ -71,7 +71,7 @@ const InList = ({children}: {children: React.ReactNode}) => {
  * | `link`           | `LinkButton` |
  * | `save`           | `SaveButton` |
  * | `export`         | `ExportButton` |
- * | `upload-images`  | `SchemaUploadImagesButton` |
+ * | `upload-files`   | `SchemaUploadFilesButton` |
  *
  * Two consequences worth knowing:
  *

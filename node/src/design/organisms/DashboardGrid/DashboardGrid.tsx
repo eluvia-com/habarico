@@ -1,5 +1,10 @@
 import React, {useEffect, useState} from 'react';
-import {ResponsiveGridLayout, noCompactor, useContainerWidth} from 'react-grid-layout';
+import {
+  ResponsiveGridLayout,
+  noCompactor,
+  useContainerWidth,
+  verticalCompactor,
+} from 'react-grid-layout';
 import type {Compactor, Layout, LayoutItem, ResponsiveLayouts} from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import type {ColorType} from '@design/theme/core';
@@ -8,20 +13,30 @@ import {IconType} from '../../atoms/Icon';
 import {Panel} from '../../molecules/Panel';
 import {PanelContent, type PanelContentPadding} from '../../molecules/PanelContent';
 import {PANEL_DRAG_HANDLE_CLASS, PanelHeader} from '../../molecules/PanelHeader';
-import {buildLayouts} from './utils';
+import {
+  GRID_BREAKPOINTS,
+  GRID_COLS,
+  SPACER_ID,
+  buildLayouts,
+  isNarrowWidth,
+  mapLayoutBack,
+  stackedBottom,
+} from './utils';
 
-const GRID_COLS = 12;
-const COLS_VIEW = {lg: GRID_COLS, md: GRID_COLS, sm: 1, xs: 1, xxs: 1};
-const COLS_EDIT = {lg: GRID_COLS, md: GRID_COLS, sm: GRID_COLS, xs: GRID_COLS, xxs: GRID_COLS};
+const COLS = {lg: GRID_COLS, sm: 1};
 const ROW_HEIGHT = 100;
 const GRID_MARGIN = 10;
-const SPACER_ID = '__spacer';
 // standard width (cols) of the add-panel ghost tile, and its height when it starts a new row
 const ADD_GHOST_W = 3;
 const ADD_GHOST_FALLBACK_H = 2;
 // Empty rows kept below the last panel while editing — the dot grid is drawn this far down
 // and an invisible drop spacer sits on the same row, so the grid always has room to grow.
 const DOT_EXTRA_ROWS = 5;
+// Hit area of the bottom-edge resize handle of a stacked panel, sized for a fingertip (WCAG 2.5.5
+// asks for 44px): it reaches from the gap below the panel up into its bottom edge, around the
+// Panel's resize pill.
+const STACKED_RESIZE_HIT_W = 96;
+const STACKED_RESIZE_HIT_H = 44;
 
 const noCompactorPreventCollision: Compactor = {...noCompactor, preventCollision: true};
 
@@ -50,6 +65,29 @@ const computeAddGhostLayout = (
   return {x: 0, y: bottom, w, h: ADD_GHOST_FALLBACK_H};
 };
 
+// The add-panel ghost on a narrow grid goes right below the stack, which has no gaps to fill.
+const addGhostLayoutFor = (
+  panels: DashboardGridPanel[],
+  isNarrow: boolean
+): DashboardGridPanelLayout =>
+  isNarrow
+    ? {x: 0, y: stackedBottom(panels), w: 1, h: ADD_GHOST_FALLBACK_H}
+    : computeAddGhostLayout(panels, Math.min(ADD_GHOST_W, GRID_COLS));
+
+// The row just below the lowest panel (and the add-panel ghost), in the layout the grid currently
+// shows; an empty grid still reserves a few rows.
+const gridBottom = (
+  panels: DashboardGridPanel[],
+  isNarrow: boolean,
+  addGhost: DashboardGridPanelLayout | null
+) => {
+  const rowBottoms = [
+    ...(isNarrow ? [stackedBottom(panels)] : panels.map((p) => p.layout.y + p.layout.h)),
+    ...(addGhost ? [addGhost.y + addGhost.h] : []),
+  ];
+  return panels.length > 0 || addGhost ? Math.max(...rowBottoms) : 4;
+};
+
 /** Grid geometry for one panel, in 12-column grid units (mirrors react-grid-layout's item subset). */
 export type DashboardGridPanelLayout = {
   /** Column offset (0-indexed from the left edge of the 12-col grid). */
@@ -64,6 +102,11 @@ export type DashboardGridPanelLayout = {
   minW?: number;
   /** Minimum height in rows the grid clamps drag-resize to. */
   minH?: number;
+  /**
+   * Height in grid rows when the grid stacks its panels into one column (container width at or
+   * below 996px). Defaults to `h`, so a panel keeps its height when it has none of its own.
+   */
+  stackedH?: number;
 };
 
 /** Interaction mode. `detail` = static read view; `edit` = drag/resize with a dot grid. */
@@ -106,7 +149,10 @@ export type DashboardGridProps = {
   mode?: DashboardGridMode;
   /**
    * Fired on every drag/resize commit in edit mode with the panels' new layouts (spacer excluded).
-   * The consumer updates `panels`. The design layer does no overlap validation or persistence.
+   * On a narrow grid (stacked panels, container width at or below 996px) a panel can only be
+   * resized in height, and the only field that changes is its `stackedH` — `x`/`y`/`w`/`h` are
+   * passed back as they were. The consumer updates `panels`. The design layer does no overlap
+   * validation or persistence.
    */
   onLayoutChange?: (layouts: {id: string; layout: DashboardGridPanelLayout}[]) => void;
   /**
@@ -123,15 +169,6 @@ export type DashboardGridProps = {
   /** Extra styles merged onto the grid container. */
   sx?: SxProps<Theme>;
 };
-
-// Map RGL's live layout back to {id, layout}[] for the real panels (spacer/ghost excluded),
-// spreading each panel's existing layout first so its minW/minH survive drag/resize writes.
-const mapLayoutBack = (panels: DashboardGridPanel[], items: LayoutItem[]) =>
-  panels.map((p) => {
-    const item = items.find((l) => l.i === p.id && l.i !== SPACER_ID);
-    if (!item) return {id: p.id, layout: p.layout};
-    return {id: p.id, layout: {...p.layout, x: item.x, y: item.y, w: item.w, h: item.h}};
-  });
 
 /** The edit-mode dot grid overlay — a circle at every grid intersection. */
 const DotGrid = ({
@@ -183,6 +220,11 @@ export const DashboardGrid = ({
 }: DashboardGridProps) => {
   const isEditing = mode === 'edit';
   const {width, containerRef} = useContainerWidth();
+  // the grid stacks its panels into one column; in edit mode only their heights can change then
+  const isNarrow = isNarrowWidth(width);
+  const isNarrowEdit = isEditing && isNarrow;
+  const isWideEdit = isEditing && !isNarrow;
+  const cols = isNarrow ? COLS.sm : COLS.lg;
   const theme = useTheme();
   // while a panel is being dragged/resized, drop the add-panel ghost: its static tile would
   // otherwise reserve its grid cell (preventCollision) and block moving/resizing into that space
@@ -190,21 +232,15 @@ export const DashboardGrid = ({
 
   // the add-panel ghost is a static tile placed after the last row while editing (with panels)
   const showAddGhost = isEditing && Boolean(addPanel) && panels.length > 0 && !isInteracting;
-  const addGhostLayout = showAddGhost
-    ? computeAddGhostLayout(panels, Math.min(ADD_GHOST_W, GRID_COLS))
-    : null;
+  const addGhostLayout = showAddGhost ? addGhostLayoutFor(panels, isNarrow) : null;
 
   // -- grid geometry --
   const gridWidth = width;
-  const colWidth = (gridWidth - GRID_MARGIN * (GRID_COLS + 1)) / GRID_COLS;
+  const colWidth = (gridWidth - GRID_MARGIN * (cols + 1)) / cols;
   const cellW = colWidth + GRID_MARGIN;
   const cellH = ROW_HEIGHT + GRID_MARGIN;
 
-  const rowBottoms = [
-    ...panels.map((p) => p.layout.y + p.layout.h),
-    ...(addGhostLayout ? [addGhostLayout.y + addGhostLayout.h] : []),
-  ];
-  const maxGridRow = rowBottoms.length > 0 ? Math.max(...rowBottoms) : 4;
+  const maxGridRow = gridBottom(panels, isNarrow, addGhostLayout);
 
   // cap the dot grid to the visible screen height so it doesn't extend far below the fold
   const [screenDotRows, setScreenDotRows] = useState<number | null>(null);
@@ -229,11 +265,14 @@ export const DashboardGrid = ({
     static: true,
   };
 
-  const layouts = buildLayouts(isEditing, panels, spacerItem);
+  // the drop spacer gives a dragged panel room below the 12-col layout; the stack has no drag, and
+  // as a static tile it would block a panel growing down into its row
+  const showSpacer = isWideEdit;
+  const layouts = buildLayouts(isEditing, panels, showSpacer ? spacerItem : undefined);
 
   const handleLayoutChange = (currentLayout: Layout, _all: ResponsiveLayouts) => {
     if (!isEditing || !currentLayout || !onLayoutChange) return;
-    onLayoutChange(mapLayoutBack(panels, currentLayout as LayoutItem[]));
+    onLayoutChange(mapLayoutBack(panels, currentLayout as LayoutItem[], isNarrow));
   };
 
   // Empty state: in edit mode the add-panel ghost is the "add your first panel" affordance;
@@ -267,6 +306,17 @@ export const DashboardGrid = ({
         // resize affordance. Keep the handle element itself (the transparent hit area) so resize
         // still works; only our Panel corner is drawn.
         '& .react-grid-item > .react-resizable-handle::after': {display: 'none'},
+        // RGL's bottom-edge handle is a 20px square turned 45° — too small a target on a phone,
+        // where the stack is resized. Widen it into an upright touch target centred on the edge
+        // and let it take the touch instead of the page scroll.
+        '& .react-grid-item > .react-resizable-handle.react-resizable-handle-s': {
+          width: STACKED_RESIZE_HIT_W,
+          height: STACKED_RESIZE_HIT_H,
+          bottom: -GRID_MARGIN,
+          ml: `${-STACKED_RESIZE_HIT_W / 2}px`,
+          transform: 'none',
+          touchAction: 'none',
+        },
         ...sx,
       }}
     >
@@ -276,7 +326,7 @@ export const DashboardGrid = ({
         <>
           {isEditing && (
             <DotGrid
-              cols={GRID_COLS}
+              cols={cols}
               rows={dotRows}
               cellW={cellW}
               cellH={cellH}
@@ -286,14 +336,19 @@ export const DashboardGrid = ({
             />
           )}
           <ResponsiveGridLayout
-            key={isEditing ? 'edit' : 'view'}
+            // remount when the edit grid crosses the breakpoint: the two take a different
+            // compactor, and the stack drops the spacer item
+            key={isNarrowEdit ? 'edit-narrow' : mode}
             className={'layout'}
             width={gridWidth}
             layouts={layouts}
-            cols={isEditing ? COLS_EDIT : COLS_VIEW}
+            breakpoints={GRID_BREAKPOINTS}
+            cols={COLS}
             rowHeight={ROW_HEIGHT}
             margin={[GRID_MARGIN, GRID_MARGIN]}
-            compactor={noCompactorPreventCollision}
+            // the stack has no free space between panels, so a panel resized taller must push the
+            // ones below it down (and pull them up when it shrinks); their y is derived anyway
+            compactor={isNarrowEdit ? verticalCompactor : noCompactorPreventCollision}
             onLayoutChange={handleLayoutChange}
             dragConfig={{enabled: isEditing, handle: `.${PANEL_DRAG_HANDLE_CLASS}`}}
             resizeConfig={{enabled: isEditing}}
@@ -302,11 +357,15 @@ export const DashboardGrid = ({
             onResizeStart={() => setIsInteracting(true)}
             onResizeStop={() => setIsInteracting(false)}
           >
-            {isEditing && <Box key={SPACER_ID} sx={{display: 'none'}} />}
+            {showSpacer && <Box key={SPACER_ID} sx={{display: 'none'}} />}
             {panels.map((p) => (
               // raise the hovered item so an inner chart tooltip isn't painted over by neighbours
               <Box key={p.id} sx={{height: '100%', '&:hover': {zIndex: 5}}}>
-                <Panel resizeHandle={isEditing} sx={{height: '100%'}}>
+                <Panel
+                  resizable={isEditing}
+                  resizeHandle={isNarrow ? 'bottom' : 'corner'}
+                  sx={{height: '100%'}}
+                >
                   <PanelHeader
                     label={p.label}
                     icon={p.icon}
@@ -314,7 +373,7 @@ export const DashboardGrid = ({
                     iconBadge={p.iconBadge}
                     help={p.help}
                     actions={p.actions}
-                    dragHandle={isEditing}
+                    dragHandle={isWideEdit}
                   />
                   <PanelContent
                     paddingSize={p.contentPaddingSize}

@@ -220,7 +220,7 @@ describe('useUploadQueue', () => {
     });
 
     await waitFor(() =>
-      expect(result.current.entries[0].error).toBe('ra.upload_images.file_too_large')
+      expect(result.current.entries[0].error).toBe('ra.upload_files.file_too_large')
     );
     expect(pendingUploads).toHaveLength(0);
   });
@@ -311,7 +311,7 @@ describe('useUploadQueue — file modifier and validation', () => {
     });
 
     await waitFor(() =>
-      expect(result.current.entries[0].error).toBe('ra.upload_images.file_type_not_allowed')
+      expect(result.current.entries[0].error).toBe('ra.upload_files.file_type_not_allowed')
     );
     expect(modifier).not.toHaveBeenCalled();
     expect(pendingUploads).toHaveLength(0);
@@ -333,7 +333,7 @@ describe('useUploadQueue — file modifier and validation', () => {
     });
 
     await waitFor(() =>
-      expect(result.current.entries[0].error).toBe('ra.upload_images.file_type_not_allowed')
+      expect(result.current.entries[0].error).toBe('ra.upload_files.file_type_not_allowed')
     );
     expect(pendingUploads).toHaveLength(0);
   });
@@ -392,7 +392,7 @@ describe('useUploadQueue — file modifier and validation', () => {
     });
 
     await waitFor(() =>
-      expect(result.current.entries[0].error).toBe('ra.upload_images.file_type_not_allowed')
+      expect(result.current.entries[0].error).toBe('ra.upload_files.file_type_not_allowed')
     );
     expect(pendingUploads).toHaveLength(0);
   });
@@ -405,7 +405,7 @@ describe('useUploadQueue — file modifier and validation', () => {
     });
 
     await waitFor(() =>
-      expect(result.current.entries[0].error).toBe('ra.upload_images.file_type_not_allowed')
+      expect(result.current.entries[0].error).toBe('ra.upload_files.file_type_not_allowed')
     );
     expect(pendingUploads).toHaveLength(0);
   });
@@ -472,7 +472,7 @@ describe('useUploadQueue — file modifier and validation', () => {
     });
 
     await waitFor(() =>
-      expect(result.current.entries[0].error).toBe('ra.upload_images.image_processing_failed')
+      expect(result.current.entries[0].error).toBe('ra.upload_files.image_processing_failed')
     );
     expect(result.current.entries[0].processing).toBeFalsy();
     expect(result.current.busyCount).toBe(0);
@@ -505,7 +505,7 @@ describe('useUploadQueue — file modifier and validation', () => {
       result.current.addAndUpload([docx]);
     });
     await waitFor(() =>
-      expect(result.current.entries[0].error).toBe('ra.upload_images.file_type_not_allowed')
+      expect(result.current.entries[0].error).toBe('ra.upload_files.file_type_not_allowed')
     );
 
     act(() => {
@@ -513,7 +513,7 @@ describe('useUploadQueue — file modifier and validation', () => {
     });
 
     await waitFor(() =>
-      expect(result.current.entries[0].error).toBe('ra.upload_images.file_type_not_allowed')
+      expect(result.current.entries[0].error).toBe('ra.upload_files.file_type_not_allowed')
     );
     expect(pendingUploads).toHaveLength(0);
   });
@@ -551,7 +551,7 @@ describe('useUploadQueue — file modifier and validation', () => {
     });
 
     await waitFor(() =>
-      expect(result.current.entries[0].error).toBe('ra.upload_images.image_processing_failed')
+      expect(result.current.entries[0].error).toBe('ra.upload_files.image_processing_failed')
     );
     expect(pendingUploads).toHaveLength(0);
   });

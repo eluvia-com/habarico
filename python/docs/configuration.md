@@ -102,11 +102,6 @@ endpoints, and with `habarico-enterprise` installed its `AdminSite` contributes 
 routes — no separate `include()` and no settings block are needed, see
 [Installation](./installation.md#enterprise-extensions).
 
-:::caution
-The namespace was renamed from `eluvia-admin` to `habarico`. A project that reverses admin URLs by
-name has to follow.
-:::
-
 ## Optional settings
 
 | Setting | Default | What it does |

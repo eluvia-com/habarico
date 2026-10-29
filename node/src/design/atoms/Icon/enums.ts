@@ -88,6 +88,7 @@ export enum IconType {
   Task = 'Task',
   Tune = 'Tune',
   UnfoldMore = 'UnfoldMore',
+  UploadFile = 'UploadFile',
   ViewList = 'ViewList',
   ViewWeek = 'ViewWeek',
   Visibility = 'Visibility',

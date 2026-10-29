@@ -1,5 +1,5 @@
 # Checks of the Python library (ci-toolbox/python-library@2).
-# This workflow only runs checks; publishing lives in publish.yml - see .github/README.md.
+# This workflow only runs checks; publishing lives in publish.yml - see .github/WORKFLOWS.md.
 name: Python
 
 # Every pull request runs every library's checks, so each job reports a status the `next` ruleset

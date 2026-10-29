@@ -14,7 +14,7 @@ info:
     `/admin/user` and `/admin/user/{record_pk}` endpoints. `/admin/user/schema` returns only actions and views 
     that are supported in `/admin/user` endpoint and `/admin/user/{record_pk}/schema` returns only actions and views 
     that are supported in `/admin/user/{record_pk}` endpoint but with higher detail.
-  version: 3.4.0
+  version: 3.5.0
   contact:
     email: lubos.matl@eluvia.com
 servers:
@@ -1357,7 +1357,7 @@ components:
         - resource
         - save
         - ai-assistant
-        - upload-images
+        - upload-files
         - export
       example: view
       description: |
@@ -1368,7 +1368,7 @@ components:
         * `save` - save the object
         * `ai-assistant` - open the AI assistant for the record. Like `resource`, it is configured by
           `ResourceActionParameters` and requires its `endpoint`.
-        * `upload-images` - bulk-upload image files
+        * `upload-files` - bulk-upload files, one record per file
         * `export` - export list data to a file
     AfterSaveType:
       type: string
@@ -1806,24 +1806,24 @@ components:
           description: Data that will be added to the object on save.
         after_save:
           $ref: '#/components/schemas/AfterSaveType'
-    UploadImagesActionParameters:
+    UploadFilesActionParameters:
       type: object
       nullable: true
       description: |
-        Upload images action parameters, present when action type is `upload-images` and at least
+        Upload files action parameters, present when action type is `upload-files` and at least
         one parameter is set. Omitted entirely when no parameter is provided.
       properties:
         reference:
           type: string
-          example: photos
+          example: attachments
           description: |
-            Resource where images will be created. When set, images are uploaded to this resource
-            instead of the current resource context.
+            Resource where a record is created for each uploaded file. When set, files are uploaded
+            to this resource instead of the current resource context.
         target:
           type: string
           example: article
           description: |
-            Field name on the image model linking to the parent record. When set together with
+            Field name on the file model linking to the parent record. When set together with
             `reference`, the current record's ID is used as the target value.
         accept:
           type: array
@@ -1834,16 +1834,17 @@ components:
             - .jpg
           description: |
             List of accepted file types. When not set, the frontend uses its own
-            default (`.png,.jpg,.jpeg,.bmp,.gif`).
+            default (`.png,.jpg,.jpeg,.bmp,.gif`), which accepts images only — set it whenever
+            the action uploads other files.
         data:
           type: object
-          description: Additional data that will be added to each uploaded image record.
-        image_field:
+          description: Additional data that will be added to each uploaded file record.
+        file_field:
           type: string
-          example: photo
+          example: file
           description: |
-            Field name on the image model that holds the uploaded image file. When not set, the
-            frontend uses its own default.
+            Field name on the file model that holds the uploaded file. There is no default: an
+            action without it saves nothing.
     ExportActionParameters:
       type: object
       nullable: true
@@ -2650,8 +2651,8 @@ components:
           $ref: '#/components/schemas/ResourceActionParameters'
         save:
           $ref: '#/components/schemas/SaveActionParameters'
-        upload_images:
-          $ref: '#/components/schemas/UploadImagesActionParameters'
+        upload_files:
+          $ref: '#/components/schemas/UploadFilesActionParameters'
         export:
           $ref: '#/components/schemas/ExportActionParameters'
         label:
@@ -3855,6 +3856,20 @@ components:
         h:
           type: integer
           minimum: 1
+        stackedH:
+          type: integer
+          minimum: 1
+          description: |
+            Height in grid rows used when the dashboard is too narrow for columns and stacks
+            its widgets one below another. Without it the stacked widget keeps `h`.
+        minW:
+          type: integer
+          minimum: 1
+          description: Smallest width, in grid columns, the widget can be resized to.
+        minH:
+          type: integer
+          minimum: 1
+          description: Smallest height, in grid rows, the widget can be resized to.
     WidgetConfig:
       type: object
       x-habarico-tier: enterprise

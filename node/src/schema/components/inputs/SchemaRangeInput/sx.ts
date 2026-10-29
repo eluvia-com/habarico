@@ -6,7 +6,7 @@ export const sx = (theme: Theme) => ({
   minWidth: 150,
   width: '100%',
   border: 1,
-  borderColor: varAlpha(theme.palette.grey['500Channel'], 0.2),
+  borderColor: theme.palette.divider,
   borderRadius: 1,
   py: 0,
   px: '1px',

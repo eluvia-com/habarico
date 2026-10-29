@@ -67,8 +67,8 @@ msgstr "Hodnota musí být slovník s klíči 'lower' nebo 'upper'."
 msgid "Save"
 msgstr "Uložit"
 
-msgid "Upload images"
-msgstr "Nahrát obrázky"
+msgid "Upload files"
+msgstr "Nahrát soubory"
 
 msgid "Delete"
 msgstr "Smazat"

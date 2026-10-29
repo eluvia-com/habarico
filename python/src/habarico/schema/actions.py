@@ -133,7 +133,7 @@ class SaveActionParameters(BaseSchema):
         self._after_save = after_save
 
 
-class UploadImagesActionParameters(BaseSchema):
+class UploadFilesActionParameters(BaseSchema):
 
     def __init__(
         self,
@@ -142,20 +142,20 @@ class UploadImagesActionParameters(BaseSchema):
         target: str | None = None,
         accept: list[str] | None = None,
         data: dict | None = None,
-        image_field: str | None = None,
+        file_field: str | None = None,
     ):
         """
-        Object represents schema of the upload images action parameters.
+        Object represents schema of the upload files action parameters.
 
         Args:
-            reference (str, optional): Resource where images will be created. Defaults to None.
-            target (str, optional): Field name on the image model linking to the parent record. Defaults to None.
-            accept (list[str], optional): List of accepted file types (e.g. [".png", ".jpg"]).
-                When not set, the frontend uses its own default. Defaults to None.
-            data (dict, optional): Additional data that will be added to each uploaded image record.
+            reference (str, optional): Resource where a record is created for each uploaded file. Defaults to None.
+            target (str, optional): Field name on the file model linking to the parent record. Defaults to None.
+            accept (list[str], optional): List of accepted file types (e.g. [".pdf", ".docx"]).
+                When not set, the frontend uses its own default, which accepts images only. Defaults to None.
+            data (dict, optional): Additional data that will be added to each uploaded file record.
                 Defaults to None.
-            image_field (str, optional): Field name on the image model that holds the uploaded image file.
-                When not set, the frontend uses its own default. Defaults to None.
+            file_field (str, optional): Field name on the file model that holds the uploaded file.
+                There is no default: an action without it saves nothing. Defaults to None.
         """
         if reference:
             self._reference = reference
@@ -165,8 +165,8 @@ class UploadImagesActionParameters(BaseSchema):
             self._accept = accept
         if data:
             self._data = data
-        if image_field:
-            self._image_field = image_field
+        if file_field:
+            self._file_field = file_field
 
 
 class ExportActionParameters(BaseSchema):
@@ -334,7 +334,7 @@ class ActionSchema(BaseSchema):
         target: str | None = None,
         accept: list[str] | None = None,
         upload_data: dict | None = None,
-        upload_image_field: str | None = None,
+        upload_file_field: str | None = None,
         export_format: str | None = None,
         export_fields: list[str] | None = None,
     ):
@@ -359,8 +359,8 @@ class ActionSchema(BaseSchema):
             view_keep_linked_parent (bool, optional): Keep linked parent in the URL when navigating to the linked
                 resource. Only used when type is ActionType.VIEW. Defaults to None.
             reference (str, optional): Reference resource. For VIEW: the resource to navigate to.
-                For RESOURCE: the resource to call the action on. For UPLOAD_IMAGES: the resource
-                where images will be created. Defaults to None.
+                For RESOURCE: the resource to call the action on. For UPLOAD_FILES: the resource
+                where a record is created for each uploaded file. Defaults to None.
             record_pk (PkType, optional): Primary key of the object. Defaults to None.
             link_url (str, optional): URL of the link. Defaults to None.
             link_target (LinkTargetType, optional): Target of the link. Defaults to LinkTargetType.BLANK.
@@ -373,13 +373,14 @@ class ActionSchema(BaseSchema):
                 Possible values: ``stay``, ``prev``, ``show``, ``list``.
                 Only used when type is ActionType.SAVE. Defaults to None.
             target (str, optional): Field name on the child model linking to the parent record.
-                Used for UPLOAD_IMAGES to link created images to the current record. Defaults to None.
-            accept (list[str], optional): List of accepted file types (e.g. [".png", ".jpg"]).
-                Used for UPLOAD_IMAGES. When not set, the frontend uses its own default. Defaults to None.
-            upload_data (dict, optional): Additional data that will be added to each uploaded image record.
-                Used for UPLOAD_IMAGES. Defaults to None.
-            upload_image_field (str, optional): Field name on the image model that holds the uploaded image file.
-                Used for UPLOAD_IMAGES. When not set, the frontend uses its own default. Defaults to None.
+                Used for UPLOAD_FILES to link created file records to the current record. Defaults to None.
+            accept (list[str], optional): List of accepted file types (e.g. [".pdf", ".docx"]).
+                Used for UPLOAD_FILES. When not set, the frontend uses its own default, which accepts
+                images only. Defaults to None.
+            upload_data (dict, optional): Additional data that will be added to each uploaded file record.
+                Used for UPLOAD_FILES. Defaults to None.
+            upload_file_field (str, optional): Field name on the file model that holds the uploaded file.
+                Used for UPLOAD_FILES. There is no default: an action without it saves nothing. Defaults to None.
             export_format (str, optional): Export format (e.g. "csv", "xlsx"). Used for EXPORT.
                 When not set, the backend default format is used. Defaults to None.
             export_fields (list[str], optional): List of field names to export. Used for EXPORT.
@@ -421,14 +422,14 @@ class ActionSchema(BaseSchema):
                 data=save_data,
                 after_save=after_save,
             )
-        elif type == ActionType.UPLOAD_IMAGES:
-            if reference or target or accept or upload_data or upload_image_field:
-                self._upload_images = UploadImagesActionParameters(
+        elif type == ActionType.UPLOAD_FILES:
+            if reference or target or accept or upload_data or upload_file_field:
+                self._upload_files = UploadFilesActionParameters(
                     reference=reference,
                     target=target,
                     accept=accept,
                     data=upload_data,
-                    image_field=upload_image_field,
+                    file_field=upload_file_field,
                 )
         elif type == ActionType.EXPORT:
             if export_format or export_fields:
@@ -661,11 +662,11 @@ class SaveActionDescriptor(ActionDescriptor):
         return not self.context.read_only
 
 
-class UploadImagesActionDescriptor(ActionDescriptor):
+class UploadFilesActionDescriptor(ActionDescriptor):
 
-    name = "upload-images"
-    label = _("Upload images")
-    icon = "AddPhotoAlternate"
+    name = "upload-files"
+    label = _("Upload files")
+    icon = "UploadFile"
 
     def __init__(
         self,
@@ -678,29 +679,29 @@ class UploadImagesActionDescriptor(ActionDescriptor):
         target: str | None = None,
         accept: list[str] | None = None,
         data: dict | None = None,
-        image_field: str | None = None,
+        file_field: str | None = None,
     ):
         """
-        Object represents schema of the upload images action descriptor.
+        Object represents schema of the upload files action descriptor.
 
         Args:
-            name (str, optional): Name of the action. Defaults to 'upload-images'.
-            label (str, optional): Label of the action. Defaults to 'Upload images'.
-            icon (str, optional): Icon of the action. Defaults to 'AddPhotoAlternate'.
+            name (str, optional): Name of the action. Defaults to 'upload-files'.
+            label (str, optional): Label of the action. Defaults to 'Upload files'.
+            icon (str, optional): Icon of the action. Defaults to 'UploadFile'.
             color (ColorType, optional): Color of the action. When not set, the button inherits
                 its color from the toolbar context. Defaults to None.
-            reference (str, optional): Resource where images will be created. When set, the button
-                uploads to this resource instead of the current resource context. Defaults to None.
-            target (str, optional): Field name on the image model linking to the parent record.
+            reference (str, optional): Resource where a record is created for each uploaded file. When set,
+                the button uploads to this resource instead of the current resource context. Defaults to None.
+            target (str, optional): Field name on the file model linking to the parent record.
                 When set together with reference, the current record's ID is used as the target value.
                 Defaults to None.
-            accept (list[str], optional): List of accepted file types (e.g. [".png", ".jpg"]).
-                When not set, the frontend uses its own default (.png,.jpg,.jpeg,.bmp,.gif).
+            accept (list[str], optional): List of accepted file types (e.g. [".pdf", ".docx"]).
+                When not set, the frontend uses its own default (.png,.jpg,.jpeg,.bmp,.gif), which accepts
+                images only — set it whenever the action uploads other files. Defaults to None.
+            data (dict, optional): Additional data that will be added to each uploaded file record.
                 Defaults to None.
-            data (dict, optional): Additional data that will be added to each uploaded image record.
-                Defaults to None.
-            image_field (str, optional): Field name on the image model that holds the uploaded image file.
-                When not set, the frontend uses its own default. Defaults to None.
+            file_field (str, optional): Field name on the file model that holds the uploaded file.
+                There is no default: an action without it saves nothing. Defaults to None.
         """
         super().__init__(
             name=name or self.name,
@@ -708,12 +709,12 @@ class UploadImagesActionDescriptor(ActionDescriptor):
             color=color,
             icon=icon or self.icon,
             action=ActionSchema(
-                type=ActionType.UPLOAD_IMAGES,
+                type=ActionType.UPLOAD_FILES,
                 reference=reference,
                 target=target,
                 accept=accept,
                 upload_data=data,
-                upload_image_field=image_field,
+                upload_file_field=file_field,
             ),
         )
 

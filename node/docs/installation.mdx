@@ -35,17 +35,31 @@ const router = createBrowserRouter([{path: '*', element: <SchemaAdmin ... />}]);
 </BrowserRouter>
 ```
 
-## Usage in the project
+## Installing the package
 
-Pick the source you consume the library from — the published package for normal
-project work, a local checkout when you develop the library and the project side by side.
+<Tabs groupId="package-manager">
+<TabItem value="npm" label="npm" default>
 
-<Tabs groupId="habarico-source">
-<TabItem value="registry" label="NPM package registry" default>
+```bash
+npm install habarico
+```
+
+</TabItem>
+<TabItem value="pnpm" label="pnpm">
 
 ```bash
 pnpm add habarico
 ```
+
+</TabItem>
+<TabItem value="yarn" label="Yarn">
+
+```bash
+yarn add habarico
+```
+
+</TabItem>
+</Tabs>
 
 Every framework dependency is a **peer** dependency — the library bundles none of them, so install
 them in the project yourself, in a version that satisfies the range:
@@ -67,48 +81,3 @@ The React Admin packages are pinned to a patch range (`~5.14.5`), not a major on
 different React Admin minor will hit duplicated contexts — two copies of `ra-core` in the bundle
 means the store, the identity and the notification system stop being shared.
 :::
-
-</TabItem>
-<TabItem value="local" label="Local repository">
-
-Run this **in the project**, pointing at your checkouts — the free library first, the paid one
-second:
-
-```bash
-pydev link-library <path-to-libs>/habarico-base/node <path-to-libs>/habarico-enterprise/node-enterprise
-```
-
-`<path-to-libs>` is the directory holding your library checkouts — the same placeholder the Ruby services use in their compose files. Relative or absolute, both work.
-Pass only the packages you actually develop; either one works on its own. Paths are resolved from
-the project directory and turned into absolute ones.
-
-:::caution
-The order matters when you link both. `habarico-enterprise` points its own `habarico` at
-the copy the project holds — which is the symlink the first argument creates. Link it first and
-both packages share one instance of the library, React and React Admin; link it second and you get
-two, which shows up as `Cannot read properties of null (reading 'useMemo')`.
-:::
-
-The command generates a `pnpm-workspace.yaml` in each library that points every peer dependency at
-the project's copy, then installs. Nothing else is needed — the built `lib/` bundle the project
-consumes is already in place.
-
-Then watch for changes in the library you edit:
-
-```bash
-pnpm watch
-```
-
-Undo it with the matching command, in any order:
-
-```bash
-pydev unlink-library <path-to-libs>/habarico-base/node <path-to-libs>/habarico-enterprise/node-enterprise
-```
-
-:::tip
-If the project's dev server was already running, drop Vite's dependency cache after linking —
-`rm -rf node_modules/.vite` — otherwise it serves the pre-bundled copy of the old package.
-:::
-
-</TabItem>
-</Tabs>

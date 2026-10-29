@@ -5,6 +5,36 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `WidgetLayout` accepts the optional `stackedH`, `minW` and `minH` (integers of at least 1), so
+  `preferences.dashboard` validates them as `contract/openapi.yaml` 3.4.0 describes them: `stackedH`
+  is the widget's height on a narrow, stacked dashboard, `minW` / `minH` its resize lower bounds.
+  A `DashboardPreference` instance given as a default now dumps the three keys as `null` when unset.
+  (HAB-1006)
+
+### Changed
+
+- **BREAKING:** The `upload-images` action is renamed to `upload-files`: it bulk-uploads documents
+  (PDF, DOCX, XLSX, ZIP, …) as much as images, and the name said otherwise. No alias keeps the old
+  names, so rename:
+  - `UploadImagesActionDescriptor` → `UploadFilesActionDescriptor` (`habarico.schema` and
+    `habarico.schema.actions`), and its `image_field` argument → `file_field`
+  - `UploadImagesActionParameters` → `UploadFilesActionParameters`, and its `image_field` → `file_field`
+  - `ActionType.UPLOAD_IMAGES` → `ActionType.UPLOAD_FILES`
+  - the `ActionSchema` argument `upload_image_field` → `upload_file_field`
+
+  The generated schema changes with it: the action type is `upload-files`, its parameters sit under
+  `upload_files` and the field is `file_field`. The descriptor's defaults are now the name
+  `upload-files`, the label "Upload files" (translated in every bundled locale) and the icon
+  `UploadFile`; an admin relying on the default name `upload-images` must update whatever refers to
+  it. `GalleryBox`'s `image_field` keeps its name - a gallery does show images. The action works
+  only with a frontend that contains HAB-993: one that knows only `upload-images` renders no button
+  and reports no error, so upgrade the backend and the frontend together.
+  (HAB-999)
+
 ## [7.2.0] — 2026-10-19
 
 ### Changed

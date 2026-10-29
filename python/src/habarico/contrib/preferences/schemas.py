@@ -74,6 +74,9 @@ class WidgetLayout(BaseModel):
     y: int = Field(ge=0)
     w: int = Field(ge=1)
     h: int = Field(ge=1)
+    stackedH: Optional[int] = Field(default=None, ge=1)
+    minW: Optional[int] = Field(default=None, ge=1)
+    minH: Optional[int] = Field(default=None, ge=1)
 
 
 WidgetColor = Literal["primary", "secondary", "success", "error", "warning", "info", "inherit"]

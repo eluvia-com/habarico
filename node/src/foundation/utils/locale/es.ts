@@ -335,13 +335,13 @@ export const esMessages: LocaleMessages = {
       error_message:
         'Lo sentimos, se produjo un error al comunicarse con la IA. Por favor, inténtelo de nuevo.',
     },
-    upload_images: {
-      dialog_title: 'Subir fotos',
+    upload_files: {
+      dialog_title: 'Subir archivos',
       select_files: 'Seleccionar archivos',
-      remove_all_tooltip: 'Eliminar todas las fotos',
+      remove_all_tooltip: 'Eliminar todos los archivos',
       remove_all: 'Eliminar todo',
-      upload_success: 'Las fotos se subieron correctamente.',
-      upload_error: 'Se produjo un error al subir las fotos.',
+      upload_success: 'Los archivos se subieron correctamente.',
+      upload_error: 'Se produjo un error al subir los archivos.',
       uploading: 'Subiendo…',
       processing: 'Procesando…',
       upload_count: 'Subir (%{count})',
