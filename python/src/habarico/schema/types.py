@@ -108,7 +108,7 @@ class ActionType(str, Enum):
     RESOURCE = "resource"
     SAVE = "save"
     AI_ASSISTANT = "ai-assistant"
-    UPLOAD_IMAGES = "upload-images"
+    UPLOAD_FILES = "upload-files"
     EXPORT = "export"
 
 

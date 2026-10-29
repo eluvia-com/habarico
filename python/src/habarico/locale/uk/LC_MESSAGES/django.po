@@ -69,8 +69,8 @@ msgstr "Значення має бути словником з ключами 'l
 msgid "Save"
 msgstr "Зберегти"
 
-msgid "Upload images"
-msgstr "Завантажити зображення"
+msgid "Upload files"
+msgstr "Завантажити файли"
 
 msgid "Delete"
 msgstr "Видалити"

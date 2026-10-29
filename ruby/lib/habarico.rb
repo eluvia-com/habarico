@@ -59,7 +59,7 @@ require "habarico/schema/action/view_action_parameters"
 require "habarico/schema/action/confirm_dialog_properties"
 require "habarico/schema/action/global_resource_action_schema"
 require "habarico/schema/action/resource_action_schema"
-require "habarico/schema/action/upload_images_action_parameters"
+require "habarico/schema/action/upload_files_action_parameters"
 
 # Aggregate schema models
 
@@ -132,7 +132,7 @@ require "habarico/generators/action/confirm_dialog_properties_generator"
 require "habarico/generators/action/global_resource_action_schema_generator"
 require "habarico/generators/action/resource_action_schema_generator"
 require "habarico/generators/action/save_action_parameters_generator"
-require "habarico/generators/action/upload_images_action_parameters_generator"
+require "habarico/generators/action/upload_files_action_parameters_generator"
 require "habarico/generators/action/trigger_action_schema_generator"
 
 # Endpoint generators
@@ -201,7 +201,7 @@ require "habarico/definition/actions/delete_action"
 require "habarico/definition/actions/edit_action"
 require "habarico/definition/actions/save_action"
 require "habarico/definition/actions/show_action"
-require "habarico/definition/actions/upload_images_action"
+require "habarico/definition/actions/upload_files_action"
 
 # Menu
 require "habarico/definition/menu/menu_item"

@@ -66,8 +66,8 @@ msgstr "Waarde moet een dictionary zijn met 'lower' of 'upper' sleutels."
 msgid "Save"
 msgstr "Opslaan"
 
-msgid "Upload images"
-msgstr "Afbeeldingen uploaden"
+msgid "Upload files"
+msgstr "Bestanden uploaden"
 
 msgid "Delete"
 msgstr "Verwijderen"

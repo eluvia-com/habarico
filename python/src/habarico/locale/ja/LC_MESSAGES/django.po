@@ -66,8 +66,8 @@ msgstr "値は 'lower' または 'upper' キーを持つ辞書でなければな
 msgid "Save"
 msgstr "保存"
 
-msgid "Upload images"
-msgstr "画像をアップロード"
+msgid "Upload files"
+msgstr "ファイルをアップロード"
 
 msgid "Delete"
 msgstr "削除"

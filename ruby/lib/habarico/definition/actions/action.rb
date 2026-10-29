@@ -13,7 +13,7 @@ module Habarico
     attr_accessor :is_background, :data # attributes for type = :resource
     attr_accessor :after_save # attributes for type = :save
     attr_accessor :link_url, :link_target, :if # attributes for type = :link
-    attr_accessor :upload_images_reference, :upload_images_target, :upload_images_accept, :upload_images_image_field, :upload_images_data # attributes for type = :"upload-images"
+    attr_accessor :upload_files_reference, :upload_files_target, :upload_files_accept, :upload_files_file_field, :upload_files_data # attributes for type = :"upload-files"
 
   end
 end

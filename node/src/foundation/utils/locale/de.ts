@@ -311,12 +311,12 @@ export const deMessages: LocaleMessages = {
       error_message:
         'Entschuldigung, beim Kommunizieren mit der KI ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
     },
-    upload_images: {
-      dialog_title: 'Fotos hochladen',
+    upload_files: {
+      dialog_title: 'Dateien hochladen',
       select_files: 'Dateien auswählen',
-      remove_all_tooltip: 'Alle Fotos entfernen',
+      remove_all_tooltip: 'Alle Dateien entfernen',
       remove_all: 'Alle löschen',
-      upload_success: 'Fotos wurden erfolgreich hochgeladen.',
+      upload_success: 'Dateien wurden erfolgreich hochgeladen.',
       upload_error: 'Beim Hochladen ist ein Fehler aufgetreten.',
       uploading: 'Hochladen…',
       processing: 'Wird verarbeitet…',

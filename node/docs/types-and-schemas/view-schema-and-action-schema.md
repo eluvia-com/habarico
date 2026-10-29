@@ -144,7 +144,7 @@ carries no parameters of its own, a `grid-item` carries the breakpoint widths in
 ## ActionSchema
 
 ```typescript
-type ActionType = 'view' | 'link' | 'resource' | 'save' | 'ai-assistant' | 'upload-images' | 'export';
+type ActionType = 'view' | 'link' | 'resource' | 'save' | 'ai-assistant' | 'upload-files' | 'export';
 type ViewModeType = 'dialog' | 'redirect' | 'sidepanel';
 type AfterSaveType = 'stay' | 'prev' | 'show' | 'list';
 type LinkTarget = 'self' | 'blank';
@@ -160,7 +160,7 @@ type ActionSchema = {
   link?: LinkActionParameters;                  // type = 'link'
   resource?: ResourceActionParameters;          // type = 'resource'
   save?: SaveActionParameters;                  // type = 'save'
-  uploadImages?: UploadImagesActionParameters;  // type = 'upload-images' (see FieldSchema)
+  uploadFiles?: UploadFilesActionParameters;    // type = 'upload-files' (see FieldSchema)
   export?: ExportActionParameters;              // type = 'export'
 };
 

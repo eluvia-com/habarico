@@ -151,19 +151,19 @@ export const useUploadQueue = ({
 
   const getUploadErrorMsg = (e: unknown): string => {
     if (e instanceof Error) return e.message;
-    return translate('ra.upload_images.upload_error');
+    return translate('ra.upload_files.upload_error');
   };
 
   /** Returns the translated reason the file's type is not allowed, or `null` when it passes. */
   const validateFileType = (file: File): string | null =>
     accept && !isFileAccepted(file, accept)
-      ? translate('ra.upload_images.file_type_not_allowed')
+      ? translate('ra.upload_files.file_type_not_allowed')
       : null;
 
   /** Returns the translated reason the file is too big, or `null` when it passes. */
   const validateFileSize = (file: File): string | null =>
     maxFileSize != null && file.size > maxFileSize
-      ? translate('ra.upload_images.file_too_large')
+      ? translate('ra.upload_files.file_too_large')
       : null;
 
   // Check the type, transform, validate again, then upload. The modifier decides the file's final
@@ -194,7 +194,7 @@ export const useUploadQueue = ({
     } catch {
       updateEntry(id, {
         processing: false,
-        error: translate('ra.upload_images.image_processing_failed'),
+        error: translate('ra.upload_files.image_processing_failed'),
       });
       return;
     }

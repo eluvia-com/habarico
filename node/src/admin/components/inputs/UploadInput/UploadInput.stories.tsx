@@ -18,7 +18,7 @@ type UploadInputStoryArgs = UploadInputProps & {
  * owns the upload queue (`useUploadQueue`), registers in-flight uploads with the `UploadingContext`
  * (so `SaveButton` waits for them) and maps between the React Admin form value (`FileData` /
  * `FileData[]`) and the queue. Schema-agnostic: `defaultInputProvider` reads the field options and
- * feeds it explicit props. All strings come from `ra.upload_images.*`
+ * feeds it explicit props. All strings come from `ra.upload_files.*`
  * translations; the light/dark toolbar toggle applies via the design theme.
  *
  * `resizeWidth` / `cropAspectRatio` are real props (see `useFileModifier`) but aren't exposed here

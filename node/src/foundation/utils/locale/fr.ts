@@ -272,12 +272,12 @@ export const frMessages: LocaleMessages = {
       error_message:
         "Désolé, une erreur s'est produite lors de la communication avec l'IA. Veuillez réessayer.",
     },
-    upload_images: {
-      dialog_title: 'Télécharger des photos',
+    upload_files: {
+      dialog_title: 'Télécharger des fichiers',
       select_files: 'Sélectionner des fichiers',
-      remove_all_tooltip: 'Supprimer toutes les photos',
+      remove_all_tooltip: 'Supprimer tous les fichiers',
       remove_all: 'Tout supprimer',
-      upload_success: 'Photos téléchargées avec succès.',
+      upload_success: 'Fichiers téléchargés avec succès.',
       upload_error: "Une erreur s'est produite lors du téléchargement.",
       uploading: 'Téléchargement…',
       processing: 'Traitement…',
