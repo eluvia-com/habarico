@@ -13,8 +13,9 @@ const TREE_ITEMS: ItemFieldSchema = {...RELATION_ITEMS, format: 'tree-relation'}
  * Renders an **array of relations** — the field an `array` schema whose `items.reference` is set
  * resolves to. Where `SchemaReferenceField` shows one referenced record, this one shows many.
  *
- * The default rendering is a `SingleFieldList` of `SchemaRecordRepresentationChip`s — one chip per
- * referenced record, each linking the same way a single relation would.
+ * The default rendering is a `SingleFieldList` of `SchemaRecordRepresentation`s — one per
+ * referenced record, each linking the same way a single relation would. `variant` picks their
+ * shape: chips in a wrapping row (the default), or plain text links stacked one per line.
  *
  * `items.format` splits it in two:
  *
