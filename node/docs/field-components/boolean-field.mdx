@@ -8,12 +8,12 @@ import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 import StorybookPreview from "@site/src/components/StorybookPreview";
 
-Displays a boolean as a yes/no chip.
+Displays a boolean as a yes/no chip, a yes/no word, or a tick / cross glyph.
 
 <StorybookPreview />
 
-The chip label comes from the translation catalogue (`ra.message.yes` / `ra.message.no`), so it
-follows the admin locale.
+The yes/no label comes from the translation catalogue (`ra.message.yes` / `ra.message.no`), so it
+follows the admin locale — in every shape.
 
 ## Example
 
@@ -29,17 +29,42 @@ of its own. On top of these it accepts the shared [field props](./index.md#commo
 | Name | Type | Default | Description |
 |---|---|---|---|
 | `source` (required) | `string` | — | Name of the field on the record |
-| `color` | `boolean` | `false` | `true` colors the chip green for true and red for false; otherwise both are neutral |
-| `variant` | `'text' \| 'filled' \| 'outlined' \| 'soft'` | `'soft'` | MUI chip variant |
+| `variant` | `'chip' \| 'text' \| 'icon'` | `fieldDefaults.boolean` | The shape the value takes — see below |
+| `color` | `boolean` | `false` | `true` colors the chip (or glyph) green for true and red for false; otherwise both are neutral |
+| `chipVariant` | `'text' \| 'filled' \| 'outlined' \| 'soft'` | `'soft'` | MUI chip style, read by the `'chip'` shape alone |
 | `label` | `string \| ReactElement \| false` | label from the schema | `false` hides the label |
 
-The chip labels are the `ra.message.yes` / `ra.message.no` translations of the active locale — they
-are not props.
+The yes/no labels are the `ra.message.yes` / `ra.message.no` translations of the active locale —
+they are not props.
 
 :::caution
 `color` is a `boolean` here, not an MUI color name — passing `"success"` enables coloring but does
 not select a palette entry.
 :::
+
+## `variant`
+
+| Value    | Renders                                                                        |
+| -------- | ------------------------------------------------------------------------------ |
+| `'chip'` | A small chip carrying the yes/no word. The default                              |
+| `'text'` | The yes/no word as plain text, in the surrounding text color                     |
+| `'icon'` | A tick / cross glyph **inside a collection**; the word everywhere else           |
+
+`'icon'` is a list affordance: a glyph buys back a column's width, which is scarce in a list and
+free in a detail view, where the word reads better than the symbol. The glyph keeps React Admin's
+yes/no tooltip, so the value stays readable to a screen reader and on hover. The fallback mirrors
+`EnumChip`, which likewise collapses to a bare glyph only in a collection.
+
+```tsx
+<BooleanField source="is_paid" variant="icon" color />
+```
+
+Left unset, `variant` follows
+[`fieldDefaults.boolean`](../base-components/field-defaults.md) — how a project renders every
+boolean the same way without naming them one by one. `'chip'` is the default behind that.
+
+Every shape goes through React Admin's `TrueIcon` / `FalseIcon`, so all three inherit its handling
+of a missing value: `null` or `undefined` renders `emptyText`, not a "No".
 
 ## Schema mapping
 

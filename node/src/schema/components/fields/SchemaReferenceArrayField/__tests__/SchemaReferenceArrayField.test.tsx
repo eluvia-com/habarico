@@ -2,7 +2,8 @@ import React, {ReactElement} from 'react';
 import {RecordContextProvider} from 'react-admin';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {SchemaRecordRepresentation} from '@schema/components/fields/SchemaRecordRepresentation';
-import {ItemFieldSchema} from '@schema/types';
+import {FieldDefaultsProvider} from '@schema/contexts/FieldDefaultsContext';
+import {FieldDefaults, ItemFieldSchema} from '@schema/types';
 import {render} from '@testing-library/react';
 import {SchemaReferenceArrayField} from '../SchemaReferenceArrayField';
 
@@ -33,12 +34,15 @@ vi.mock('@schema/hooks/useGlobalResourceSchemaContext', () => ({
 const items = {reference: 'eshop/tag'} as ItemFieldSchema;
 
 const renderField = (
-  props: Partial<React.ComponentProps<typeof SchemaReferenceArrayField>> = {}
+  props: Partial<React.ComponentProps<typeof SchemaReferenceArrayField>> = {},
+  fieldDefaults: FieldDefaults = {}
 ) => {
   render(
-    <RecordContextProvider value={{id: 1, tag_ids: [1, 2]}}>
-      <SchemaReferenceArrayField source={'tag_ids'} items={items} {...props} />
-    </RecordContextProvider>
+    <FieldDefaultsProvider {...fieldDefaults}>
+      <RecordContextProvider value={{id: 1, tag_ids: [1, 2]}}>
+        <SchemaReferenceArrayField source={'tag_ids'} items={items} {...props} />
+      </RecordContextProvider>
+    </FieldDefaultsProvider>
   );
   return received[received.length - 1];
 };
@@ -128,5 +132,28 @@ describe('SchemaReferenceArrayField - width cap', () => {
 
   it('leaves the cap to the container outside a collection', () => {
     expect(representationOf(renderField({variant: 'link'})).props.maxWidth).toBeUndefined();
+  });
+});
+
+describe('SchemaReferenceArrayField - fieldDefaults', () => {
+  // The application's choice, set once on `SchemaAdmin` (or per resource) instead of duplicated into
+  // a `fieldProvider` override. A prop on the field still wins over it.
+  it('falls back to the shape the application chose', () => {
+    expect(representationOf(renderField({}, {reference: 'link'})).props.variant).toBe('link');
+  });
+
+  it('stacks the links the application asked for, one per line', () => {
+    expect(listOf(renderField({}, {reference: 'link'})).props.direction).toBe('column');
+  });
+
+  it('lets an explicit prop win over it', () => {
+    expect(
+      representationOf(renderField({variant: 'chip'}, {reference: 'link'})).props.variant
+    ).toBe('chip');
+  });
+
+  // Regression guard for every project that sets no defaults at all.
+  it('is a chip when nothing says otherwise', () => {
+    expect(representationOf(renderField()).props.variant).toBe('chip');
   });
 });

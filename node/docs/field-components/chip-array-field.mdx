@@ -7,7 +7,7 @@ storybook: admin-fields-chiparrayfield--playground
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
-Renders an array of scalar values as a row of chips.
+Renders an array of scalar values as a row of chips, or as plain labels stacked one per line.
 
 It is the fallback for arrays: when the items are objects or references, the dispatcher picks
 [SchemaObjectArrayField](./object-array-field.mdx) or
@@ -31,6 +31,7 @@ On top of these it accepts the shared [field props](./index.md#common-props).
 | `source` (required) | `string`  | —       | Name of the array field on the record                                                                  |
 | `choices`           | `Choices` | —       | Enum of the **items** (`{value, label, color?, icon?}`); without it the raw values are shown           |
 | `iconsKey`          | `string`  | —       | Key into the `iconsMap` on [SchemaAdmin](../base-components/schema-admin.md), giving each chip an icon |
+| `variant`           | `'chip' \| 'text'` | `fieldDefaults.choices` | Chips, or plain labels one per line — see below                              |
 
 It is the presence of `choices` — not a `format` flag — that switches on the enum branch. Inside a
 datagrid, chips that have an icon collapse to icon-only, tooltipped glyphs; chips without one stay
@@ -41,6 +42,28 @@ Chips never link anywhere — `linkType` is `false`. For clickable references us
 
 `defaultFieldProvider` fills both props from the item schema: `choices` from `items.enum` and
 `iconsKey` from `items.options.choices.iconsKey`.
+
+## `variant`
+
+`'text'` renders the label as plain text instead of a chip — but **only for an enum whose options
+define no color of their own**. A chip of a colored option *carries* the color, and plain text
+cannot, so a colored enum keeps its chips under `'text'` as well. The test is run over the whole
+option list, not per value, so one field never mixes chips and bare words down a column; a `color`
+of `'inherit'` counts as no color.
+
+```tsx
+<ChipArrayField source="channels" choices={channelChoices} variant="text" />
+```
+
+Left unset, `variant` follows
+[`fieldDefaults.choices`](../base-components/field-defaults.md) — the same key the other choices
+field reads, so a single choice and an array of them are never rendered in two different shapes.
+`'chip'` is the default behind that.
+
+The text shape stacks the labels one per line, for the same reason
+[SchemaReferenceArrayField](./reference-array-field.mdx) stacks its links: a row of bare words reads
+as one run-on phrase, where chips carry a shape that keeps neighbours apart. Raw values with no enum
+behind them have no color to lose and always honour `'text'`.
 
 ## How an array is dispatched
 

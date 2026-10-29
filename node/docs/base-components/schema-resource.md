@@ -33,6 +33,7 @@ On top of these it accepts React Admin's `ResourceProps` — `name` is required 
 |---|---|---|---|
 | `name` (required) | `string` | — | Resource name, e.g. `"eshop/product"` |
 | `fieldProvider` | `ResourceFieldProvider` | — | [Display overrides](../providers/field-provider.md) for this resource only |
+| `fieldDefaults` | `FieldDefaults` | from `SchemaAdmin` | [Field shapes](./field-defaults.md) for this resource only — merged over the admin's, key by key |
 | `inputProvider` | `ResourceInputProvider` | — | [Input overrides](../providers/input-provider.md) for this resource only |
 | `buttonProvider` | `ResourceButtonProvider` | — | [Button overrides](../providers/button-provider.md) for this resource only |
 | `boxProvider` | `ResourceBoxProvider` | — | [Layout overrides](../providers/box-provider.md) for this resource only |

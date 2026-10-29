@@ -9,11 +9,11 @@ import {useValueLocationContext} from '@design/contexts/ValueLocationContext';
 import {SchemaRecordRepresentation} from '@schema/components/fields/SchemaRecordRepresentation';
 import {
   REFERENCE_WIDTH_OFFSET,
-  ReferenceVariant,
   referenceMaxWidth,
 } from '@schema/components/fields/referenceVariant';
+import {useFieldDefaults} from '@schema/contexts/FieldDefaultsContext';
 import {useGlobalResourceSchemaContext} from '@schema/hooks/useGlobalResourceSchemaContext';
-import {FieldSchema, ItemFieldSchema} from '@schema/types';
+import {FieldSchema, ItemFieldSchema, ReferenceVariant} from '@schema/types';
 import {convertApiSortToRaSort} from '@schema/utils/api';
 import {FIELD_DEFAULT} from '@schema/utils/fieldSelection';
 import {viewModeToPresentation} from '@schema/utils/viewMode';
@@ -21,9 +21,9 @@ import {SchemaTreeReferenceArrayField} from './SchemaTreeReferenceArrayField';
 
 export type SchemaReferenceArrayFieldProps = FieldProps & {
   items: ItemFieldSchema | FieldSchema;
-  // Chip (the default) or a plain text link. `'link'` also stacks the references one per line —
-  // see the `SingleFieldList` below. Not read by the tree branch, which renders a tree rather than
-  // a list of representations.
+  // Chip or a plain text link; defaults to `fieldDefaults.reference` and an explicit value wins
+  // over it. `'link'` also stacks the references one per line — see the `SingleFieldList` below.
+  // Not read by the tree branch, which renders a tree rather than a list of representations.
   variant?: ReferenceVariant;
 };
 
@@ -32,10 +32,13 @@ export const SchemaReferenceArrayField = ({
   label,
   emptyText,
   items,
-  variant = 'chip',
+  variant: inVariant,
 }: SchemaReferenceArrayFieldProps) => {
   const {isInCollection} = useValueLocationContext();
   const reference = useResourceContext(items.reference);
+  // Read above the early returns below — the hook has to run on every render of this component.
+  const {reference: defaultVariant} = useFieldDefaults();
+  const variant = inVariant ?? defaultVariant;
 
   const {schema: relatedSchema} = useGlobalResourceSchemaContext(reference);
 

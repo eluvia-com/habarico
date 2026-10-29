@@ -36,6 +36,9 @@ export {ExportButton, type ExportButtonProps} from './buttons/ExportButton';
 
 // Fields
 export {SchemaField, type SchemaFieldProps} from './fields/SchemaField';
+export {SchemaBooleanField, type SchemaBooleanFieldProps} from './fields/SchemaBooleanField';
+export {SchemaChipArrayField, type SchemaChipArrayFieldProps} from './fields/SchemaChipArrayField';
+export {SchemaChoicesField, type SchemaChoicesFieldProps} from './fields/SchemaChoicesField';
 export {SchemaFieldContent, type SchemaFieldContentProps} from './fields/SchemaFieldContent';
 export {SchemaObjectArrayField} from './fields/SchemaObjectArrayField';
 export {SchemaObjectField} from './fields/SchemaObjectField';
@@ -44,7 +47,6 @@ export {
   SchemaReferenceArrayField,
   type SchemaReferenceArrayFieldProps,
 } from './fields/SchemaReferenceArrayField';
-export type {ReferenceVariant} from './fields/referenceVariant';
 export {SchemaRangeField, type SchemaRangeFieldProps} from './fields/SchemaRangeField';
 export {
   SchemaRecordRepresentation,

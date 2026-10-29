@@ -10,11 +10,11 @@ import {
 import {SchemaRecordRepresentation} from '@schema/components/fields/SchemaRecordRepresentation';
 import {
   REFERENCE_WIDTH_OFFSET,
-  ReferenceVariant,
   referenceMaxWidth,
 } from '@schema/components/fields/referenceVariant';
+import {useFieldDefaults} from '@schema/contexts/FieldDefaultsContext';
 import {useGlobalResourceSchemaContext} from '@schema/hooks/useGlobalResourceSchemaContext';
-import {FieldOptions} from '@schema/types';
+import {FieldOptions, ReferenceVariant} from '@schema/types';
 import {FIELD_DEFAULT} from '@schema/utils/fieldSelection';
 import {viewModeToPresentation} from '@schema/utils/viewMode';
 import {SchemaReferenceFieldContent} from './SchemaReferenceFieldContent';
@@ -23,8 +23,9 @@ export type SchemaReferenceFieldProps = FieldProps & {
   reference?: string;
   targetSource?: string;
   options?: FieldOptions;
-  // Chip (the default) or a plain text link. Ignored by the `targetSource` branch below, which
-  // renders a field of the related record rather than its representation.
+  // Chip or a plain text link. Defaults to `fieldDefaults.reference` (`'chip'` unless the
+  // application says otherwise) — an explicit value here wins over it. Ignored by the
+  // `targetSource` branch below, which renders a field of the related record, not a representation.
   variant?: ReferenceVariant;
 };
 
@@ -36,10 +37,13 @@ export const SchemaReferenceField = ({
   reference: inReference,
   targetSource,
   options,
-  variant = 'chip',
+  variant: inVariant,
 }: SchemaReferenceFieldProps) => {
   const reference = useResourceContext(inReference);
   const {isInCollection} = useValueLocationContext();
+  // Read above the early returns below — the hook has to run on every render of this component.
+  const {reference: defaultVariant} = useFieldDefaults();
+  const variant = inVariant ?? defaultVariant;
 
   const {schema: relatedSchema} = useGlobalResourceSchemaContext(reference);
 
