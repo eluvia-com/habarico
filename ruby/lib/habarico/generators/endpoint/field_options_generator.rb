@@ -56,9 +56,9 @@ module Habarico
     # independent generator methods, called separately for the same field - derive it only once
     # instead of each re-running `model.validators_on(attachment)` and the Marcel content-type
     # guess for the half of the result the other one does not need.
-    def file_validation_rules(model, attr_name)
-      @file_validation_rules ||= {}
-      @file_validation_rules[[model, attr_name]] ||= Habarico::FileValidations.for_model(model, attr_name)
+    def file_rules(model, attr_name)
+      @file_rules ||= {}
+      @file_rules[[model, attr_name]] ||= Habarico::FileRulesResolver.new(model).resolve(attr_name)
     end
 
     def phone_field_options_generator
@@ -97,18 +97,18 @@ module Habarico
     # Largest file (bytes) this `file_attr` accepts, derived from its own
     # `active_storage_validations` size declaration (HAB-966). `habarico_enterprise.uploads`, when
     # installed, additionally folds in the project-wide upload size ceiling for a field a
-    # chunked-upload provider serves - see `Habarico::FileValidations.for_model`.
+    # chunked-upload provider serves - see `Habarico::FileRulesResolver`.
     #
     # A bare symbol declaration has no `FieldReference` to set an explicit override on - see
     # `generate_max_size_fr` for that.
     def generate_max_size_at(model, attr_name)
-      file_validation_rules(model, attr_name).max_size
+      file_rules(model, attr_name).max_size
     end
 
     # File types this `file_attr` accepts, derived from its own `active_storage_validations`
     # content-type declaration (HAB-966).
     def generate_accept_at(model, attr_name)
-      Habarico::FileValidations.accept_for(file_validation_rules(model, attr_name).allowed_content_types)
+      file_rules(model, attr_name).accept
     end
 
     def generate_prefix_fr(_model, _field_reference)
@@ -167,12 +167,12 @@ module Habarico
     # imply.
     def generate_max_size_fr(model, field_reference)
       return field_reference.max_size if field_reference.max_size.present?
-      file_validation_rules(model, field_reference.name).max_size
+      file_rules(model, field_reference.name).max_size
     end
 
     def generate_accept_fr(model, field_reference)
       return field_reference.accept if field_reference.accept.present?
-      Habarico::FileValidations.accept_for(file_validation_rules(model, field_reference.name).allowed_content_types)
+      file_rules(model, field_reference.name).accept
     end
 
   end

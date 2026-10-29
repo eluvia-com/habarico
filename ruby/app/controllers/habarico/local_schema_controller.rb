@@ -12,7 +12,7 @@ module Habarico
         target: (JSON.parse(params['_target']) rescue {}).symbolize_keys,
         source: (JSON.parse(params['_source']) rescue {}).symbolize_keys
       )
-      render json: Habarico::SchemaService.instance.get_local_schema(resource_name, context).as_json.deep_compact(compactable: [nil, {}].freeze)
+      render_schema(Habarico::SchemaService.instance.get_local_schema(resource_name, context))
     end
 
     def show
@@ -28,7 +28,7 @@ module Habarico
         target: (JSON.parse(params['_target']) rescue {}).symbolize_keys,
         source: (JSON.parse(params['_source']) rescue {}).symbolize_keys
       )
-      render json: Habarico::SchemaService.instance.get_local_schema(resource_name, context).as_json.deep_compact(compactable: [nil, {}].freeze)
+      render_schema(Habarico::SchemaService.instance.get_local_schema(resource_name, context))
     end
 
   end

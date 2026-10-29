@@ -43,13 +43,13 @@ module Habarico
 
     # Largest file (bytes) the frontend accepts for this field, checked before the upload starts.
     # Derived from a `file_attr`'s own `active_storage_validations` size declaration (HAB-966); see
-    # `Habarico::FileValidations`. `habarico_enterprise.uploads` additionally folds in its
+    # `Habarico::FileRulesResolver`. `habarico_enterprise.uploads` additionally folds in its
     # project-wide `Config.max_upload_size` ceiling for a field a chunked-upload provider serves.
     integer_attr :max_size
 
     # File types the frontend accepts for this field, checked before the upload starts. Derived
     # from a `file_attr`'s own `active_storage_validations` content-type declaration (HAB-966); see
-    # `Habarico::FileValidations`.
+    # `Habarico::FileRulesResolver`.
     has_many_attr :accept, 'String'
 
   end

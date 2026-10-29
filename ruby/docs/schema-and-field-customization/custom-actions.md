@@ -96,7 +96,7 @@ Habarico::Response.new(
 )
 
 # 3. A complete `Habarico::ActionSchema` - full control over what is sent
-Habarico::Response.new(action: build_action_schema(Habarico::ShowAction.new, record_pk: order.id))
+Habarico::Response.new(action: trigger_action_schema(Habarico::ShowAction.new, record_pk: order.id))
 ```
 
 A name that is not declared in `actions` raises an error naming the declared ones.
@@ -150,9 +150,10 @@ Habarico::Response.new(
 )
 ```
 
-`Habarico::Controller#build_action_schema(action, record:, record_pk:, reference:)` builds the same
-schema from a declared action's name or a `Habarico::Action` and returns it — it is what the
-[`get_trigger_action_schema` hook](./controller-hooks.md) returns, and what form 3 above uses.
+`Habarico::Controller#trigger_action_schema(action, record:, record_pk:, reference:)` builds the same
+schema from a declared action's name or a `Habarico::Action` and returns it — it is what form 3
+above uses, and what the [`get_trigger_action_schema` hook](./controller-hooks.md) returns to retarget
+its trigger action.
 
 ---
 

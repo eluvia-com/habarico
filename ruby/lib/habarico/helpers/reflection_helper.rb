@@ -57,5 +57,11 @@ module Habarico
       is_active_record_class?(model_class) && model_class.reflect_on_association(field_name.to_sym)&.macro == :has_many
     end
 
+    # Columns of the primary key of `model_class` (every one of a composite key), none for a model
+    # without one.
+    def self.primary_key_fields(model_class)
+      Array(model_class.try(:primary_key)).map(&:to_s)
+    end
+
   end
 end

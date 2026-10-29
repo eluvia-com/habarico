@@ -15,6 +15,7 @@ require "habarico/authenticatable"
 # *****************************************************************************
 
 require "habarico/active_model/references"
+require "habarico/active_model/extensible_enum"
 
 # *****************************************************************************
 # Helpers
@@ -24,11 +25,18 @@ require "habarico/helpers/action_helper"
 require "habarico/helpers/attributes_helper"
 require "habarico/helpers/box_helper"
 require "habarico/helpers/callable_helper"
-require "habarico/helpers/filter_params_helper"
 require "habarico/helpers/order_by_helper"
 require "habarico/helpers/reflection_helper"
-require "habarico/helpers/sorting_helper"
-require "habarico/file_validations"
+
+# *****************************************************************************
+# Resolvers
+# *****************************************************************************
+
+require "habarico/resolvers/field_path_resolver"
+require "habarico/resolvers/file_rules_resolver"
+require "habarico/resolvers/filter_params_resolver"
+require "habarico/resolvers/record_params_resolver"
+require "habarico/resolvers/sorting_resolver"
 
 # *****************************************************************************
 # Search
@@ -37,7 +45,6 @@ require "habarico/file_validations"
 # Free per-resource search. The global spotlight search and its highlighter are a paid feature and
 # are not required here - habarico-enterprise loads them and registers itself through
 # `Config.search_highlighter_class` (HAB-812).
-require "habarico/search/field_resolver"
 require "habarico/search/search_matcher"
 
 # *****************************************************************************
@@ -46,7 +53,6 @@ require "habarico/search/search_matcher"
 
 # Shared enum types
 require "habarico/schema/types"
-require "habarico/schema/extensible_enum"
 
 # Action schema models
 require "habarico/schema/action/link_action_parameters"
@@ -241,12 +247,16 @@ require "habarico/definition/definition"
 # *****************************************************************************
 
 # Controller
+require "habarico/queries/records_query"
+require "habarico/validators/order_by_validator"
 require "habarico/controller"
 
 # Serializer
-require "habarico/serializers/serializer"
+require "habarico/serializers/compact_json"
+require "habarico/serializers/fields_serializer"
 require "habarico/serializers/meta_serializer"
 require "habarico/serializers/record_serializer"
+require "habarico/serializers/response_serializer"
 
 # *****************************************************************************
 # Services

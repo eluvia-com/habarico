@@ -2,7 +2,7 @@ require "test_helper"
 require "active_storage_validations"
 
 module Habarico
-  class FileValidationsTest < Minitest::Test
+  class FileRulesResolverTest < Minitest::Test
 
     class UploadableModel
       def self.name
@@ -58,35 +58,35 @@ module Habarico
     end
 
     # ***********************************************************************
-    # for_model
+    # resolve
     # ***********************************************************************
 
     def test_nil_model_derives_none
-      rules = FileValidations.for_model(nil, :photo)
+      rules = FileRulesResolver.new(nil).resolve(:photo)
       assert_nil rules.allowed_content_types
       assert_nil rules.max_size
     end
 
     def test_non_file_attr_derives_none
-      rules = FileValidations.for_model(UnvalidatedModel, :not_a_file)
+      rules = FileRulesResolver.new(UnvalidatedModel).resolve(:not_a_file)
       assert_nil rules.allowed_content_types
       assert_nil rules.max_size
     end
 
     def test_attribute_without_underlying_attachment_derives_none
-      rules = FileValidations.for_model(NoAttachmentModel, :photo)
+      rules = FileRulesResolver.new(NoAttachmentModel).resolve(:photo)
       assert_nil rules.allowed_content_types
       assert_nil rules.max_size
     end
 
     def test_field_without_validators_derives_none
-      rules = FileValidations.for_model(UnvalidatedModel, :photo)
+      rules = FileRulesResolver.new(UnvalidatedModel).resolve(:photo)
       assert_nil rules.allowed_content_types
       assert_nil rules.max_size
     end
 
     def test_field_with_declared_validators_derives_both
-      rules = FileValidations.for_model(ValidatedModel, :photo)
+      rules = FileRulesResolver.new(ValidatedModel).resolve(:photo)
       assert_equal %w[image/png image/jpeg], rules.allowed_content_types
       assert_equal 2_000, rules.max_size
     end
@@ -98,7 +98,7 @@ module Habarico
           [::ActiveStorageValidations::ContentTypeValidator.new(attributes: [:photo_attachment], with: :png)]
         end
       end
-      rules = FileValidations.for_model(klass, :photo)
+      rules = FileRulesResolver.new(klass).resolve(:photo)
       assert_equal ["image/png"], rules.allowed_content_types
     end
 
@@ -109,7 +109,7 @@ module Habarico
           [::ActiveStorageValidations::ContentTypeValidator.new(attributes: [:photo_attachment], with: %r{\Aimage/.*\z})]
         end
       end
-      rules = FileValidations.for_model(klass, :photo)
+      rules = FileRulesResolver.new(klass).resolve(:photo)
       assert_equal 1, rules.allowed_content_types.size
       assert_kind_of Regexp, rules.allowed_content_types.first
     end
@@ -121,7 +121,7 @@ module Habarico
           [::ActiveStorageValidations::SizeValidator.new(attributes: [:photo_attachment], less_than: 5_242_880)]
         end
       end
-      rules = FileValidations.for_model(klass, :photo)
+      rules = FileRulesResolver.new(klass).resolve(:photo)
       assert_equal 5_242_879, rules.max_size
     end
 
@@ -132,25 +132,29 @@ module Habarico
           [::ActiveStorageValidations::SizeValidator.new(attributes: [:photo_attachment], greater_than: 1_000)]
         end
       end
-      rules = FileValidations.for_model(klass, :photo)
+      rules = FileRulesResolver.new(klass).resolve(:photo)
       assert_nil rules.max_size
     end
 
     # ***********************************************************************
-    # accept_for
+    # FileRules#accept
     # ***********************************************************************
 
-    def test_accept_for_maps_concrete_types
-      assert_equal %w[image/png image/jpeg], FileValidations.accept_for(%w[image/png image/jpeg])
+    def accept(allowed_content_types)
+      FileRules.new(allowed_content_types: allowed_content_types).accept
     end
 
-    def test_accept_for_blank_is_nil
-      assert_nil FileValidations.accept_for(nil)
-      assert_nil FileValidations.accept_for([])
+    def test_accept_maps_concrete_types
+      assert_equal %w[image/png image/jpeg], accept(%w[image/png image/jpeg])
     end
 
-    def test_accept_for_drops_out_entirely_when_a_regexp_is_present
-      assert_nil FileValidations.accept_for(["image/png", %r{\Aimage/.*\z}])
+    def test_accept_of_no_content_types_is_nil
+      assert_nil accept(nil)
+      assert_nil accept([])
+    end
+
+    def test_accept_drops_out_entirely_when_a_regexp_is_present
+      assert_nil accept(["image/png", %r{\Aimage/.*\z}])
     end
 
   end

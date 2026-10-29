@@ -10,6 +10,8 @@ module Habarico
   # *****************************************************************************
   class ControllerOrderByTest < Minitest::Test
 
+    Column = Struct.new(:type)
+
     # Minimal ActiveRecord double. Only the class-level reflection the sorting whitelist reads is
     # answered, so no database connection is involved - what matters is that the class really is an
     # ActiveRecord::Base descendant, since that is what switches the whitelist on.
@@ -18,7 +20,7 @@ module Habarico
       model = Class.new(ActiveRecord::Base)
       model.define_singleton_method(:name) { 'Product' }
       model.define_singleton_method(:primary_key) { 'id' }
-      model.define_singleton_method(:columns_hash) { columns.index_with { |_column| Object.new } }
+      model.define_singleton_method(:columns_hash) { columns.index_with { |_column| Column.new(:string) } }
       model.define_singleton_method(:column_names) { columns }
       model.define_singleton_method(:attribute_names) { columns }
       model.define_singleton_method(:reflect_on_association) { |name| associations[name.to_sym] }
@@ -63,11 +65,10 @@ module Habarico
       controller
     end
 
-    # The two `before_action` hooks of `index`, in the order the controller declares them.
+    # The `before_action` of `index`: `set_pagination`, then the field whitelist.
     def order_by(params = {}, model: nil, &body)
       controller = build_controller(params, model: model, &body)
       controller.send(:set_list_pagination)
-      controller.send(:validate_order_by_param)
       controller
     end
 
@@ -255,32 +256,8 @@ module Habarico
       assert_rejected({ order_by: 'name:asc' }, ['order_by__name'], &body)
     end
 
-    def test_the_primary_key_stays_accepted_under_a_host_tiebreaker
-      # The frontend sorts by `pk_field_name` whenever a list has no sorting of its own, whatever
-      # the resource breaks ties on.
-      body = proc do
-        def list_order_by_tiebreaker
-          %w[email]
-        end
-      end
-      controller = order_by({ order_by: 'id:asc' }, &body)
-
-      assert_equal :asc, controller.instance_variable_get(:@order_by)['id']
-    end
-
-    def test_a_host_tiebreaker_is_accepted_too
-      body = proc do
-        def list_order_by_tiebreaker
-          %w[email]
-        end
-      end
-      controller = order_by({ order_by: 'email:desc' }, &body)
-
-      assert_equal :desc, controller.instance_variable_get(:@order_by)['email']
-    end
-
     # ***********************************************************************
-    # Tiebreaker
+    # The primary key behind the ordering
     # ***********************************************************************
 
     def test_the_primary_key_is_ordered_by_behind_the_request
@@ -290,8 +267,8 @@ module Habarico
     end
 
     def test_a_request_already_sorting_by_the_primary_key_keeps_its_direction
-      # The tiebreaker used to be handed to `set_pagination` as `fallback_order_by`, which
-      # concatenates it onto the ordering before parsing - `id:desc,id:asc` collapses to ascending.
+      # The primary key reaches `set_pagination` as `fallback_order_by`, which never overrides a
+      # direction the request already sets.
       controller = order_by({ order_by: 'id:desc' })
 
       assert_equal({ 'id' => :desc }, controller.instance_variable_get(:@order_by))
@@ -321,17 +298,6 @@ module Habarico
       controller = order_by({ order_by: 'name:asc' }, model: model)
 
       assert_equal({ 'name' => :asc }, controller.instance_variable_get(:@order_by))
-    end
-
-    def test_a_host_controller_can_sort_ties_differently
-      body = proc do
-        def list_order_by_tiebreaker
-          %w[email]
-        end
-      end
-      controller = order_by({ order_by: 'name:asc' }, &body)
-
-      assert_equal({ 'name' => :asc, 'email' => :asc }, controller.instance_variable_get(:@order_by))
     end
 
     def test_a_model_without_reflection_is_left_to_itself

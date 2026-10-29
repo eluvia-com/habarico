@@ -1,6 +1,8 @@
 module Habarico
   module Serializers
-    class Serializer
+    # Reads the values of a resource's `fields` from a record: foreign keys for `belongs_to` /
+    # `has_one`, the value of an enum, the plain attribute otherwise.
+    class FieldsSerializer
       include Eluvia::Serializers::FieldsetSerializer
 
       def initialize(definition)
@@ -9,7 +11,7 @@ module Habarico
 
       def serialize(record, fields: nil)
         read_fieldset(fields).each_with_object({}) do |rest_field, result|
-          next unless record.respond_to?(rest_field.name)
+          next unless serializable?(record, rest_field.name)
 
           result[rest_field.name] = read_attribute(record, rest_field.name)
         end
@@ -17,6 +19,11 @@ module Habarico
 
       def readable_fields
         field_names
+      end
+
+      # Whether `field_name` goes into the response; a subclass adding a computed field opts it in.
+      def serializable?(record, field_name)
+        record.respond_to?(field_name)
       end
 
       def read_attribute(record, field_name)

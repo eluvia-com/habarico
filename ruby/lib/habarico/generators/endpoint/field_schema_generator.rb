@@ -260,7 +260,7 @@ module Habarico
     end
 
     def generate_sort_by(model, field_name, attr_name, _variant)
-      Habarico::SortingHelper.schema_sort_by(definition, model, field_name, attr_name: attr_name)
+      Habarico::SortingResolver.new(model, sorting_fields: definition.sorting_fields).field_sort_by(field_name, attr_name: attr_name)
     end
 
     def generate_reference(model, field_name, _attr_name, _variant)

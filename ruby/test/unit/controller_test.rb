@@ -1,68 +1,6 @@
 require "test_helper"
 
 module Habarico
-  class ControllerTest < Minitest::Test
-
-    # Minimal model double: `sanitize_record_params` only ever calls `has_file_attr?` on it.
-    class UploadableModel
-      def self.has_file_attr?(field)
-        field.to_sym == :document
-      end
-    end
-
-    class RecordsController < ActionController::Base
-      include Habarico::Controller
-
-      model UploadableModel
-      fields %i[notes document]
-    end
-
-    def setup
-      @controller = RecordsController.new
-    end
-
-    # ***********************************************************************
-    # sanitize_record_params - scalar fields (existing behavior)
-    # ***********************************************************************
-
-    def test_permits_scalar_fields
-      @controller.params = { notes: "hello", employee_id: 9 }
-      permitted = @controller.send(:sanitize_record_params)
-      assert_equal "hello", permitted[:notes]
-    end
-
-    # ***********************************************************************
-    # sanitize_record_params - file_attr fields (base64 / chunked upload)
-    # ***********************************************************************
-
-    def test_strips_hash_valued_file_field_without_nested_permit_spec
-      # Regression baseline: a bare `permit(:document)` (no nested spec) silently drops any
-      # Hash value - this is the bug `record_param_permit_spec` fixes below.
-      params = ActionController::Parameters.new(document: { upload_key: "tmp/uploads/x/y.zip" })
-      assert_nil params.permit(:document)[:document]
-    end
-
-    def test_permits_upload_key_for_file_attr_field
-      @controller.params = { notes: "hello", document: { upload_key: "tmp/uploads/x/y.zip" } }
-      permitted = @controller.send(:sanitize_record_params)
-      assert_equal "tmp/uploads/x/y.zip", permitted[:document][:upload_key]
-    end
-
-    def test_permits_base64_content_for_file_attr_field
-      @controller.params = { document: { filename: "y.zip", content: "base64data" } }
-      permitted = @controller.send(:sanitize_record_params)
-      assert_equal "y.zip", permitted[:document][:filename]
-      assert_equal "base64data", permitted[:document][:content]
-    end
-
-    def test_does_not_permit_unlisted_keys_on_file_attr_field
-      @controller.params = { document: { upload_key: "tmp/uploads/x/y.zip", evil: "nope" } }
-      permitted = @controller.send(:sanitize_record_params)
-      refute permitted[:document].key?(:evil)
-    end
-
-  end
-
   # *****************************************************************************
   # show - HAB-899: read-by-id must respect can_read, same as index
   # *****************************************************************************
@@ -178,7 +116,7 @@ module Habarico
 
         attr_reader :rendered_ids
 
-        def render_list
+        def render_list(_search_query = nil)
           @rendered_ids = @records.ids
         end
       end
@@ -255,7 +193,7 @@ module Habarico
         ScopedRelation.new(@ids & ids)
       end
 
-      def filter_2(_default_filter)
+      def filter_2(_default_filter, current_user: nil) # rubocop:disable Lint/UnusedMethodArgument -- keyword name must match the real filter_2 interface
         self
       end
 
@@ -305,48 +243,6 @@ module Habarico
       controller.params = { id: "3" }
       controller.send(:set_record)
       assert_equal 3, controller.instance_variable_get(:@record).id
-    end
-
-  end
-
-  # *****************************************************************************
-  # finalize_meta - HAB-1022: meta.schema is snake_case like the rest of the response
-  # *****************************************************************************
-
-  class FinalizeMetaTest < Minitest::Test
-
-    class MetaController < ActionController::Base
-      include Habarico::Controller
-    end
-
-    def finalize(schema)
-      result = { 'id' => 1, 'final_variable_symbol' => '123', 'meta' => { 'repr' => 'Record', 'schema' => schema } }
-      MetaController.new.send(:finalize_meta, result, :detail, nil)['meta']['schema']
-    end
-
-    def test_schema_keys_stay_snake_case
-      schema = finalize(
-        'name' => 'bank_transactions',
-        'pk_field_name' => 'id',
-        'actions' => [{ 'name' => 'detail', 'is_detail' => true, 'show_in_list' => true, 'show_in_detail' => true }]
-      )
-
-      assert_equal 'id', schema['pk_field_name']
-      assert_equal({ 'name' => 'detail', 'is_detail' => true, 'show_in_list' => true, 'show_in_detail' => true }, schema['actions'].first)
-    end
-
-    def test_declared_view_parameters_reach_the_client_as_declared
-      schema = finalize(
-        'actions' => [{ 'name' => 'remind', 'view' => { 'dialog_width' => 'md', 'parameters' => { 'kind' => 'reminder', 'object_id' => 7 } } }]
-      )
-
-      assert_equal({ 'dialog_width' => 'md', 'parameters' => { 'kind' => 'reminder', 'object_id' => 7 } }, schema['actions'].first['view'])
-    end
-
-    def test_nil_and_empty_hash_values_are_dropped
-      schema = finalize('name' => 'orders', 'label' => nil, 'actions' => [{ 'name' => 'detail', 'confirm_dialog' => {} }])
-
-      assert_equal({ 'name' => 'orders', 'actions' => [{ 'name' => 'detail' }] }, schema)
     end
 
   end

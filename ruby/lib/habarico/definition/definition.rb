@@ -17,8 +17,8 @@ module Habarico
                   # Fields and filters
                   :sorting_fields, :read_only_fields, :write_only_fields, :filters,
 
-                  # Pagination (per resource; `nil` falls back to `Habarico::Config` and then to
-                  # the eluvia-base defaults - see `Habarico::Controller#set_list_pagination`)
+                  # Pagination: a number or a callable taking the context; `nil` falls back to
+                  # `Habarico::Config` and then to the eluvia-base defaults
                   :default_page_limit, :max_page_limit,
 
                   # Aggregation and dashboard are paid: habarico-enterprise adds
@@ -31,6 +31,9 @@ module Habarico
                   # Permissions
                   :can, :can_read, :can_create, :can_update, :can_delete, :allow_read_by_id,
                   :policy_scope,
+
+                  # Class reading the field values of a record, `Habarico::Serializers::FieldsSerializer`
+                  :fields_serializer,
 
                   # Generator classes - action
                   :link_action_parameters_generator, :resource_action_endpoint_parameters_generator,
@@ -64,10 +67,10 @@ module Habarico
                   :view_endpoint_parameters_generator, :list_view_parameters_generator, :view_schema_generator
 
     def initialize
+      @fields_serializer = Habarico::Serializers::FieldsSerializer
 
       # No column is assumed to exist. Without a declaration the list is ordered by the primary
-      # key alone, which `Habarico::Controller#append_order_by_tiebreaker` appends anyway
-      # (HAB-915).
+      # key alone, which `Habarico::Controller#set_list_pagination` puts behind every ordering.
       @default_sorting = nil
       @force_sorting = false
       @default_filter = {}

@@ -2,7 +2,7 @@ require "test_helper"
 require "minitest/mock"
 
 # Top-level so `Habarico::ResourceService` resolves the `products` resource to it by name, the way
-# a host app's controller is resolved. `serialize_record` below needs that resolution.
+# a host app's controller is resolved. `record_serializer` below needs that resolution.
 class ProductsController < ActionController::Base
   include Habarico::Controller
 
@@ -205,14 +205,14 @@ module Habarico
 
     def test_trigger_action_targets_another_record_of_the_same_resource
       action = @controller.class.definition.normalized_actions.find { |a| a.name == 'edit_price' }
-      schema = @controller.send(:build_action_schema, action, record_pk: CATEGORY_PK)
+      schema = @controller.send(:trigger_action_schema, action, record_pk: CATEGORY_PK)
       result = render(Habarico::Response.new(action: schema))
 
       assert_equal CATEGORY_PK, result['meta']['trigger_action']['view']['endpoint']['record_pk']
     end
 
-    def test_build_action_schema_retargets_a_declared_action_given_by_name
-      schema = @controller.send(:build_action_schema, 'edit_price', record_pk: CATEGORY_PK, reference: 'categories')
+    def test_trigger_action_schema_retargets_a_declared_action_given_by_name
+      schema = @controller.send(:trigger_action_schema, 'edit_price', record_pk: CATEGORY_PK, reference: 'categories')
 
       assert_equal CATEGORY_PK, schema.view.endpoint.record_pk
       assert_equal 'categories', schema.view.endpoint.reference
@@ -264,14 +264,14 @@ module Habarico
 
     def serialize_record(controller, record)
       Habarico::SchemaService.instance.stub(:get_object_schema, OBJECT_SCHEMA) do
-        controller.send(:serialize_record, :detail, record)
+        controller.send(:record_serializer).serialize(:detail, record)
       end
     end
 
     def test_get_trigger_action_schema_reaches_the_meta_of_a_serialized_record
       controller = Class.new(ProductsController) do
         def get_trigger_action_schema(record)
-          build_action_schema(
+          trigger_action_schema(
             Habarico::ViewAction.new(name: 'show', view_name: 'show', view_mode: :dialog, is_detail: true),
             record: record,
             reference: 'categories',
@@ -288,6 +288,42 @@ module Habarico
       assert_equal 'categories', endpoint['reference']
       assert_equal CATEGORY_PK, endpoint['record_pk']
       assert_equal 'dialog', result['meta']['trigger_action']['view']['mode']
+    end
+
+    # Without a record of its own, as on a list: the trigger action must target the record the
+    # hook was called with, not the request's.
+    def list_controller(&hook)
+      controller = ProductsController.new
+      controller.define_singleton_method(:get_trigger_action_schema, &hook)
+      controller.params = {}
+      controller
+    end
+
+    def test_get_trigger_action_schema_may_answer_a_declared_action_name
+      record = ProductsController::Product.new(CATEGORY_PK, 'Grinder')
+
+      trigger = serialize_record(list_controller { |_record| 'edit_price' }, record)['meta']['trigger_action']
+
+      assert_equal 'edit', trigger['view']['name']
+      assert_equal CATEGORY_PK, trigger['view']['endpoint']['record_pk']
+    end
+
+    def test_get_trigger_action_schema_may_answer_an_action
+      record = ProductsController::Product.new(PRODUCT_PK, 'Espresso machine')
+      controller = list_controller do |_record|
+        Habarico::LinkAction.new(name: 'open_manual', link_url: 'https://manuals.example.com/espresso', link_target: :blank)
+      end
+
+      trigger = serialize_record(controller, record)['meta']['trigger_action']
+
+      assert_equal 'link', trigger['type']
+      assert_equal 'https://manuals.example.com/espresso', trigger['link']['url']
+    end
+
+    def test_get_trigger_action_schema_answering_nil_adds_no_trigger_action
+      record = ProductsController::Product.new(PRODUCT_PK, 'Espresso machine')
+
+      refute serialize_record(list_controller { |_record| nil }, record)['meta'].key?('trigger_action')
     end
 
     def test_serialized_record_has_no_trigger_action_without_the_hook
