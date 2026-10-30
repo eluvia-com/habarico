@@ -1,6 +1,6 @@
 {
   "name": "habarico",
-  "version": "7.3.0-beta.10",
+  "version": "7.3.0-beta.11",
   "description": "With this library you can connect to BE schemas and automatically or semi-automatically generate an admin dashboard.",
   "type": "module",
   "main": "lib/index.cjs",
