@@ -1,1 +1,1 @@
-export {ChoicesField, type ChoicesFieldProps} from './ChoicesField';
+export {ChoicesField, type ChoicesFieldProps, type ChoicesFieldVariant} from './ChoicesField';

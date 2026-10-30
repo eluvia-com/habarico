@@ -8,7 +8,7 @@ import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 import StorybookPreview from "@site/src/components/StorybookPreview";
 
-Displays an enum value as a colored chip.
+Displays an enum value as a colored chip, or as its plain label.
 
 <StorybookPreview />
 
@@ -40,6 +40,7 @@ On top of its own `choices`, the component accepts the shared
 | `emptyText` | `string` | — | Text shown when the value is empty |
 | `record` | `RaRecord` | record from context | Renders a record other than the one in context |
 | `iconsKey` | `string` | — | Key into the `iconsMap` on [SchemaAdmin](../base-components/schema-admin.md), used to give the chip an icon |
+| `variant` | `'chip' \| 'text'` | `fieldDefaults.choices` | Chip, or the plain label — see below |
 
 `SchemaChoicesField` is the wrapper the schema mounts: `choices` comes from the field's `enum` and
 `iconsKey` from `options.choices.iconsKey`.
@@ -50,6 +51,23 @@ one.
 
 In a list the chip is truncated to the column width, so a long label does not push the column
 open.
+
+## `variant`
+
+`'text'` renders the label as plain text instead of a chip — but **only for an enum whose options
+define no color of their own**. A chip of a colored option *carries* the color, and plain text
+cannot, so a colored enum keeps its chips under `'text'` as well. The test is run over the whole
+option list, not per value, so one field never mixes chips and bare words down a column; a `color`
+of `'inherit'` counts as no color.
+
+```tsx
+<ChoicesField source="status" choices={statusChoices} variant="text" />
+```
+
+Left unset, `variant` follows
+[`fieldDefaults.choices`](../base-components/field-defaults.md) — the same key the other choices
+field reads, so a single choice and an array of them are never rendered in two different shapes.
+`'chip'` is the default behind that.
 
 ## Schema mapping
 

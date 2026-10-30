@@ -3,6 +3,7 @@ import {Identifier, ResourceProps} from 'react-admin';
 import {Route} from 'react-router-dom';
 import {useAdminConfig} from '@admin/contexts/AdminConfigContext';
 import {DashboardContent} from '@design/layouts/dashboard';
+import {FieldDefaultsProvider} from '@schema/contexts/FieldDefaultsContext';
 import {ResourceBoxProvider} from '@schema/contexts/ResourceBoxContext';
 import {ResourceButtonProvider} from '@schema/contexts/ResourceButtonContext';
 import {ResourceFieldProvider} from '@schema/contexts/ResourceFieldContext';
@@ -13,7 +14,7 @@ import {
   ResourceFieldProvider as ResourceFieldProviderType,
   ResourceInputProvider as ResourceInputProviderType,
 } from '@schema/providers/types';
-import {GlobalViewSchema, ViewType} from '@schema/types';
+import {FieldDefaults, GlobalViewSchema, ViewType} from '@schema/types';
 import {isRoutedViewMode} from '@schema/utils/viewMode';
 
 export type ViewProps = {
@@ -29,6 +30,7 @@ export type GetViewWithProvidersProps = {
   fieldProvider?: ResourceFieldProviderType;
   boxProvider?: ResourceBoxProviderType;
   buttonProvider?: ResourceButtonProviderType;
+  fieldDefaults?: FieldDefaults;
   properties?: ViewProps;
 };
 
@@ -38,10 +40,19 @@ export const getViewWithProviders = ({
   fieldProvider,
   boxProvider,
   buttonProvider,
+  fieldDefaults,
 }: GetViewWithProvidersProps) => {
   if (!view) return;
 
   let viewWithProviders = view;
+  // Wrapped on its own, not folded into the `fieldProvider` branch below: a resource sets its field
+  // shapes with or without a provider of its own. Spread rather than passed as an object so the
+  // provider memoizes on the keys (see `FieldDefaultsProvider`).
+  if (fieldDefaults) {
+    viewWithProviders = (
+      <FieldDefaultsProvider {...fieldDefaults}>{viewWithProviders}</FieldDefaultsProvider>
+    );
+  }
   if (inputProvider) {
     viewWithProviders = (
       <ResourceInputProvider provider={inputProvider}>{viewWithProviders}</ResourceInputProvider>

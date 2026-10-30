@@ -1,4 +1,7 @@
 import {Identifier, RaRecord} from 'react-admin';
+import {BooleanFieldVariant} from '@admin/components/fields/BooleanField';
+import {ChoicesFieldVariant} from '@admin/components/fields/ChoicesField';
+import {RecordRepresentationVariant} from '@admin/components/fields/RecordRepresentation';
 import {SearchObjectHighlight} from '@admin/utils/highlight';
 import {ColorType} from '@design/theme/core/palette';
 import {LinkTarget} from '@foundation/utils/navigation';
@@ -387,6 +390,40 @@ export type FilterSchema = {
   properties?: FieldSchema[];
   items?: ItemFieldSchema | FieldSchema;
   isAlwaysOn?: boolean;
+};
+
+// ----------------------------------------------------------------------------
+// Field presentation defaults
+// ----------------------------------------------------------------------------
+
+// The three shape vocabularies are re-exported from the admin components that own them, so
+// `@schema/types` stays the single public source for the `fieldDefaults` surface while each
+// component keeps defining the shapes it can actually render. The admin barrel exports the
+// originals under their own names (`RecordRepresentationVariant`, `BooleanFieldVariant`,
+// `ChoicesFieldVariant`), which is why these aliases are safe at the package root.
+
+/** How a reference renders the record it points at. See `RecordRepresentation`. */
+export type ReferenceVariant = RecordRepresentationVariant;
+
+/** How a boolean renders. See `BooleanField`. */
+export type BooleanVariant = BooleanFieldVariant;
+
+/** How a single choice (or an array of them) renders. See `ChoicesField`. */
+export type ChoicesVariant = ChoicesFieldVariant;
+
+/**
+ * The shape each kind of field takes when nothing says otherwise — the application's own look,
+ * which no schema describes. Set once on `SchemaAdmin` (or per resource on `SchemaResource`) and
+ * read by the schema field components; an explicit `variant` prop on a field still wins.
+ *
+ * Deliberately a record per kind of field rather than one value for all of them: a reference's
+ * `'link'` means nothing to a boolean, and a kind added here later is opt-in by its own key
+ * instead of silently changing how an existing project looks on a version bump.
+ */
+export type FieldDefaults = {
+  reference?: ReferenceVariant;
+  boolean?: BooleanVariant;
+  choices?: ChoicesVariant;
 };
 
 // ----------------------------------------------------------------------------

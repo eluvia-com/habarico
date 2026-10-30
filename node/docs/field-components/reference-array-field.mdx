@@ -30,7 +30,7 @@ On top of these it accepts the shared [field props](./index.md#common-props).
 | ------------------- | -------------------------------- | ------- | ---------------------------------------------------------------------------- |
 | `source` (required) | `string`                         | —       | Field on the record holding the array of foreign keys                        |
 | `items` (required)  | `ItemFieldSchema \| FieldSchema` | —       | Schema of a single element: its `reference`, `format` and `options.relation` |
-| `variant`           | `'chip' \| 'link'`               | `'chip'` | Render each element as a chip or as a text link                             |
+| `variant`           | `'chip' \| 'link'`               | `fieldDefaults.reference` | Render each element as a chip or as a text link            |
 
 Everything that shapes the chips is read from `items`, not from props of its own:
 
@@ -61,8 +61,9 @@ carry a shape that keeps neighbours apart. The chip form keeps its wrapping row.
 ```
 
 The stacking applies inside a datagrid cell too: the row has no fixed height, so it grows to fit
-rather than clipping everything below the first link. To switch every reference in a project at
-once, override [fieldProvider](../providers/field-provider.md#rendering-references-as-text).
+rather than clipping everything below the first link. Left unset, `variant` follows
+[`fieldDefaults.reference`](../base-components/field-defaults.md), which is how a project switches
+every reference at once; `'chip'` is the default behind that.
 
 ## The tree branch
 

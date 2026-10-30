@@ -39,7 +39,7 @@ record when you want to show one of its values instead of its representation.
 | `label`             | `string \| ReactElement \| false` | label from the schema | `false` hides the label                                               |
 | `emptyText`         | `string`                          | —                     | Text shown when the reference is empty                                |
 | `options.relation`  | `RelationFieldOptions`            | from the schema       | See the table below                                                   |
-| `variant`           | `'chip' \| 'link'`                | `'chip'`              | Render the referenced record as a chip or as a text link              |
+| `variant`           | `'chip' \| 'link'`                | `fieldDefaults.reference` | Render the referenced record as a chip or as a text link          |
 
 ### `options.relation`
 
@@ -73,8 +73,9 @@ cap and the schema's say over which view opens and on what surface are the field
 ```
 
 It is a prop, not a schema property: the backend describes the relation, the application decides
-how it looks. To switch every reference in a project at once, override
-[fieldProvider](../providers/field-provider.md#rendering-references-as-text).
+how it looks. Left unset it follows
+[`fieldDefaults.reference`](../base-components/field-defaults.md), which is how a project switches
+every reference at once; `'chip'` is the default behind that.
 
 The `targetSource` branch ignores it — there the field renders a value of the related record, not
 its representation.

@@ -14,6 +14,7 @@ contexts are already in place; outside them the ones that throw will say so.
 | `useSchemaRootContext` | The resolved providers, service schemas and identity | Throws |
 | `useAdminConfig` | The app-shell configuration | Throws |
 | `useIcons` | `iconsMap` and the `getIcon` resolver | Returns an empty map |
+| `useFieldDefaults` | The shape each kind of field takes | Returns the built-in defaults |
 | `useViewSchemaContext` | The view being rendered, plus `readOnly` | Throws |
 | `useFieldSchemaContext` | The schema of the field being rendered | Throws |
 | `useRootRecordContext` | The record the screen belongs to | Returns `undefined` |
@@ -74,6 +75,27 @@ const icon = getIcon('status', 'published', 'orderStatus');
 of value to element or a function of `(source, value)`. It returns `undefined` when `iconsKey` is
 missing from the map, which is how [ChoicesField](../field-components/choices-field.mdx) falls back
 to a plain chip.
+
+## useFieldDefaults
+
+```typescript
+const {reference, boolean, choices} = useFieldDefaults();
+```
+
+The shape each kind of field takes here — [`fieldDefaults`](../base-components/field-defaults.md) as
+the application set it, resolved: the nearest `SchemaResource` merged over `SchemaAdmin` merged over
+the built-in `'chip'`. Every key always has a value, so a field of your own reads it without
+repeating a fallback:
+
+```tsx
+const MyReferenceField = ({variant, ...rest}: MyReferenceFieldProps) => {
+  const {reference} = useFieldDefaults();
+  return <SchemaReferenceField variant={variant ?? reference} {...rest} />;
+};
+```
+
+It does **not** throw outside a provider — a field is rendered in a test and in a Storybook story
+with no admin above it, and the built-in defaults are the right answer there.
 
 ## useViewSchemaContext
 

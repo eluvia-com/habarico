@@ -1,12 +1,6 @@
-import {RecordRepresentationVariant} from '@admin/components/fields/RecordRepresentation';
-
-/**
- * How a reference field renders the record it points at: as a chip (the default, a tag) or as a
- * plain text link. The field passes it straight to `RecordRepresentation`'s own `variant`, so the
- * two are one vocabulary. Not a schema property — the application picks it per field, or for every
- * reference at once, by overriding `fieldProvider`.
- */
-export type ReferenceVariant = RecordRepresentationVariant;
+// `ReferenceVariant` — how a reference renders the record it points at — lives in `@schema/types`
+// beside the rest of the `fieldDefaults` surface, since the application sets it there as well as
+// per field. This module keeps only the width arithmetic the two reference fields share.
 
 // `--field-<source>` is the datagrid column's width, set on the `<td>` itself (see `AdminDatagrid`'s
 // `columnSx`), so the space actually available inside the cell is narrower by its own horizontal

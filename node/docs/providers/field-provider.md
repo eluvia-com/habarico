@@ -80,41 +80,24 @@ text that the surrounding layout expects; a component that ignores them renders 
 isolation and wrongly inside a datagrid.
 :::
 
-### Rendering references as text
+### Not for a project-wide look
 
-The reference fields render the record they point at as a chip. To render every reference in the
-project as a text link instead, hand them `variant="link"` — the two branches below are the
-whole override, because anything this provider does not claim falls through to the default one:
+A provider is the wrong tool for "every reference in this project is a text link, every boolean a
+word". That is [fieldDefaults](../base-components/field-defaults.md):
 
 ```tsx
-<SchemaAdmin
-  fieldProvider={({type, format, schema, props}) => {
-    if (format === 'relation' || format === 'tree-relation') {
-      return (
-        <SchemaReferenceField
-          variant="link"
-          reference={schema?.reference}
-          targetSource={schema?.targetSource}
-          options={schema?.options}
-          {...props}
-        />
-      );
-    }
-    if (type === 'array' && schema?.items?.reference) {
-      return (
-        <SchemaReferenceArrayField variant="link" items={schema.items} {...props} />
-      );
-    }
-  }}
->
-  <SchemaResource name="eshop/product" />
-</SchemaAdmin>
+<SchemaAdmin fieldDefaults={{reference: 'link', boolean: 'text', choices: 'text'}} ... />
 ```
 
-Both branches mirror `defaultFieldProvider`'s own, so nothing but the look changes: the query, the
-field selection, the width cap in a datagrid and the schema's say over which view opens stay the
-field's. See
-[RecordRepresentation](../field-components/record-representation.mdx) for the form itself.
+Written as a provider, the same thing has to restate the dispatch `defaultFieldProvider` already
+does — which formats are references, which arrays carry one — just to pass one prop, and the
+application then owns conditions the library is free to change under it. `fieldDefaults` says only
+what it means, and still composes with a provider: the field's `variant` prop wins over the
+defaults, so a provider returning `<SchemaReferenceField variant="chip" />` keeps its chip inside an
+admin that asked for links.
+
+Reach for a provider when the shape depends on something only the application knows — one field, one
+resource, a value of the record.
 
 ## Default mapping
 

@@ -147,6 +147,46 @@
   it to whether its `filters` prop is passed. New translation key `ra.action.reset_datagrid_filters`
   in every bundled locale. (VD-2875)
 
+- `SchemaAdmin` and `SchemaResource` gained an optional `fieldDefaults` prop — the shape each kind of
+  field takes across a project, declared once instead of rebuilt in a `fieldProvider` override:
+  `<SchemaAdmin fieldDefaults={{reference: 'link', boolean: 'text', choices: 'text'}} />`. It is a
+  record per kind of field, not one value for all of them: a reference's `'link'` means nothing to a
+  boolean, and a kind taught a second shape later arrives as a new key nobody has set, so a version
+  bump cannot quietly change how an existing project looks. Resolved nearest-first — the field's own
+  `variant` prop, the nearest `SchemaResource`, `SchemaAdmin`, then the built-in `'chip'` — with a
+  resource merging over the admin key by key rather than replacing it, so `fieldDefaults` composes
+  with a `fieldProvider` instead of competing with it. Read through the new `useFieldDefaults` hook,
+  which returns resolved values and answers outside a provider (a field renders in a test and in a
+  story with no admin above it). Omitting the prop is identical to the previous behaviour.
+  (HAB-984)
+- `BooleanField` gained `variant?: 'chip' | 'text' | 'icon'` (default `'chip'`): the yes/no chip it
+  has always rendered, the same word as plain text, or a tick / cross glyph. `'icon'` is a list
+  affordance — it draws the glyph inside a collection, where a column has no width to spare, and
+  resolves to `'text'` in a detail view, where the word reads better than the symbol; that mirrors
+  `EnumChip`, which likewise collapses to a bare glyph only in a collection. Every shape still goes
+  through React Admin's `TrueIcon` / `FalseIcon`, so all three keep its handling of a missing value
+  (`emptyText`, never a "No") and its yes/no tooltip. Picked project-wide by `fieldDefaults.boolean`.
+  (HAB-984)
+- `ChoicesField` and `ChipArrayField` gained `variant?: 'chip' | 'text'` (default `'chip'`), which
+  renders the resolved label as plain text instead of a chip — the array form stacking the labels one
+  per line, as the reference array does its links. `'text'` is deliberately **not** unconditional: an
+  enum whose options define an explicit color keeps its chips, because the color is information plain
+  text cannot carry. The test (`choicesCarryColor`, exported) runs over the whole option list rather
+  than per value, so one field never mixes chips and bare words down a column; `'inherit'` counts as
+  no color, and raw values with no enum behind them always honour `'text'`. Picked project-wide by
+  `fieldDefaults.choices`. (HAB-984)
+- Reference fields gained a `variant?: 'chip' | 'link'` prop (default `'chip'`), so a
+  project can render the record a reference points at as a plain text link instead of a chip.
+  `SchemaReferenceField` and `SchemaReferenceArrayField` both take it; the array form also stacks
+  text links one per line (a row of bare links reads as one run-on sentence), in a detail view and
+  in a datagrid cell alike, while the chip form keeps its wrapping row. The representation behind
+  both forms, `RecordRepresentation` (and its schema-aware `SchemaRecordRepresentation`), is
+  exported for direct use as `children` of `ReferenceField` / `ReferenceArrayField`. The default is
+  unchanged, so existing projects look and behave exactly as before. `SchemaReferenceArrayField` is
+  now exported from the package, which it was not. Chosen by the application through a
+  `fieldProvider` override — the schema is untouched, and neither the contract nor the Python/Ruby
+  DSL changes.
+  (HAB-973)
 - `SchemaAdmin` gained an optional `rowTooltip?: boolean` prop (default `true`). `false` hides the
   gesture tooltip ("Double-click: Show") on list rows across the whole admin, while clicking and
   double-clicking a row still open it. The value reaches `SchemaDatagrid` through the new optional
@@ -395,6 +435,30 @@
   `SchemaRootContext` current from inside the React Admin context across sign-ins, sign-outs and
   impersonations. (HAB-971)
 
+### Changed
+
+- **BREAKING:** `BooleanField`'s `variant` prop was renamed to `chipVariant`, the same way
+  `RecordRepresentation`'s was below. `variant` now names the shape the value takes
+  (`'chip' | 'text' | 'icon'`, see above) rather than the MUI style the chip is drawn in, and the two
+  vocabularies share `'text'` with different meanings — keeping one name for both would make
+  `variant="text"` mean one thing on this field and another everywhere else. Rename the prop at the
+  call site; nothing else about the chip changed. (HAB-984)
+- `ReferenceVariant` is now exported from `@schema/types` rather than from the schema components
+  barrel, alongside the new `BooleanVariant`, `ChoicesVariant` and `FieldDefaults`. The name and the
+  type are unchanged and it is still reached from the package root, so an existing
+  `import {ReferenceVariant} from '@eluvia/habarico'` keeps working. (HAB-984)
+- **BREAKING:** `RecordRepresentationChip` and `RecordRepresentationLink` are unified into a single
+  `RecordRepresentation`, whose new `variant?: 'chip' | 'link'` prop (default `'chip'`) chooses the
+  shape — the same vocabulary the reference fields' own `variant` already uses, now carried
+  unchanged all the way down. `SchemaRecordRepresentationChip` and `SchemaRecordRepresentationLink`
+  collapse into `SchemaRecordRepresentation` the same way. The MUI chip variant moves from
+  `variant` to **`chipVariant`**, which `variant` is now spent on; `size`, `color` and `icon` are
+  unchanged. Props are discriminated by `variant`, so the chip's look on `variant="link"` is a type
+  error rather than a prop that silently does nothing — `RecordRepresentationChipProps` /
+  `RecordRepresentationLinkProps` (and their `Schema` counterparts) name the two branches for a
+  component that only ever renders one of them, and `RecordRepresentationProps` is their union.
+  To migrate: rename the component, rename a `variant` meant for the chip to `chipVariant`, and add
+  `variant="link"` where the link form was used. Rendering and behaviour are unchanged. (HAB-973)
 - **BREAKING:** `SchemaRootContextProvider` no longer resolves the identity itself: its `value`
   takes `userIdentity` and `setUserIdentity`, which `SchemaAdmin` supplies from the identity it
   scopes the per-user store to. `SchemaAdmin` users are unaffected; a hand-assembled

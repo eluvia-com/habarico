@@ -1,7 +1,5 @@
 import React from 'react';
 import {FileField, RichTextField} from 'react-admin';
-import {BooleanField} from '@admin/components/fields/BooleanField';
-import {ChipArrayField} from '@admin/components/fields/ChipArrayField';
 import {DateField} from '@admin/components/fields/DateField';
 import {EmailField} from '@admin/components/fields/EmailField';
 import {ImageField} from '@admin/components/fields/ImageField';
@@ -11,6 +9,8 @@ import {TextField} from '@admin/components/fields/TextField';
 import {TimeField} from '@admin/components/fields/TimeField';
 import {UrlField} from '@admin/components/fields/UrlField';
 import {FieldProps} from '@admin/components/fields/types';
+import {SchemaBooleanField} from '@schema/components/fields/SchemaBooleanField';
+import {SchemaChipArrayField} from '@schema/components/fields/SchemaChipArrayField';
 import {SchemaChoicesField} from '@schema/components/fields/SchemaChoicesField';
 import {SchemaObjectArrayField} from '@schema/components/fields/SchemaObjectArrayField';
 import {SchemaObjectField} from '@schema/components/fields/SchemaObjectField';
@@ -143,7 +143,7 @@ const renderArrayField = ({schema, isInList, rest}: FieldParams) => {
     return <SchemaReferenceArrayField {...rest} items={schema.items} />;
   }
   return (
-    <ChipArrayField
+    <SchemaChipArrayField
       {...rest}
       choices={schema.items.enum}
       iconsKey={schema.items.options?.choices?.iconsKey}
@@ -167,7 +167,7 @@ export const defaultFieldProvider = ({
 
   switch (type) {
     case 'boolean':
-      return <BooleanField {...rest} />;
+      return <SchemaBooleanField {...rest} />;
     case 'number':
       return (
         <NumberField

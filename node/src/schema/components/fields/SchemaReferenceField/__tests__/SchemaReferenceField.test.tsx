@@ -1,6 +1,8 @@
 import React, {ReactElement} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {SchemaRecordRepresentation} from '@schema/components/fields/SchemaRecordRepresentation';
+import {FieldDefaultsProvider} from '@schema/contexts/FieldDefaultsContext';
+import {FieldDefaults} from '@schema/types';
 import {render} from '@testing-library/react';
 import {SchemaReferenceField} from '../SchemaReferenceField';
 
@@ -29,8 +31,15 @@ vi.mock('@schema/hooks/useGlobalResourceSchemaContext', () => ({
   useGlobalResourceSchemaContext: () => ({schema: {name: 'category'}}),
 }));
 
-const renderField = (props: Partial<React.ComponentProps<typeof SchemaReferenceField>> = {}) => {
-  render(<SchemaReferenceField source={'category_id'} reference={'eshop/category'} {...props} />);
+const renderField = (
+  props: Partial<React.ComponentProps<typeof SchemaReferenceField>> = {},
+  fieldDefaults: FieldDefaults = {}
+) => {
+  render(
+    <FieldDefaultsProvider {...fieldDefaults}>
+      <SchemaReferenceField source={'category_id'} reference={'eshop/category'} {...props} />
+    </FieldDefaultsProvider>
+  );
   return received[received.length - 1];
 };
 
@@ -104,5 +113,24 @@ describe('SchemaReferenceField - width cap', () => {
     expect(representationOf(renderField({source: 'owner.category_id'})).props.maxWidth).toBe(
       'calc(var(--field-owner__category_id, 500px) - 32px)'
     );
+  });
+});
+
+describe('SchemaReferenceField - fieldDefaults', () => {
+  // The application's choice, set once on `SchemaAdmin` (or per resource) instead of duplicated into
+  // a `fieldProvider` override. A prop on the field still wins over it.
+  it('falls back to the shape the application chose', () => {
+    expect(representationOf(renderField({}, {reference: 'link'})).props.variant).toBe('link');
+  });
+
+  it('lets an explicit prop win over it', () => {
+    expect(
+      representationOf(renderField({variant: 'chip'}, {reference: 'link'})).props.variant
+    ).toBe('chip');
+  });
+
+  // Regression guard for every project that sets no defaults at all.
+  it('is a chip when nothing says otherwise', () => {
+    expect(representationOf(renderField()).props.variant).toBe('chip');
   });
 });
