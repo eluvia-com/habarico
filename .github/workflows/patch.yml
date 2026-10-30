@@ -1,0 +1,149 @@
+# The patch button. Run on a maintenance branch `release/<lib>@vX.Y`, it releases that library at
+# its next patch version and pushes the tag that starts publish.yml. It publishes nothing itself,
+# and merges nothing back: the branch holds an older state of the whole tree.
+#
+# Port of release-patch from ci-toolbox/base-release.yml. The fix reaches the branch through its own
+# pull request - see "Releasing a patch" in .github/OPERATIONS.md.
+name: Patch release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Work out the patch and print it, but push nothing"
+        type: boolean
+        default: false
+
+concurrency:
+  group: patch-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  patch:
+    name: patch
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Carries pydev; see publish.yml for the note on the image.
+    container: ${{ vars.TOOLBOX_IMAGE || 'ghcr.io/druids/developers-chamber:1' }}
+    env:
+      CHANGELOG_PATH: CHANGELOG.md
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      # A GitHub App token, not GITHUB_TOKEN, so the pushed tag starts publish.yml. Same App as
+      # release.yml; it needs a ruleset bypass on `release/*` as well.
+      - id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v5
+        with:
+          # The tag of the current version is the comparison base.
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Prepare git
+        run: |
+          set -eu
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          # Work on the real tip of the branch, not on whatever the dispatch happened to see.
+          git fetch origin "$GITHUB_REF_NAME"
+          git switch -C "$GITHUB_REF_NAME" "origin/$GITHUB_REF_NAME"
+
+      # Everything up to the commit only reads, so a rejected patch leaves the branch as it was.
+      - name: Work out the patch
+        run: |
+          set -eu
+          LIB=$(echo "$GITHUB_REF_NAME" | sed -n 's|^release/\([a-z0-9_-]*\)@v[0-9]*\.[0-9]*$|\1|p')
+          if [ -z "$LIB" ] || [ ! -d "$LIB/.pydev" ]; then
+            echo "ERROR: run this on a maintenance branch release/<lib>@vX.Y, not on $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+          CURRENT=$(cd "$LIB" && pydev version print)
+          case "$CURRENT" in
+            *-*) echo "ERROR: $LIB is on $CURRENT, not a released version"; exit 1 ;;
+          esac
+          SERIES="${GITHUB_REF_NAME##*@v}"
+          if [ "$(echo "$CURRENT" | cut -d. -f1,2)" != "$SERIES" ]; then
+            echo "ERROR: $LIB is on $CURRENT, which is not the $SERIES series of $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+          VERSION=$(cd "$LIB" && pydev version print-next -r patch)
+          if git rev-parse -q --verify "refs/tags/${LIB}@${VERSION}" >/dev/null; then
+            echo "ERROR: ${LIB}@${VERSION} is already tagged"
+            exit 1
+          fi
+
+          BASE="${LIB}@${CURRENT}"
+          if ! git rev-parse -q --verify "refs/tags/$BASE" >/dev/null; then
+            echo "no tag $BASE to compare against - releasing $VERSION"
+          elif git diff --quiet "$BASE" HEAD -- "$LIB/"; then
+            echo "nothing to release - $LIB/ has not changed since $BASE"
+            exit 0
+          fi
+
+          echo "  $LIB: $CURRENT -> $VERSION"
+          echo "$LIB $VERSION" > /tmp/patch
+
+      - name: Stamp the changelog and commit
+        run: |
+          set -eu
+          [ -s /tmp/patch ] || exit 0
+          read -r LIB VERSION < /tmp/patch
+
+          (cd "$LIB" && pydev version bump-to-next -r patch)
+          [ "$(cd "$LIB" && pydev version print)" = "$VERSION" ] || { echo "ERROR: $LIB version file does not say $VERSION"; exit 1; }
+          git add "$LIB"
+
+          CHANGELOG="$LIB/$CHANGELOG_PATH"
+          if [ -f "$CHANGELOG" ]; then
+            TODAY=$(date +%Y-%m-%d)
+            # An `[Unreleased]` section with entries becomes the release; without any, the patch
+            # still goes out, under a generic entry.
+            ENTRIES=$(awk '/^## \[Unreleased\]/ { on = 1; next } on && /^## / { exit } on && NF { print }' "$CHANGELOG")
+            if [ -n "$ENTRIES" ]; then
+              sed -i "s/^## \[Unreleased\]/## [${VERSION}] — ${TODAY}/" "$CHANGELOG"
+            else
+              echo "::warning::$CHANGELOG has no entries under [Unreleased] - releasing $VERSION with a generic one"
+              awk -v section="## [${VERSION}] — ${TODAY}\n\n### Fixed\n\n- Bug fixes.\n" '
+                /^## \[Unreleased\]/ { skip = 1; next }
+                skip && /^[[:space:]]*$/ { next }
+                { skip = 0 }
+                !done && /^## / { print section; done = 1 }
+                { print }
+                END { if (!done) { print ""; print section } }
+              ' "$CHANGELOG" > /tmp/changelog && mv /tmp/changelog "$CHANGELOG"
+            fi
+            git add "$CHANGELOG"
+          fi
+
+          git commit -m "Bump version to ${LIB}@${VERSION}"
+          echo "patch commit: $(git rev-parse --short HEAD)"
+
+      - name: Push
+        run: |
+          set -eu
+          [ -s /tmp/patch ] || exit 0
+          read -r LIB VERSION < /tmp/patch
+          TAG="${LIB}@${VERSION}"
+          git tag "$TAG"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "dry run - would push $GITHUB_REF_NAME and $TAG"
+            git show --stat HEAD
+            exit 0
+          fi
+
+          # The tag last: it starts the publish, so nothing reaches a registry unless the branch
+          # holds the commit it points at.
+          git push origin "$GITHUB_REF_NAME"
+          git push origin "$TAG"
+          echo "released: $TAG"
