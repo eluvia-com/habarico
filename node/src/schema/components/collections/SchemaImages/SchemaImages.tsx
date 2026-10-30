@@ -16,13 +16,15 @@ import {SchemaButtons} from '@schema/components/buttons/SchemaButtons';
 import {SchemaFieldContent} from '@schema/components/fields/SchemaFieldContent';
 import {useMethodSchemaContext} from '@schema/contexts/MethodSchemaContext/useMethodSchemaContext';
 import {useGetField} from '@schema/contexts/ResourceFieldContext/useGetField';
-import {FieldDescriptor, FieldSchema, Filters} from '@schema/types';
+import {AnyActionDescriptor, FieldDescriptor, FieldSchema, Filters} from '@schema/types';
 import {generateFieldSchemaMap} from '@schema/utils/generateFieldSchemaMap';
 
 export type SchemaImagesProps = {
   fields?: FieldDescriptor[];
   indexField?: string;
   sortForFilters?: Filters;
+  // the per-image action slot; `buttons` replaces its rendering
+  rowActions?: AnyActionDescriptor[];
   buttons?: ReactNode;
   onRowClick?: (record: RaRecord) => void;
   expand?: ReactElement | FC;
@@ -80,13 +82,14 @@ export const SchemaImages = ({
   target,
   indexField,
   sortForFilters = {},
+  rowActions,
   buttons = (
     <SchemaButtons
       target={target}
       surface={'iconButton'}
       size={'small'}
       isList={true}
-      scope={'detail'}
+      descriptors={rowActions}
       maxVisibleButtons={{xs: 2, sm: 3}}
     />
   ),

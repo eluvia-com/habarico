@@ -45,6 +45,23 @@ describe('getSchemaProvider', () => {
       expect(result[0]).toHaveProperty('hasCreate', true);
     });
 
+    it('keeps the query parameters of a reference as they were sent', async () => {
+      const mockSchema = [
+        {
+          name: 'articles',
+          menu: {view: {endpoint: {resource: 'articles', params: {author_id: '1', _target: 'x'}}}},
+        },
+      ];
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockSchema),
+      } as Response);
+
+      const result = await provider.getServiceSchema('blog', 'http://api.example.com', {});
+
+      expect(result[0].menu?.view?.endpoint?.params).toEqual({author_id: '1', _target: 'x'});
+    });
+
     it('appends resource url from serviceUrl and name', async () => {
       const mockSchema = [{name: 'articles'}];
       vi.mocked(fetch).mockResolvedValue({
@@ -103,6 +120,21 @@ describe('getSchemaProvider', () => {
 
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/schema/'), expect.any(Object));
       expect(result.url).toBe('http://api.example.com/articles/');
+    });
+
+    it('keeps the query parameters of a reference as they were sent', async () => {
+      const mockSchema = {
+        name: 'articles',
+        views: [{endpoint: {method: 'get', reference: {resource: 'tags', params: {post_id: '1'}}}}],
+      };
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockSchema),
+      } as Response);
+
+      const result = await provider.getRecordSchema('http://api.example.com/articles/');
+
+      expect(result.views[0].endpoint.reference?.params).toEqual({post_id: '1'});
     });
 
     it('includes record id in the URL when provided', async () => {

@@ -23,7 +23,7 @@ export {
   UploadingContext,
   type UploadingContextValue,
 } from './contexts/UploadingContext';
-export {useResourceContext, useResourceContextOrUndefined} from './contexts/ResourceContext';
+export {useResourceContext} from './contexts/ResourceContext';
 export {
   RootRecordContextProvider,
   RootRecordContext,

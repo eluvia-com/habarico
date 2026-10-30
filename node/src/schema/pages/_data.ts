@@ -4,6 +4,7 @@ import type {ServiceAuthProvider} from '@admin/providers/types';
 import type {SchemaProvider, ServiceDataProvider} from '@schema/providers/types';
 import type {
   ActionDescriptor,
+  AnyActionDescriptor,
   BoxSchema,
   EndpointsSchema,
   EnumType,
@@ -18,6 +19,7 @@ import type {
   MenuSchema,
   RecordMeta,
   ResourceActionSchema,
+  ResourceReference,
   ServiceSchema,
   ServicesSchema,
   ViewActionParameters,
@@ -51,6 +53,15 @@ export const DOCUMENTS_RESOURCE = `${SERVICE_NAME}/documents`;
 export const PAYMENTS_RESOURCE = `${SERVICE_NAME}/payments`;
 // Photos back the property gallery box; not a menu resource (no `menu`), only referenced by url.
 export const PHOTOS_RESOURCE = `${SERVICE_NAME}/photos`;
+
+// The address a schema of this service gives one of its resources.
+const referenceTo = (
+  resource: string,
+  parts: Partial<ResourceReference> = {}
+): ResourceReference => {
+  const [service, name] = resource.split('/');
+  return {service, resource: name, ...parts};
+};
 
 const PROPERTIES_URL = `${SERVICE_URL}/properties/`;
 const OWNERS_URL = `${SERVICE_URL}/owners/`;
@@ -724,7 +735,7 @@ const fd = (name: string, extra: Partial<FieldDescriptor> = {}): FieldDescriptor
 //
 // All three render as row-action buttons (showInList). `show` (eye) is *also* what a row click
 // resolves to — the datagrid's default row activation navigates to `show ?? edit` (see
-// `resolveRowActionSchema`) — so the detail has two entry points: the eye button and the row click.
+// `resolveRowAction`) — so the detail has two entry points: the eye button and the row click.
 // `edit` (view) and `delete` (resource) are the pencil / trash buttons. These land on each record's
 // `meta.schema.actions` (via `decorate`) — that's what the list reads.
 // ----------------------------------------------------------------------------
@@ -739,12 +750,16 @@ const redirectView = (viewName: string): ViewActionParameters =>
 // A redirect to a routed *action* view (`/:id/a/<action>`). Unlike a reserved view (which routes by
 // type alone), an action view routes by its `actionName`, so the button needs it in `endpoint` to
 // build the `/a/<action>` path — otherwise it navigates to `/a/undefined` and matches nothing.
-const redirectActionView = (viewName: string, actionName: string): ViewActionParameters =>
+const redirectActionView = (
+  viewName: string,
+  resource: string,
+  actionName: string
+): ViewActionParameters =>
   ({
     name: viewName,
     mode: 'redirect',
     parameters: {},
-    endpoint: {actionName},
+    endpoint: referenceTo(resource, {actionName}),
   }) as ViewActionParameters;
 
 // Same, but opens the target view in a dialog instead of navigating to its own page. `dialogWidth`
@@ -937,7 +952,7 @@ const PROPERTY_FIELDS: FieldSchema[] = [
     name: 'owner_id',
     type: 'integer',
     format: 'relation',
-    reference: OWNERS_RESOURCE,
+    reference: referenceTo(OWNERS_RESOURCE),
     label: 'Vlastník',
   },
   {
@@ -1069,7 +1084,7 @@ const PROPERTY_LIST_COLUMNS: FieldDescriptor[] = [
   fd('type', {sortable: true, format: 'choices', enum: asEnum(PROPERTY_TYPES)}),
   fd('layout'),
   fd('area', {sortable: true}),
-  fd('owner_id', {format: 'relation', reference: OWNERS_RESOURCE}),
+  fd('owner_id', {format: 'relation', reference: referenceTo(OWNERS_RESOURCE)}),
   fd('involvement'),
   fd('active'),
 ];
@@ -1122,7 +1137,11 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
           card: true,
           readOnly: true,
           gridItem: HALF,
-          gallery: {reference: PHOTOS_RESOURCE, target: 'property_id', imageField: 'image'},
+          gallery: {
+            reference: referenceTo(PHOTOS_RESOURCE),
+            target: 'property_id',
+            imageField: 'image',
+          },
           // Header toolbar action → navigates to the "Správa fotografií" subpage
           // (`/…/properties/:id/a/manage_photos`), a detail-scoped routed action view.
           toolbarActions: [
@@ -1133,7 +1152,7 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
               action: {
                 type: 'view',
                 isDetail: true,
-                view: redirectActionView('manage_photos', 'manage_photos'),
+                view: redirectActionView('manage_photos', PROPERTIES_RESOURCE, 'manage_photos'),
               },
             },
           ],
@@ -1242,9 +1261,9 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
           label: 'Vlastníci',
           card: true,
           readOnly: true,
-          // `listActions` set explicitly (Create + "link existing owner") — otherwise
-          // SchemaListBoxActions falls back to auto-generating the owner detail / edit / delete actions.
-          list: {reference: OWNERS_RESOURCE, listActions: OWNER_LIST_BOX_ACTIONS},
+          // `listActions` set explicitly (Create + "link existing owner") instead of the owner
+          // collection defaults a backend would send.
+          list: {reference: referenceTo(OWNERS_RESOURCE), listActions: OWNER_LIST_BOX_ACTIONS},
           boxes: [fd('full_name'), fd('email'), fd('phone')],
         },
       ],
@@ -1329,7 +1348,7 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
           card: true,
           readOnly: true,
           list: {
-            reference: DOCUMENTS_RESOURCE,
+            reference: referenceTo(DOCUMENTS_RESOURCE),
             target: 'property_id',
             // Search (`q`) stays shown inline in the toolbar (`isAlwaysOn`); the rest go to the
             // filter drawer. Listing them all keeps `category` / `signed` available (a `filters` list
@@ -1422,7 +1441,7 @@ const PROPERTY_MANAGE_PHOTOS_BOX: BoxSchema = {
   label: 'Správa fotografií',
   card: true,
   readOnly: true,
-  list: {reference: PHOTOS_RESOURCE, target: 'property_id'},
+  list: {reference: referenceTo(PHOTOS_RESOURCE), target: 'property_id'},
   boxes: [fd('image'), fd('caption')],
 };
 
@@ -1522,7 +1541,10 @@ const PROPERTY_RESOURCE_SCHEMA: LocalResourceSchema = {
       type: 'action',
       isDetail: true,
       label: 'Nahlásit závadu',
-      endpoint: {method: 'post', actionName: 'report'},
+      endpoint: {
+        method: 'post',
+        reference: referenceTo(PROPERTIES_RESOURCE, {actionName: 'report'}),
+      },
       detail: {
         box: PROPERTY_REPORT_BOX,
         // Empty toolbar actions: this action form has nothing to edit / delete, so suppress the
@@ -1547,7 +1569,10 @@ const PROPERTY_RESOURCE_SCHEMA: LocalResourceSchema = {
       type: 'action',
       isDetail: true,
       label: 'Správa fotografií',
-      endpoint: {method: 'get', actionName: 'manage_photos'},
+      endpoint: {
+        method: 'get',
+        reference: referenceTo(PROPERTIES_RESOURCE, {actionName: 'manage_photos'}),
+      },
       detail: {box: PROPERTY_MANAGE_PHOTOS_BOX, toolbarActions: []},
     },
   ],
@@ -1651,7 +1676,7 @@ const OWNER_LINK_FIELDS: FieldSchema[] = [
     name: 'owner_id',
     type: 'integer',
     format: 'relation',
-    reference: OWNERS_RESOURCE,
+    reference: referenceTo(OWNERS_RESOURCE),
     label: 'Vlastník',
     required: true,
   },
@@ -1732,7 +1757,10 @@ const OWNER_RESOURCE_SCHEMA: LocalResourceSchema = {
       type: 'action',
       isDetail: false,
       label: 'Spárovat existujícího vlastníka',
-      endpoint: {method: 'patch', actionName: 'link_owner'},
+      endpoint: {
+        method: 'patch',
+        reference: referenceTo(OWNERS_RESOURCE, {actionName: 'link_owner'}),
+      },
       detail: {
         box: OWNER_LINK_BOX,
         // Suppress the auto-generated owner edit / delete toolbar actions (they would otherwise leak
@@ -1761,7 +1789,7 @@ const PHOTO_FIELDS: FieldSchema[] = [
     name: 'property_id',
     type: 'integer',
     format: 'relation',
-    reference: PROPERTIES_RESOURCE,
+    reference: referenceTo(PROPERTIES_RESOURCE),
     label: 'Nemovitost',
   },
   {name: 'caption', type: 'string', format: 'text', label: 'Popisek'},
@@ -1812,7 +1840,7 @@ const DOCUMENT_FIELDS: FieldSchema[] = [
     name: 'property_id',
     type: 'integer',
     format: 'relation',
-    reference: PROPERTIES_RESOURCE,
+    reference: referenceTo(PROPERTIES_RESOURCE),
     label: 'Nemovitost',
   },
   {name: 'issued_on', type: 'string', format: 'date', label: 'Vystaveno', sortable: true},
@@ -1844,7 +1872,7 @@ const DOCUMENT_FILTERS: FilterSchema[] = [
 const DOCUMENT_LIST_COLUMNS: FieldDescriptor[] = [
   fd('title', {sortable: true}),
   fd('category', {sortable: true, format: 'choices', enum: asEnum(DOCUMENT_CATEGORIES)}),
-  fd('property_id', {format: 'relation', reference: PROPERTIES_RESOURCE}),
+  fd('property_id', {format: 'relation', reference: referenceTo(PROPERTIES_RESOURCE)}),
   fd('issued_on', {sortable: true}),
   fd('amount', {sortable: true}),
   fd('signed'),
@@ -1914,7 +1942,10 @@ const DOCUMENT_RESOURCE_SCHEMA: LocalResourceSchema = {
       type: 'action',
       isDetail: false,
       label: 'Hromadný upload dokumentů',
-      endpoint: {method: 'post', actionName: 'bulk_upload'},
+      endpoint: {
+        method: 'post',
+        reference: referenceTo(DOCUMENTS_RESOURCE, {actionName: 'bulk_upload'}),
+      },
       detail: {
         box: DOCUMENT_BULK_UPLOAD_BOX,
         bottomActions: [
@@ -1942,14 +1973,14 @@ const PAYMENT_FIELDS: FieldSchema[] = [
     name: 'property_id',
     type: 'integer',
     format: 'relation',
-    reference: PROPERTIES_RESOURCE,
+    reference: referenceTo(PROPERTIES_RESOURCE),
     label: 'Nemovitost',
   },
   {
     name: 'owner_id',
     type: 'integer',
     format: 'relation',
-    reference: OWNERS_RESOURCE,
+    reference: referenceTo(OWNERS_RESOURCE),
     label: 'Vlastník',
   },
   {
@@ -2130,7 +2161,7 @@ const PAYMENT_DETAIL_BOX: BoxSchema = {
 
 const PAYMENT_LIST_COLUMNS: FieldDescriptor[] = [
   fd('variable_symbol', {sortable: true}),
-  fd('property_id', {format: 'relation', reference: PROPERTIES_RESOURCE}),
+  fd('property_id', {format: 'relation', reference: referenceTo(PROPERTIES_RESOURCE)}),
   fd('amount', {sortable: true}),
   fd('direction', {format: 'choices', enum: PAYMENT_DIRECTION_ENUM}),
   fd('status', {sortable: true, format: 'choices', enum: PAYMENT_STATUS_ENUM}),
@@ -2202,7 +2233,7 @@ const PROPERTY_BASE_VIEWS: GlobalViewSchema[] = [
     type: 'action',
     isDetail: true,
     mode: 'dialog',
-    endpoint: {method: 'post', actionName: 'report'},
+    endpoint: {method: 'post', reference: referenceTo(PROPERTIES_RESOURCE, {actionName: 'report'})},
   },
   // "Správa fotografií" subpage — a routed (`redirect`) detail action view, so its toolbar button
   // navigates to `/…/properties/:id/a/manage_photos` instead of opening an overlay.
@@ -2211,7 +2242,10 @@ const PROPERTY_BASE_VIEWS: GlobalViewSchema[] = [
     type: 'action',
     isDetail: true,
     mode: 'redirect',
-    endpoint: {method: 'get', actionName: 'manage_photos'},
+    endpoint: {
+      method: 'get',
+      reference: referenceTo(PROPERTIES_RESOURCE, {actionName: 'manage_photos'}),
+    },
   },
 ];
 
@@ -2226,7 +2260,10 @@ const OWNER_BASE_VIEWS: GlobalViewSchema[] = [
     type: 'action',
     isDetail: false,
     mode: 'dialog',
-    endpoint: {method: 'patch', actionName: 'link_owner'},
+    endpoint: {
+      method: 'patch',
+      reference: referenceTo(OWNERS_RESOURCE, {actionName: 'link_owner'}),
+    },
   },
 ];
 
@@ -2239,7 +2276,10 @@ const DOCUMENT_BASE_VIEWS: GlobalViewSchema[] = [
     type: 'action',
     isDetail: false,
     mode: 'dialog',
-    endpoint: {method: 'post', actionName: 'bulk_upload'},
+    endpoint: {
+      method: 'post',
+      reference: referenceTo(DOCUMENTS_RESOURCE, {actionName: 'bulk_upload'}),
+    },
   },
 ];
 
@@ -2493,12 +2533,59 @@ const localizeSchema = <T>(schema: T, locale?: string): T =>
 // `meta.locale` (Czech by default, English for `en`).
 // ----------------------------------------------------------------------------
 
+// A backend fills every action slot its author left unset with a `DefaultActions` entry; the mock
+// schemas above set only what differs, and this adds the rest the same way.
+const DEFAULT_ACTIONS: AnyActionDescriptor[] = [{type: 'default_actions'}];
+const ROW_DEFAULT_ACTIONS: AnyActionDescriptor[] = [{type: 'default_actions', scope: 'detail'}];
+const LIST_DEFAULT_ACTIONS: AnyActionDescriptor[] = [{type: 'default_actions', scope: 'list'}];
+
+const withBoxDefaults = (box: BoxSchema): BoxSchema => ({
+  ...box,
+  boxes: box.boxes?.map((item) => (item.type === 'field' ? item : withBoxDefaults(item))),
+  ...(box.list
+    ? {
+        list: {
+          ...box.list,
+          rowActions: box.list.rowActions ?? ROW_DEFAULT_ACTIONS,
+          listActions: box.list.listActions ?? LIST_DEFAULT_ACTIONS,
+        },
+      }
+    : {}),
+});
+
+const withBackendDefaults = (schema: LocalResourceSchema): LocalResourceSchema => ({
+  ...schema,
+  views: schema.views.map((view) =>
+    view.type === 'list'
+      ? {
+          ...view,
+          list: {
+            ...view.list,
+            rowActions: view.list?.rowActions ?? ROW_DEFAULT_ACTIONS,
+            toolbarActions: view.list?.toolbarActions ?? DEFAULT_ACTIONS,
+          },
+        }
+      : {
+          ...view,
+          ...(view.detail
+            ? {
+                detail: {
+                  ...view.detail,
+                  box: withBoxDefaults(view.detail.box),
+                  toolbarActions: view.detail.toolbarActions ?? DEFAULT_ACTIONS,
+                },
+              }
+            : {}),
+        }
+  ),
+});
+
 const RESOURCE_SCHEMA_BY_URL: Record<string, LocalResourceSchema> = {
-  [PROPERTIES_URL]: PROPERTY_RESOURCE_SCHEMA,
-  [OWNERS_URL]: OWNER_RESOURCE_SCHEMA,
-  [DOCUMENTS_URL]: DOCUMENT_RESOURCE_SCHEMA,
-  [PAYMENTS_URL]: PAYMENT_RESOURCE_SCHEMA,
-  [PHOTOS_URL]: PHOTO_RESOURCE_SCHEMA,
+  [PROPERTIES_URL]: withBackendDefaults(PROPERTY_RESOURCE_SCHEMA),
+  [OWNERS_URL]: withBackendDefaults(OWNER_RESOURCE_SCHEMA),
+  [DOCUMENTS_URL]: withBackendDefaults(DOCUMENT_RESOURCE_SCHEMA),
+  [PAYMENTS_URL]: withBackendDefaults(PAYMENT_RESOURCE_SCHEMA),
+  [PHOTOS_URL]: withBackendDefaults(PHOTO_RESOURCE_SCHEMA),
 };
 
 export const mockSchemaProvider: SchemaProvider = {

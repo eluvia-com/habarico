@@ -41,8 +41,8 @@ Every box type reads these from its `BoxSchema`, whatever the `type`:
 | `collapsible` | `'open' \| 'closed'` | Makes the box collapsible and sets its initial state |
 | `boxes` | `BoxItem[]` | Children: nested boxes, field descriptors, or both |
 | `readOnly` | `boolean` | Renders every field inside as a display field |
-| `toolbarActions` | `ActionDescriptor[]` | Buttons in the box header, next to the label |
-| `bottomActions` | `ActionDescriptor[]` | Buttons below the box's fields, e.g. a section-level save |
+| `toolbarActions` | `AnyActionDescriptor[]` | Buttons in the box header, next to the label — acting on the box's record, or on what an entry's `reference` addresses |
+| `bottomActions` | `AnyActionDescriptor[]` | Buttons below the box's fields, e.g. a section-level save |
 | `options.dynamicRender` | `DynamicRenderOptions` | `showQuery` / `requiredQuery` — see [SchemaBox](./schema-box.md#conditional-rendering) |
 
 ## Card frame

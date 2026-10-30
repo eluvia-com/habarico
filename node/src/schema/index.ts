@@ -62,6 +62,8 @@ export * from './utils/fieldSelection';
 export * from './utils/generateDescriptorsFromSchema';
 export * from './utils/generateFieldSchemaMap';
 export * from './utils/preferencesStore';
+export type {ActionContext} from './utils/actionDescriptor';
+export * from './utils/resourceReference';
 export * from './utils/schemaValidators';
 export * from './utils/viewMode';
 

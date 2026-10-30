@@ -20,7 +20,7 @@ text input. For an array of *objects* the schema dispatcher picks
 
 ```tsx
 {/* References — autocomplete multi-select */}
-<SchemaArrayInput source="categories" items={{type: 'integer', reference: 'eshop/category'}} />
+<SchemaArrayInput source="categories" items={{type: 'integer', reference: {service: 'eshop', resource: 'category'}}} />
 
 {/* Enum values — chip multi-select */}
 <SchemaArrayInput source="tags" items={{type: 'string', format: 'choices', enum: tagChoices}} />
@@ -62,7 +62,7 @@ means the stored order is no longer what the user sees.
 
 ```json
 {"name": "categories", "type": "array",
- "items": {"type": "integer", "format": "relation", "reference": "eshop/category",
+ "items": {"type": "integer", "format": "relation", "reference": {"resource": "category"},
            "options": {"relation": {"showCreateButton": true}}}}
 ```
 

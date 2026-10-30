@@ -15,34 +15,27 @@ import {useResourceContext} from '@admin/contexts/ResourceContext';
 import {FilterDiv} from '@admin/overrides/ra-iu-materialui';
 import {useIsLastPanel} from '@design/contexts/IsLastPanelContext';
 import {Alert, Box} from '@mui/material';
-import {buildBoxHeaderActions} from '@schema/components/boxes/BoxHeaderActions';
 import {BoxLayout, useBoxCard} from '@schema/components/boxes/BoxLayout';
 import {SchemaBoxProps} from '@schema/components/boxes/types';
-import {SchemaButtons} from '@schema/components/buttons/SchemaButtons';
+import {buildBoxBottomActions, buildBoxHeaderActions} from '@schema/components/boxes/utils';
 import {SchemaImages} from '@schema/components/collections/SchemaImages';
 import {SchemaFilter} from '@schema/components/filters/SchemaFilter';
 import {LocalResourceSchemaProvider} from '@schema/contexts/LocalResourceSchemaContext';
 import {MethodSchemaProvider} from '@schema/contexts/MethodSchemaContext';
 import {useGetLocalResourceSchema} from '@schema/hooks/useGetLocalResourceSchema';
-import {ActionDescriptor} from '@schema/types';
 import {
   convertApiSortToRaSort,
   generateFilterSchemas,
   getTopLevelFieldDescriptors,
 } from '@schema/utils/api';
+import {resourceKey} from '@schema/utils/resourceReference';
 import {SchemaImagesBoxActions} from './SchemaImagesBoxActions';
 import {listSx} from './listSx';
-
-// The box's bottom-actions row, rendered into the BoxLayout footer (or nothing when unset).
-const renderBottomActions = (descriptors: ActionDescriptor[] | undefined) =>
-  descriptors?.length ? (
-    <SchemaButtons size="medium" variant="contained" descriptors={descriptors} />
-  ) : undefined;
 
 export const SchemaImagesBox = ({schema, label = schema.label, isRoot}: SchemaBoxProps) => {
   const record = useRecordContext();
   const resource = useResourceContext();
-  const reference = useResourceContext(schema.list?.reference);
+  const reference = useResourceContext(resourceKey(schema.list?.reference));
   const [locale] = useLocaleState();
   const isLast = useIsLastPanel();
   const translate = useTranslate();
@@ -55,7 +48,7 @@ export const SchemaImagesBox = ({schema, label = schema.label, isRoot}: SchemaBo
   // --------------------------------------------------------------------------
 
   const schemaParams = {
-    ...(listSchema.schemaParams || {}),
+    ...listSchema.reference.params,
     ...(record && listSchema.target
       ? {target: JSON.stringify({[listSchema.target]: record.id})}
       : {}),
@@ -180,6 +173,7 @@ export const SchemaImagesBox = ({schema, label = schema.label, isRoot}: SchemaBo
           <Box px={2} mb={2}>
             <SchemaImages
               fields={flatFields}
+              rowActions={schema.list.rowActions}
               target={schema.list.target}
               indexField={schema.list.sortable?.fieldName}
               sortForFilters={schema.list.sortable?.sortForFilters}
@@ -211,17 +205,8 @@ export const SchemaImagesBox = ({schema, label = schema.label, isRoot}: SchemaBo
       schema={schema}
       card={card}
       label={label ? <DynamicText>{label}</DynamicText> : undefined}
-      action={buildBoxHeaderActions({
-        reference,
-        schema: resourceSchema,
-        schemaParams,
-        resource,
-        recordId: record.id,
-        target: listSchema.target,
-        listToolbarActions: listSchema.toolbarActions,
-        boxToolbarActions: schema.toolbarActions,
-      })}
-      footerRight={renderBottomActions(schema.bottomActions)}
+      action={buildBoxHeaderActions(schema.toolbarActions)}
+      footerRight={buildBoxBottomActions(schema.bottomActions)}
       fullHeight={isLast}
     >
       {listElement}

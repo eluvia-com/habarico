@@ -20,12 +20,10 @@ import {FilterDiv} from '@admin/overrides/ra-iu-materialui';
 import {ResponsiveScrollbar} from '@design/atoms/Scrollbar';
 import {useIsLastPanel} from '@design/contexts/IsLastPanelContext';
 import {Alert} from '@mui/material';
-import {buildBoxHeaderActions} from '@schema/components/boxes/BoxHeaderActions';
 import {BoxLayout, useBoxCard} from '@schema/components/boxes/BoxLayout';
 import {SchemaBoxProps} from '@schema/components/boxes/types';
-import {SchemaButtons} from '@schema/components/buttons/SchemaButtons';
+import {buildBoxBottomActions, buildBoxHeaderActions} from '@schema/components/boxes/utils';
 import {SchemaDatagrid} from '@schema/components/collections/SchemaDatagrid';
-import {SchemaDatagridRowActions} from '@schema/components/collections/SchemaDatagrid/SchemaDatagridRowActions';
 import {LocalResourceSchemaProvider} from '@schema/contexts/LocalResourceSchemaContext';
 import {MethodSchemaProvider} from '@schema/contexts/MethodSchemaContext';
 import {useWasBoxEverVisible} from '@schema/contexts/ParentBoxContext';
@@ -43,11 +41,13 @@ import {
   FIELD_DEFAULT,
   FieldSelection,
   actionDescriptorsToFieldSelection,
+  descriptorsNeedAllActions,
   fieldDescriptorsToActionSelection,
   fieldDescriptorsToFieldSelection,
   mergeFieldSelections,
 } from '@schema/utils/fieldSelection';
 import {buildDrawerFilter, buildInlineFilter} from '@schema/utils/filterElements';
+import {resourceKey} from '@schema/utils/resourceReference';
 import {SchemaListBoxActions} from './SchemaListBoxActions';
 import {listSx} from './listSx';
 
@@ -84,19 +84,11 @@ const buildPreferenceKey = (
     ? `SchemaListBox.${resource}.${target}.${reference}.${schemaName}`
     : `SchemaListBox.${resource}.${reference}.${schemaName}`;
 
-const buildRowActionButtons = (
-  rowActions: ListBoxParameters['rowActions'],
-  target: string | undefined
-) =>
-  (!rowActions || rowActions.length > 0) && (
-    <SchemaDatagridRowActions descriptors={rowActions} target={target} />
-  );
-
 const buildActionSelection = (
   rowActions: ListBoxParameters['rowActions'],
   flatFields: FieldDescriptor[] | undefined
 ): FieldSelection | string => {
-  if (rowActions === undefined) return FIELD_DEFAULT;
+  if (rowActions === undefined || descriptorsNeedAllActions(rowActions)) return FIELD_DEFAULT;
   const flatFieldActionSelection = flatFields ? fieldDescriptorsToActionSelection(flatFields) : {};
   return mergeFieldSelections(
     flatFieldActionSelection,
@@ -126,7 +118,7 @@ const SchemaListBoxContent = ({schema, label = schema.label, isRoot}: SchemaBoxP
   const parentDescriptors = useParentResourceDescriptorsContext();
   const translate = useTranslate();
 
-  const reference = useResourceContext(schema.list?.reference);
+  const reference = useResourceContext(resourceKey(schema.list?.reference));
   const [locale] = useLocaleState();
   const isLast = useIsLastPanel();
   const card = useBoxCard(schema, Boolean(label), isRoot);
@@ -142,7 +134,7 @@ const SchemaListBoxContent = ({schema, label = schema.label, isRoot}: SchemaBoxP
   // --------------------------------------------------------------------------
 
   const schemaParams = {
-    ...listSchema.schemaParams,
+    ...listSchema.reference.params,
     ...(record && listSchema.target
       ? {_target: JSON.stringify({[listSchema.target]: record.id})}
       : {}),
@@ -206,13 +198,6 @@ const SchemaListBoxContent = ({schema, label = schema.label, isRoot}: SchemaBoxP
   // --------------------------------------------------------------------------
   // Render
   // --------------------------------------------------------------------------
-
-  // Memoized: it is `SchemaDatagrid`'s `rowActionButtons` prop below, which would otherwise get a
-  // fresh element on every render.
-  const rowActionButtons = useMemo(
-    () => buildRowActionButtons(rowActions, listSchema.target),
-    [rowActions, listSchema.target]
-  );
 
   // Memoized: `ParentResourceDescriptorsProvider` passes `value` straight through, so a fresh array
   // here would invalidate the context for this box's row detail views. Before the early returns
@@ -286,7 +271,7 @@ const SchemaListBoxContent = ({schema, label = schema.label, isRoot}: SchemaBoxP
                 target={listSchema.target}
                 indexField={listSchema.sortable?.fieldName}
                 sortForFilters={listSchema.sortable?.sortForFilters}
-                rowActionButtons={rowActionButtons}
+                rowActions={rowActions}
                 singleClickAction={listSchema.singleClickAction}
                 doubleClickAction={listSchema.doubleClickAction}
               />
@@ -323,28 +308,13 @@ const SchemaListBoxContent = ({schema, label = schema.label, isRoot}: SchemaBoxP
     listElement
   );
 
-  const hasBottomActions = !!schema.bottomActions?.length;
-
   return (
     <BoxLayout
       schema={schema}
       card={card}
       label={label ? <DynamicText>{label}</DynamicText> : undefined}
-      action={buildBoxHeaderActions({
-        reference,
-        schema: resourceSchema,
-        schemaParams,
-        resource,
-        recordId: record.id,
-        target: listSchema.target,
-        listToolbarActions: listSchema.toolbarActions,
-        boxToolbarActions: schema.toolbarActions,
-      })}
-      footerRight={
-        hasBottomActions ? (
-          <SchemaButtons size="medium" variant="contained" descriptors={schema.bottomActions} />
-        ) : undefined
-      }
+      action={buildBoxHeaderActions(schema.toolbarActions)}
+      footerRight={buildBoxBottomActions(schema.bottomActions)}
       fullHeight={isLast}
     >
       {content}

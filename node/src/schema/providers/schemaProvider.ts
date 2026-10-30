@@ -44,6 +44,7 @@ export const getSchemaProvider = (
         'defaultFilters',
         'sortForFilters',
         'extraFilters',
+        'params',
       ]);
       for (const resource of data) {
         resource.url = serviceUrl + '/' + resource.name + '/';
@@ -91,6 +92,7 @@ export const getSchemaProvider = (
         'parameters',
         'defaultValue',
         'data',
+        'params',
       ]);
       data.url = resourceUrl;
       resolveRelativeUploadUrls(data, resourceUrl);

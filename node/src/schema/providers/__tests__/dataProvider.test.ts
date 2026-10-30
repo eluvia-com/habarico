@@ -1,4 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {ActionResult} from '@schema/types';
 import {getDataProviderFactory} from '../dataProvider';
 
 // Mock react-admin's fetchUtils
@@ -348,6 +349,86 @@ describe('getDataProviderFactory', () => {
         expect.stringContaining('articles/a%2Fb%3Fc/publish'),
         expect.objectContaining({method: 'POST'})
       );
+    });
+  });
+
+  describe('references in meta', () => {
+    const view = (endpoint: object) => ({
+      name: 'show',
+      choices: [],
+      mode: 'redirect',
+      parameters: {},
+      endpoint,
+    });
+
+    it('fills the service of the resource into the actions a record carries', async () => {
+      fetchJson.mockResolvedValue({
+        json: {
+          id: 1,
+          meta: {
+            schema: {
+              name: 'articles',
+              actions: [{name: 'open', type: 'view', view: view({resource: 'tags'})}],
+            },
+          },
+        },
+        status: 200,
+        headers: new Headers(),
+        body: '',
+      });
+
+      const result = await dataProvider.getOne('blog/articles', {id: 1});
+
+      expect(result.data.meta.schema.actions[0].view.endpoint).toEqual({
+        service: 'blog',
+        resource: 'tags',
+      });
+    });
+
+    it('fills the service into the action an action result triggers', async () => {
+      fetchJson.mockResolvedValue({
+        json: {
+          meta: {
+            state: 'success',
+            trigger_action: {type: 'view', view: view({resource: 'tags', record_pk: 3})},
+          },
+        },
+        status: 200,
+        headers: new Headers(),
+        body: '',
+      });
+
+      const result = await dataProvider.callAction('blog/articles', 'post', 'publish', {
+        id: 1,
+        data: {},
+      });
+
+      expect((result.data as ActionResult).meta.triggerAction?.view?.endpoint).toEqual({
+        service: 'blog',
+        resource: 'tags',
+        recordPk: 3,
+      });
+    });
+
+    it('keeps a service the backend named', async () => {
+      fetchJson.mockResolvedValue({
+        json: {
+          meta: {trigger_action: {type: 'view', view: view({service: 'shop', resource: 'orders'})}},
+        },
+        status: 200,
+        headers: new Headers(),
+        body: '',
+      });
+
+      const result = await dataProvider.callAction('blog/articles', 'post', 'publish', {
+        id: 1,
+        data: {},
+      });
+
+      expect((result.data as ActionResult).meta.triggerAction?.view?.endpoint).toEqual({
+        service: 'shop',
+        resource: 'orders',
+      });
     });
   });
 
