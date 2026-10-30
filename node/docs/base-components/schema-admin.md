@@ -170,6 +170,7 @@ type ExtraMenuItem = {
 An item whose `key` matches nothing generated and carries no `title`/`href` is silently dropped —
 a mistyped key simply produces no menu entry.
 
+
 ## See also
 
 - [SchemaResource](./schema-resource.md) — declaring the resources inside

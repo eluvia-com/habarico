@@ -135,8 +135,16 @@ the same context `BaseAdmin` uses) → **`SchemaRootContextProvider`** → `Form
   assembled by hand.
 - **`SchemaAdminRuntime`** consumes `SchemaRootContext` (it needs the resolved `dataProvider` /
   `authProvider` — a component can't read a context it provides) and renders React Admin's
-  `<AdminContext>` → **`DynamicAdminUI`**, with `layout={SchemaLayout}`, the auth login page,
-  `catchAll={NotFound}` and the dashboard.
+  `<AdminContext>` → **`DynamicAdminUI`**, with `layout={SchemaLayoutWithSlots}`, the auth login
+  page, `catchAll={NotFound}` and the dashboard.
+- **`SchemaLayoutWithSlots`** is what `layout` gets: a module-level constant that reads the layout
+  shell (`SchemaLayout`, or the application's `LayoutComponent`) and the schema-layer slots
+  (`extraMenuItems`, `search`) from `SchemaLayoutBindingContext`, which `SchemaAdminRuntime`
+  provides. **Nothing that reaches a React Admin component prop may be built during a render**:
+  React Admin renders `layout`, `dashboard`, `loginPage` and `catchAll` as elements of the type
+  given, so a component whose identity changes unmounts everything below it — for `layout` that is
+  the entire admin, open forms and their unsaved values included. `extraMenuItems` used to sit in
+  the layout's `useMemo` deps and cost exactly that.
 
 ### Dynamic resource/route generation
 

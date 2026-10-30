@@ -1,5 +1,4 @@
 import React, {
-  ComponentType,
   FC,
   ReactElement,
   ReactNode,
@@ -9,7 +8,6 @@ import React, {
 } from 'react';
 import {
   AdminContext,
-  CoreLayoutProps,
   CustomRoutes,
   DashboardComponent as DashboardComponentType,
   LayoutComponent as LayoutComponentType,
@@ -74,15 +72,13 @@ import {QueryClient, QueryClientProvider, useQueryClient} from '@tanstack/react-
 import {AdminLanguage, IconsMap, ServiceConfigMap} from '@typing';
 import {DynamicAdminUI} from './DynamicAdminUI';
 import {SchemaLayout} from './SchemaLayout';
+import {SchemaLayoutBinding, SchemaLayoutBindingContext} from './SchemaLayoutBindingContext';
+import {SchemaLayoutWithSlots} from './SchemaLayoutWithSlots';
 import {ExtraMenuItem} from './types';
 import {useSchemaAdminStore} from './useSchemaAdminStore';
 import {separateAdminChildren} from './utils';
 
 const queryClient = new QueryClient();
-
-// Stable default so the layout binding in the runtime (memoized on `extraMenuItems`) doesn't
-// remount the layout on every `SchemaAdmin` re-render (e.g. on a locale change).
-const DEFAULT_EXTRA_MENU_ITEMS: ExtraMenuItem[] = [];
 
 // The schema layer generates its menu inside `<Admin>` (via `useSchemaMenu`, which needs the
 // resource definitions), so the resolved menu cannot live in this config assembled outside
@@ -117,7 +113,7 @@ type SchemaAdminRuntimeProps = {
   lightTheme?: object;
   darkTheme?: object;
   // Custom top-level menu items merged into the schema-generated menu. Bound into the layout here
-  // rather than carried in `AdminConfigContext` (see the `layout` memo below).
+  // through `SchemaLayoutBindingContext` rather than carried in `AdminConfigContext` (see below).
   extraMenuItems?: ExtraMenuItem[];
 };
 
@@ -156,19 +152,20 @@ const SchemaAdminRuntime = ({
     [darkThemeProp]
   );
 
-  // `extraMenuItems` is a schema-layer concern (it feeds `useSchemaMenu` inside `SchemaLayout`), so
-  // it is threaded into the layout as a prop instead of being carried in the shared
-  // `AdminConfigContext`. Memoized so the layout component identity stays stable across renders —
-  // otherwise React Admin would remount the whole layout. Keep `extraMenuItems` a stable reference.
-  const layout = useMemo<ComponentType<CoreLayoutProps>>(() => {
-    const Layout = LayoutComponent as ComponentType<
-      CoreLayoutProps & {extraMenuItems?: ExtraMenuItem[]; search?: SearchComponentType}
-    >;
-    const SchemaLayoutWithSlots = (props: CoreLayoutProps) => (
-      <Layout {...props} extraMenuItems={extraMenuItems} search={search} />
-    );
-    return SchemaLayoutWithSlots;
-  }, [LayoutComponent, extraMenuItems, search]);
+  // `extraMenuItems` and `search` are schema-layer concerns (the first feeds `useSchemaMenu` inside
+  // `SchemaLayout`, the second the search overlay), so they are threaded into the layout as props
+  // instead of being carried in the shared `AdminConfigContext` — which is assembled outside
+  // `<Admin>` and shared with `BaseAdmin`.
+  //
+  // They reach the layout through `SchemaLayoutBindingContext`, never through the identity of the
+  // component passed to `layout` below: React Admin renders that prop as an element of its type, so
+  // a component rebuilt whenever a slot's reference changes remounts the whole admin — open forms
+  // and their unsaved values with it. `SchemaLayoutWithSlots` is therefore a module-level constant,
+  // and the application may pass either slot inline.
+  const layoutBinding = useMemo<SchemaLayoutBinding>(
+    () => ({LayoutComponent, extraMenuItems, search}),
+    [LayoutComponent, extraMenuItems, search]
+  );
 
   // The auth pages take their shell config as props; feed them the logo from `AdminConfigContext`.
   const effectiveAuthPage = authPage ?? (
@@ -187,37 +184,39 @@ const SchemaAdminRuntime = ({
   const isInRouter = useInRouterContext();
 
   return (
-    <UnsavedChangesProvider>
-      <AdminHashRouter basename={basename}>
-        <AdminContext
-          basename={isInRouter ? basename : undefined}
-          i18nProvider={i18nProvider}
-          dataProvider={dataProvider}
-          authProvider={authProvider}
-          lightTheme={lightTheme}
-          darkTheme={darkTheme}
-          store={store}
-          queryClient={queryClient}
-        >
-          <DynamicAdminUI
-            catchAll={NotFound}
-            layout={layout}
-            loginPage={effectiveAuthPage}
-            requireAuth={true}
-            ready={Loading}
-            notification={Notification}
-            dashboard={dashboard}
-            disableTelemetry
+    <SchemaLayoutBindingContext.Provider value={layoutBinding}>
+      <UnsavedChangesProvider>
+        <AdminHashRouter basename={basename}>
+          <AdminContext
+            basename={isInRouter ? basename : undefined}
+            i18nProvider={i18nProvider}
+            dataProvider={dataProvider}
+            authProvider={authProvider}
+            lightTheme={lightTheme}
+            darkTheme={darkTheme}
+            store={store}
+            queryClient={queryClient}
           >
-            {children}
-            <CustomRoutes noLayout>
-              <Route path="/reset-password/:token" element={effectiveResetPasswordPage} />
-              <Route path="/logout" element={<LogoutPage />} />
-            </CustomRoutes>
-          </DynamicAdminUI>
-        </AdminContext>
-      </AdminHashRouter>
-    </UnsavedChangesProvider>
+            <DynamicAdminUI
+              catchAll={NotFound}
+              layout={SchemaLayoutWithSlots}
+              loginPage={effectiveAuthPage}
+              requireAuth={true}
+              ready={Loading}
+              notification={Notification}
+              dashboard={dashboard}
+              disableTelemetry
+            >
+              {children}
+              <CustomRoutes noLayout>
+                <Route path="/reset-password/:token" element={effectiveResetPasswordPage} />
+                <Route path="/logout" element={<LogoutPage />} />
+              </CustomRoutes>
+            </DynamicAdminUI>
+          </AdminContext>
+        </AdminHashRouter>
+      </UnsavedChangesProvider>
+    </SchemaLayoutBindingContext.Provider>
   );
 };
 
@@ -306,7 +305,7 @@ export const SchemaAdmin = ({
   statusFooter,
   arrangement,
   contentMaxWidth = 'xl',
-  extraMenuItems = DEFAULT_EXTRA_MENU_ITEMS,
+  extraMenuItems,
   iconsMap,
   UpdateIdentityComponent = UpdateIdentityDialog,
   ChangePasswordComponent = ChangePasswordDialog,
