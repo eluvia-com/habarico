@@ -15,6 +15,18 @@
   holding the current page still starts open and reopens whenever navigation leads into it. In the
   collapsed rail a click opens the group's sub-menu at once, as hovering does, so it works on touch
   screens too. The mobile drawer stays open while a group is expanded. (HAB-996)
+- `SchemaAdmin` no longer remounts the admin when `extraMenuItems` or `search` arrives as a new
+  reference. The component given to React Admin's `layout` was rebuilt whenever either slot changed
+  identity, and a new layout type unmounts the whole tree below it — so an application passing
+  `extraMenuItems` inline (or merely re-rendering for an unrelated reason, such as an auth token
+  refresh) silently lost the open form's unsaved values, with the URL unchanged. Both slots now
+  reach `SchemaLayout` through a context and the layout component is a module-level constant, so a
+  change of their *contents* still rebuilds the menu and the search overlay while the admin, the
+  open form and its values stay mounted. Neither slot has to be memoized by the application any
+  more.
+- `BaseAdmin` memoizes its light and dark themes on the `lightTheme` / `darkTheme` props, as
+  `SchemaAdmin` already did: a fresh theme object on every render re-created the MUI theme and
+  re-rendered the whole admin below it.
 ### Added
 
 - `DashboardGridPanelLayout` gained an optional `stackedH` — the panel's height in grid rows when
