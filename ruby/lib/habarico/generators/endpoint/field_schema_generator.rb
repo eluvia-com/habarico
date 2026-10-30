@@ -46,7 +46,7 @@ module Habarico
         sort_by: generate_sort_by(model, field_name, attr_name, variant),
         reference: Habarico::ResourceReference.build(generate_reference(model, field_name, attr_name, variant)),
         enum: generate_enum(model, field_name, attr_name, variant),
-        items: generate_items(model, field_name, attr_name, variant, subfields),
+        items: generate_items(model, field_name, attr_name, variant, subfields, field_reference: field_reference),
         properties: generate_properties(model, field_name, attr_name, variant, subfields),
         options: generate_options(model, field_name, attr_name, variant),
       )
@@ -301,9 +301,21 @@ module Habarico
       nil
     end
 
-    def generate_items(model, field_name, attr_name, _variant, subfields)
+    def generate_items(model, field_name, attr_name, _variant, subfields, field_reference: nil)
       name = ''
       label = generate_label(model, field_name, attr_name, nil)
+
+      # "Append only" file array attribute is a list of uploads, each item a file the frontend uploads
+      if Habarico::ReflectionHelper.is_append_only_file_array_attr?(model, attr_name)
+        return Habarico::FieldSchema.new(
+          name: name,
+          label: label,
+          type: 'object',
+          format: model.find_file_array_attr(attr_name).fetch(:nature) == :image ? 'base64-image' : 'base64-file',
+          properties: fields_schema_generator.generate(Eluvia::File, %i[type url filename size content]),
+          options: field_options_generator.generate(model, attr_name, field_reference),
+        )
+      end
 
       # Manually declared "has many" reference is interpreted as array of relations, so we need to define items schema
       if Habarico::ReflectionHelper.is_has_many_reference?(model, field_name)
@@ -374,6 +386,9 @@ module Habarico
     end
 
     def generate_options(model, _field_name, attr_name, _variant)
+      # The upload options of an append-only file array are on its items, where the frontend reads them
+      return nil if Habarico::ReflectionHelper.is_append_only_file_array_attr?(model, attr_name)
+
       field_options_generator.generate(model, attr_name, nil)
     end
 

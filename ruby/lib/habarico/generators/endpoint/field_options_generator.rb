@@ -94,7 +94,7 @@ module Habarico
       nil # not possible to generate dynamic render without FieldReference
     end
 
-    # Largest file (bytes) this `file_attr` accepts, derived from its own
+    # Largest file (bytes) this file field accepts, derived from its own
     # `active_storage_validations` size declaration (HAB-966). `habarico_enterprise.uploads`, when
     # installed, additionally folds in the project-wide upload size ceiling for a field a
     # chunked-upload provider serves - see `Habarico::FileRulesResolver`.
@@ -105,7 +105,7 @@ module Habarico
       file_rules(model, attr_name).max_size
     end
 
-    # File types this `file_attr` accepts, derived from its own `active_storage_validations`
+    # File types this file field accepts, derived from its own `active_storage_validations`
     # content-type declaration (HAB-966).
     def generate_accept_at(model, attr_name)
       file_rules(model, attr_name).accept
