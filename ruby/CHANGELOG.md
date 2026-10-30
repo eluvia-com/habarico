@@ -21,6 +21,7 @@ version and date when a release is finalized.
 - `default_page_limit` and `max_page_limit` take a callable as well as a number; it is called with the request's context, and `nil` falls back to `Habarico::Config` (HAB-1062).
 - `fields_serializer` on the resource definition - the class reading the field values of a record, `Habarico::Serializers::FieldsSerializer` by default; a subclass adding a computed field opts it in through `serializable?` (HAB-1062).
 - `after_save` on `Habarico::SaveAction`, `upload_files_data` on `Habarico::UploadFilesAction` and `view_choices` on `Habarico::ViewAction`, with `Types::AFTER_SAVE_TYPE` - schema attributes the contract and the Python library already had (HAB-955).
+- Multi-file upload field: an `eluvia-base` `file_array_attr` declared with `append_only: true` is emitted as an `array` whose `items` carry `base64-image` / `base64-file` and the field's upload options (`max_size`, `accept`, `image`), and its `{filename, content}` items are permitted on create and update. An image array advertises only the image types of its attachment's `content_type:` validation (HAB-991).
 
 ### Changed
 

@@ -162,14 +162,40 @@ Chunked uploads are configured once for the project — see
 </TabItem>
 <TabItem value="ruby" label="Ruby">
 
-An attachment on the model is detected as a file/image field:
+A direct image field on the model — a `file_attr` over its attachment:
 
 ```ruby
 class Product < ApplicationRecord
-  has_one_attached :photo
-  has_many_attached :gallery
+  include Eluvia::ActiveRecord::FileAttribute
+
+  has_one_attached :photo_attachment
+  file_attr :photo, underlying_attachment: :photo_attachment, nature: :image, declare: true
 end
 ```
+
+Several images — an append-only `file_array_attr` turns the input into multi-file mode:
+
+```ruby
+class Product < ApplicationRecord
+  include Eluvia::ActiveRecord::FileArrayAttribute
+
+  has_many_attached :gallery_attachments
+  # append_only: each saved file is attached beside the existing ones, none is removed
+  file_array_attr :gallery, underlying_attachments: :gallery_attachments, nature: :image,
+                  append_only: true, declare: true
+end
+
+class ProductsController < ApplicationController
+  include Habarico::Controller
+
+  model Product
+  fields            [:id, :name]
+  write_only_fields [:gallery]
+end
+```
+
+Existing files are listed and deleted through a resource of their own — see
+[File fields](/ruby/field-types#file-fields). Chunked uploads apply to the single-file field only.
 
 </TabItem>
 </Tabs>

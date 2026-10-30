@@ -68,6 +68,53 @@ module Habarico
     end
 
     # ***********************************************************************
+    # resolve - append-only file_array_attr fields
+    # ***********************************************************************
+
+    class GalleryModel
+      def self.has_file_array_attr?(field)
+        %i[gallery documents].include?(field.to_sym)
+      end
+
+      def self.find_file_array_attr(field)
+        { attr_name: field.to_sym, append_only: field.to_sym == :gallery }
+      end
+    end
+
+    def resolve_gallery(params, fields:, write_only_fields: [])
+      definition = Habarico::Definition.new
+      definition.model = GalleryModel
+      definition.fields = fields
+      definition.write_only_fields = write_only_fields
+      RecordParamsResolver.new(definition).resolve(ActionController::Parameters.new(params))
+    end
+
+    def gallery_params
+      { gallery: [{ filename: "a.png", content: "base64data" }, { filename: "b.png", content: "more", evil: "nope" }] }
+    end
+
+    def test_permits_uploads_for_write_only_append_only_field
+      permitted = resolve_gallery(gallery_params, fields: %i[name], write_only_fields: %i[gallery])
+
+      assert_equal(%w[a.png b.png], permitted[:gallery].map { |file| file[:filename] })
+      assert_equal "base64data", permitted[:gallery].first[:content]
+      refute permitted[:gallery].last.key?(:evil)
+    end
+
+    def test_permits_uploads_for_append_only_field_declared_with_subfields
+      permitted = resolve_gallery(gallery_params, fields: [:name, { gallery: [:id, { file: %i[filename url] }] }])
+
+      assert_equal(%w[a.png b.png], permitted[:gallery].map { |file| file[:filename] })
+    end
+
+    def test_keeps_declared_subfields_for_default_file_array
+      params = { documents: [{ id: "1", file: { filename: "a.txt", content: "data" } }] }
+      permitted = resolve_gallery(params, fields: [{ documents: [:id, { file: %i[filename content] }] }])
+
+      assert_equal "a.txt", permitted[:documents].first[:file][:filename]
+    end
+
+    # ***********************************************************************
     # validation_error
     # ***********************************************************************
 
