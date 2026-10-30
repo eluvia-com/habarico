@@ -127,12 +127,6 @@ A lighter, card-less grouping: a heading and a body, with `SectionHeader`, `Sect
 | `fullHeight` | `boolean` | `false` | Stretches to the container height — mirrors `Panel`'s flag |
 | `sx` | `SxProps<Theme>` | — | Passed to the container |
 
-:::caution
-`SimpleBox`, `SimpleListBox`, `GridBox` and `GridBoxItem` no longer exist. `Panel` (with
-`PanelContent flush` for a table) replaces the first two, and `PanelGrid` / `PanelGridItem` the
-last two.
-:::
-
 ## See also
 
 - [SchemaGridBox](./grid-box.md) — the schema-driven grid built on these

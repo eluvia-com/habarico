@@ -97,13 +97,6 @@ attached to the `limit` field:
 Refused: a `limit` above `max_page_limit`, a non-numeric one, and a negative one. Accepted: a
 missing or blank `limit`, which falls back to the default page size.
 
-:::caution
-Until now no ceiling existed at all in the Ruby stack: `?limit=99999999` reached Kaminari, and
-`?limit=0` crashed the endpoint with `ZeroDivisionError`. Both are now answered properly — the
-first with a `422`, the second with a meta-only response — so a client that relied on an unbounded
-`limit` has to page instead.
-:::
-
 ## Meta-only requests
 
 `limit=0` is a deliberate value, not an invalid one: the response carries the `meta` block and no

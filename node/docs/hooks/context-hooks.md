@@ -22,12 +22,6 @@ contexts are already in place; outside them the ones that throw will say so.
 | `useUnsavedChanges` | Whether the form has unsaved changes | Returns `false` |
 | `useUnsavedChangesControl` | Read or set that flag without subscribing | Returns a no-op pair |
 
-:::caution
-The single `useAdminContext` of earlier versions no longer exists. The schema-driven half of it is
-`useSchemaRootContext`, the app-shell half is `useAdminConfig`, and the icon resolver moved to
-`useIcons`.
-:::
-
 ## useSchemaRootContext
 
 The schema-driven root of the admin, resolved: every provider together with its default
@@ -123,8 +117,8 @@ const {sources} = useFormInputSourcesContext();
 It re-renders the caller on every registration, because that is when the list changes. Use it only
 where you need the list itself; to register an input, use `useFormInputSourcesRegistration` below.
 
-The hook also returns `register` / `unregister`, so an existing call site keeps working — but
-reaching for them here subscribes you to the list for nothing.
+It also returns `register` / `unregister`, but calling them through this hook subscribes you to the
+list; use `useFormInputSourcesRegistration` instead.
 
 ## useFormInputSourcesRegistration
 

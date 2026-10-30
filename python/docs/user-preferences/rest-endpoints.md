@@ -27,5 +27,5 @@ Response body shape:
 `updated_at` is `null` when the response carries the registered default (no stored
 record). All endpoints require an authenticated user; preferences are isolated
 per-user. The `{key}` URL parameter is constrained to the registered key pattern, so
-malformed keys return `404` without reaching the view. See the repo-root
-`contract/openapi.yaml` for the full schema.
+malformed keys return `404` without reaching the view. See the
+[REST API reference](/api) for the full schema.

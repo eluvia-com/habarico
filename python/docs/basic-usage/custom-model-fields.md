@@ -44,8 +44,8 @@ class Category(models.Model):
 
 ## Locale Fields — premium
 
-Locale model fields for internationalization moved to `habarico-enterprise`. Currently, the
-following Czech locale fields are supported:
+`habarico-enterprise` provides locale model fields for internationalization. The following Czech
+locale fields are available:
 
 | Field | Description |
 |-------|-------------|
