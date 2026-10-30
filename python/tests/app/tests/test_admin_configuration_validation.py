@@ -6,8 +6,10 @@ from app.models import Article, Author, Product
 from django.core.exceptions import ImproperlyConfigured
 from habarico import ModelAdmin, site
 from habarico.schema import (
+    CURRENT,
     Action,
     Box,
+    DefaultActions,
     Field,
     FieldWrapper,
     Filter,
@@ -632,6 +634,80 @@ class TestValidateActions:
 
         with pytest.raises(ImproperlyConfigured, match="can_update"):
             validate(_Admin)
+
+
+class TestValidateReferencedActions:
+    """
+    A descriptor carrying a ``reference`` names an action of *another* resource, so this admin's
+    ``can_*`` flags say nothing about it. The check follows the reference instead.
+    """
+
+    def test_a_referenced_action_is_checked_against_the_target(self, db):
+        """``readonly_article`` cannot create, so naming its ``create`` is still a misconfiguration."""
+
+        class _Admin(ModelAdmin):
+            abstract = True
+            model = Article
+            can_create = True
+            view_schema_generators = [
+                ListViewSchemaGenerator(toolbar_actions=[Action(name="create", reference="readonly_article")])
+            ]
+
+        with pytest.raises(ImproperlyConfigured, match="readonly_article"):
+            validate(_Admin)
+
+    def test_this_admins_flags_do_not_refuse_a_referenced_action(self, db):
+        """The whole point of a reference: the action belongs to the target, not here."""
+
+        class _Admin(ModelAdmin):
+            abstract = True
+            model = Article
+            can_create = False
+            view_schema_generators = [
+                ListViewSchemaGenerator(toolbar_actions=[Action(name="create", reference="product")])
+            ]
+
+        assert validate(_Admin).model is Article
+
+    def test_an_unregistered_reference_is_left_alone(self, db):
+        """A reference into another service names an admin this registry has never heard of."""
+
+        class _Admin(ModelAdmin):
+            abstract = True
+            model = Article
+            can_create = False
+            view_schema_generators = [
+                ListViewSchemaGenerator(toolbar_actions=[Action(name="create", reference="school/teacher")])
+            ]
+
+        assert validate(_Admin).model is Article
+
+    def test_current_is_checked_against_this_admin(self, db):
+        """``CURRENT`` is the schema being generated, which for a declared descriptor is this one."""
+
+        class _Admin(ModelAdmin):
+            abstract = True
+            model = Article
+            can_create = False
+            view_schema_generators = [
+                ListViewSchemaGenerator(toolbar_actions=[Action(name="create", reference=CURRENT)])
+            ]
+
+        with pytest.raises(ImproperlyConfigured, match="can_create"):
+            validate(_Admin)
+
+    def test_default_actions_has_nothing_to_check(self, db):
+        """A group entry names no action; which of them expand is the client's decision."""
+
+        class _Admin(ModelAdmin):
+            abstract = True
+            model = Article
+            can_create = False
+            view_schema_generators = [
+                ListViewSchemaGenerator(toolbar_actions=[DefaultActions(reference="readonly_article")])
+            ]
+
+        assert validate(_Admin).model is Article
 
 
 class TestWhenValidationRuns:

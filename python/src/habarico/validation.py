@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Iterator
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Model
 from habarico.schema import (
+    CURRENT,
     ActionSchemaGenerator,
     AdminSchemaGenerator,
     Field,
@@ -24,11 +25,13 @@ from habarico.schema import (
 from habarico.schema.actions import generate_action_descriptor, generate_actions_descriptor, get_action_name
 from habarico.schema.boxes import ArrayBox, BaseBox, GalleryBox, ListBox, ObjectBox, generate_boxes_descriptor
 from habarico.schema.fields import FieldDescriptor, generate_filters_descriptor
+from habarico.schema.reference import ContextResourceReference
 from habarico.utils import LOOKUP_SEP, walk_to_leaf_field
 
 if TYPE_CHECKING:
     from django.db.models import Field as DjangoField
     from habarico.admin import ModelAdmin
+    from habarico.schema.actions import ActionDescriptor
 
 
 def model_field_names(model: type[Model]) -> list[str]:
@@ -185,16 +188,9 @@ def ordering_lookup_name(entry) -> str:
     return entry[0] if isinstance(entry, tuple) else entry
 
 
-def iter_action_names(actions) -> Iterator[str]:
-    """Yield each action name from a raw ``Actions`` value (``ActionDescriptor`` entries or plain strings)."""
-    for action in generate_actions_descriptor(actions) or []:
-        yield get_action_name(action)
-
-
-def single_action_name(action) -> str | None:
-    """Return the action name referenced by a single ``ActionDescriptor | str`` value, or ``None`` when unset."""
-    resolved = generate_action_descriptor(action)
-    return get_action_name(resolved) if resolved else None
+def iter_action_descriptors(actions) -> Iterator[ActionDescriptor]:
+    """Yield each entry of a raw ``Actions`` value as a descriptor (plain strings normalized)."""
+    yield from generate_actions_descriptor(actions) or []
 
 
 class AdminConfigurationValidator:
@@ -529,22 +525,58 @@ class AdminConfigurationValidator:
         """
         for generator in self.admin.view_schema_generators:
             for attr in ("row_actions", "toolbar_actions", "bottom_actions", "list_actions"):
-                for name in iter_action_names(getattr(generator, attr, None)):
-                    self.validate_builtin_action(name)
+                for descriptor in iter_action_descriptors(getattr(generator, attr, None)):
+                    self.validate_builtin_action(get_action_name(descriptor), descriptor)
 
             for attr in ("double_click_action", "single_click_action"):
-                name = single_action_name(getattr(generator, attr, None))
-                if name is not None:
-                    self.validate_builtin_action(name)
+                descriptor = generate_action_descriptor(getattr(generator, attr, None))
+                if descriptor is not None:
+                    self.validate_builtin_action(get_action_name(descriptor), descriptor)
 
-    def validate_builtin_action(self, name: str) -> None:
+    def validate_builtin_action(self, name: str | None, descriptor: ActionDescriptor | None = None) -> None:
         """Check one built-in CRUD action name against the ``can_*`` flag that must enable it.
 
         A flag declared as a method (HAB-948) cannot be evaluated here - registration happens at
         startup, long before any request - and is truthy, so it passes: the action stays declared
         and ``AdminPermission`` settles it per request. Only a literal ``False``, which is knowable
         now, is refused.
+
+        A descriptor carrying a ``reference`` names an action of another resource, so the flag is
+        read off that admin rather than this one.
         """
         required_flag = self.BUILTIN_CRUD_ACTIONS.get(name)
-        if required_flag is not None and not getattr(self.admin, required_flag):
-            raise self.error("action", name, f"requires {required_flag}=True")
+        if required_flag is None:
+            return
+
+        target, target_name = self.resolve_action_permission_target(descriptor)
+        if target is None:
+            return
+        if not getattr(target, required_flag):
+            where = f" on {target_name}" if target_name else ""
+            raise self.error("action", name, f"requires {required_flag}=True{where}")
+
+    def resolve_action_permission_target(self, descriptor) -> tuple["ModelAdmin | None", str | None]:
+        """
+        The admin whose ``can_*`` flag governs a descriptor, and its name when it is not this one.
+
+        Returns ``(None, None)`` when the target cannot be resolved here, which is not a failure:
+        a reference may point into another service, whose admins this registry never sees, and a
+        bare name may belong to an admin that registers after this one. Either way the flag is
+        unknowable at registration time and ``AdminPermission`` settles it per request.
+        """
+        from habarico.site import site
+
+        reference = getattr(descriptor, "_reference", None)
+        if reference is None:
+            return self.admin, None
+
+        # `CURRENT` is the schema being generated, which for a descriptor declared here is this
+        # admin. Any other sentinel stands for an address this registry cannot see from the
+        # descriptor alone - `LIST` is the box it sits in - so the flag is left to `AdminPermission`.
+        if isinstance(reference, ContextResourceReference):
+            return (self.admin, None) if reference is CURRENT else (None, None)
+
+        resource = reference.qualified_name
+        if site.exists_admin(resource):
+            return site.get_admin(resource), resource
+        return None, None

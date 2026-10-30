@@ -41,7 +41,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `ActionDescriptor.reference` removes that reason, so `BoxSchema.toolbar_actions` is now the only
   toolbar a box has. But the resource's `create` and `export` used to arrive through the implicit
   fallback above the table, so moving them into the header needed a way to say "this resource's
-  defaults" — a `default_actions` descriptor — and once the defaults are in the header the fallback has
+  defaults" — a `DefaultActionsDescriptor` — and once the defaults are in the header the fallback has
   to go, or the same buttons appear twice on screen.
 
   So an absent or empty slot now renders nothing, everywhere: `row_actions` on `ListBoxParameters`
@@ -62,7 +62,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
   **These frontend and backend versions have to be deployed together.** A new frontend against an
   old backend gets slots with nothing in them and no fallback left to fill them; an old frontend
-  against a new backend discards a `default_actions` descriptor as an unknown kind. Both end in
+  against a new backend discards a `DefaultActionsDescriptor` as an unknown descriptor. Both end in
   boxes without actions, and both do it silently — no error, no warning, just missing buttons.
   `info.version` 4.0.0, shared with the entries below.
   (HAB-938)
@@ -163,20 +163,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `info.version` 4.0.0.
   (HAB-938)
 
-- **BREAKING:** `ActionDescriptor` gained a required `type` and `name` left `required`. The slots
-  hold two kinds of entry now — one naming a single action, one standing for a resource's defaults —
-  and `type` is which: `action` or `default_actions`. They are one schema rather than two, because
-  two schemas could not be told apart without an `oneOf` in all ten slots, and a reader of the model
-  then has to hold two near-identical boxes in their head to understand one list. `name` is required
-  for `action` and meaningless for `default_actions`, which the field says; that conditional is the
-  same shape the spec already uses elsewhere ("Value is required only if action is not standard").
+- **BREAKING:** `ActionDescriptor` gained a required `type`, always `action`. The action slots hold
+  two kinds of entry now — one naming a single action, one standing for a resource's defaults — and
+  `type` is which. They are two schemas, each carrying only what its kind has: an action has a label,
+  an icon, a colour and a confirm dialog, and a group of defaults has none of those, because they
+  belong to each action it expands into. The slots accept either through an `oneOf`, discriminated by
+  `type` exactly as `BoxSchema.boxes` tells a box from a field.
 
-  A subtype was the obvious alternative and does not work: `allOf` demands that both branches hold,
-  so a child could not pin `type: default_actions` against a parent pinning `type: action`, nor shed
-  the parent's required `name`. Inheritance would have needed a third, nameless base schema — three
-  boxes in the model where the complaint was two.
+  `reference` is optional on both, and absent means the resource the schema was generated for — so
+  a slot of a resource's own view holds the bare `{type: 'default_actions'}`, and only a slot
+  pointing elsewhere, such as a list box inside another resource's form, carries an address.
 
-  The merge also repaired a `oneOf` that could not be satisfied as written.
+  A subtype would have been the obvious way to share the two fields they have in common and does not
+  work: `allOf` demands that both branches hold, so a child could not pin `type: default_actions`
+  against a parent pinning `type: action`, nor shed the parent's required `name`.
+
+  The required `type` also repaired a `oneOf` that could not be satisfied as written.
   `FieldDescriptor.action` accepts `ActionDescriptor` or `ActionSchema`, and `ActionSchema` declares
   no `required` and allows additional properties — so the ordinary value `{name: 'edit'}` matched
   **both** branches, where a `oneOf` admits exactly one. The required `type` separates them: `action`
@@ -324,9 +326,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   foreign and cross-service references too. Additive. `info.version` 4.0.0.
   (HAB-938)
 
-- `default_actions` as a value of `ActionDescriptor.type`, with `scope` and `ActionScopeType` beside
-  it. Such an entry stands for "whatever actions this resource offers": the client expands it into one
-  ordinary `action` entry per action, each bound to the resource `reference` names. It is what lets a
+- `DefaultActionsDescriptor` and `ActionScopeType`. It stands for "whatever actions this resource
+  offers": the client expands it into one ordinary `ActionDescriptor` per action, each bound to the
+  resource `reference` names. It carries nothing of a button's appearance — a label, an icon and a
+  colour belong to each action it expands into, which already has them. It is what lets a
   slot ask for a resource's defaults without listing them one by one and going stale when one is
   added. `scope` (`list` / `detail` / `all`, absent meaning `all`) picks which of them; whether the
   expansion targets a record or the collection is not configured but follows from `record_pk` being
@@ -337,7 +340,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   slots — `row_actions` and `list_actions` on `ListBoxParameters`, all three on `ListViewParameters`,
   `toolbar_actions` and `bottom_actions` on `DetailViewParameters` and `BoxSchema`. Not in
   `ActionDescriptor.menu_items`: those are the sub-items of one button, not a slot asking for a
-  resource's defaults. `info.version` 4.0.0.
+  resource's defaults, so that slot takes an `ActionDescriptor` alone. `info.version` 4.0.0.
   (HAB-938)
 - `ActionDescriptor.confirm_dialog` — the confirm dialog a descriptor puts in front of the action
   it names, overriding the one the action's own schema declares. The frontend has always honoured

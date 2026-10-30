@@ -8,7 +8,7 @@ module Habarico
 
       # Create model
       Habarico::UploadFilesActionParameters.new(
-        reference: generate_reference(action, context),
+        reference: Habarico::ResourceReference.build(generate_reference(action, context)),
         target: generate_target(action, context),
         accept: generate_accept(action, context),
         file_field: generate_file_field(action, context),

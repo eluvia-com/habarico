@@ -98,10 +98,20 @@ class GalleryBoxParametersGeneratorTest < Minitest::Test
   # Generator — private method generate_reference
   # ---------------------------------------------------------------------------
 
-  def test_generate_reference_returns_box_reference
+  def test_generate_reference_addresses_the_box_resource
     generator = build_generator
     box = Habarico::GalleryBox.new(reference: 'photos')
-    assert_equal 'photos', generator.send(:generate_reference, box, stub_context)
+    reference = generator.send(:generate_reference, box, stub_context)
+    assert_nil reference.service
+    assert_equal 'photos', reference.resource
+  end
+
+  def test_generate_reference_splits_a_prefixed_name
+    generator = build_generator
+    box = Habarico::GalleryBox.new(reference: 'eshop/photos')
+    reference = generator.send(:generate_reference, box, stub_context)
+    assert_equal 'eshop', reference.service
+    assert_equal 'photos', reference.resource
   end
 
   def test_generate_reference_returns_nil_when_not_set
@@ -159,19 +169,19 @@ class GalleryBoxParametersGeneratorTest < Minitest::Test
   end
 
   # ---------------------------------------------------------------------------
-  # Generator — private method generate_schema_params
+  # Generator — the query the box's schema request carries
   # ---------------------------------------------------------------------------
 
-  def test_generate_schema_params_returns_box_schema_params
+  def test_schema_params_travel_inside_the_reference
     generator = build_generator
-    box = Habarico::GalleryBox.new(schema_params: { mode: 'compact' })
-    assert_equal({ mode: 'compact' }, generator.send(:generate_schema_params, box, stub_context))
+    box = Habarico::GalleryBox.new(reference: 'photos', schema_params: { mode: 'compact' })
+    assert_equal({ mode: 'compact' }, generator.send(:generate_reference, box, stub_context).params)
   end
 
-  def test_generate_schema_params_returns_nil_when_not_set
+  def test_a_reference_without_a_query_carries_none
     generator = build_generator
-    box = Habarico::GalleryBox.new
-    assert_nil generator.send(:generate_schema_params, box, stub_context)
+    box = Habarico::GalleryBox.new(reference: 'photos')
+    assert_nil generator.send(:generate_reference, box, stub_context).params
   end
 
   # ---------------------------------------------------------------------------
@@ -278,7 +288,7 @@ class GalleryBoxParametersGeneratorTest < Minitest::Test
   def test_generate_sets_reference
     generator = build_generator
     result = generator.generate(build_box(reference: 'photos'), stub_context)
-    assert_equal 'photos', result.reference
+    assert_equal 'photos', result.reference.resource
   end
 
   def test_generate_sets_image_field
@@ -311,10 +321,10 @@ class GalleryBoxParametersGeneratorTest < Minitest::Test
     assert_equal({ published: true }, result.extra_filters)
   end
 
-  def test_generate_sets_schema_params
+  def test_generate_carries_the_query_inside_the_reference
     generator = build_generator
     result = generator.generate(build_box(schema_params: { view: 'grid' }), stub_context)
-    assert_equal({ view: 'grid' }, result.schema_params)
+    assert_equal({ view: 'grid' }, result.reference.params)
   end
 
   def test_generate_sets_default_sorting

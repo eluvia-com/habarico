@@ -31,6 +31,7 @@ from habarico.filters.filters import AdminRelatedFilterMixin, RangeFilter
 from habarico.serializers.fields import AdminRelatedFieldMixin
 from habarico.settings import admin_api_settings
 from habarico.utils import (
+    CLONE_REQUEST_QUERY_PARAMS,
     DEFAULT_PK,
     build_validator_rule,
     cap_first,
@@ -67,6 +68,7 @@ from rest_framework.serializers import (
 from .actions import (
     ActionDescriptor,
     Actions,
+    DefaultActions,
     GlobalResourceActionSchema,
     ResourceActionSchema,
     SaveActionDescriptor,
@@ -84,6 +86,7 @@ from .fields import (
     SortingOrStr,
 )
 from .menu import ActionViewChoice, MenuGroup, MenuSchema
+from .reference import build_endpoint_reference, build_resource_reference
 from .resource import (
     EndpointsSchema,
     GlobalResourceSchema,
@@ -92,6 +95,7 @@ from .resource import (
     ObjectResourceSchema,
 )
 from .types import (
+    ActionScopeType,
     ActionType,
     ColorType,
     DialogWidthType,
@@ -874,10 +878,17 @@ class ViewSchemaGenerator(ViewOrActionSchemaGenerator):
         return field.field_name not in EXCLUDED_VIEW_FIELDS and field.field_name
 
     def get_endpoint_parameters(self) -> ViewEndpointParameters:
+        """
+        Where the view's data comes from, left unaddressed when that is the resource being generated.
+
+        An ``action_name`` cannot be addressed on its own, though — it lives inside the address — so a
+        view that has one names the resource it belongs to.
+        """
+        action_name = self.get_action_name()
+        reference = self.get_reference() or (self.get_admin().name if action_name else None)
         return ViewEndpointParameters(
             method=self.get_method(),
-            reference=self.get_reference(),
-            action_name=self.get_action_name(),
+            reference=build_endpoint_reference(reference, action_name),
         )
 
     def get_breadcrumbs(self) -> list[MenuSchema] | None:
@@ -1152,8 +1163,8 @@ class ListViewSchemaGenerator(ResourceViewSchemaGeneratorMixin, ViewSchemaGenera
 
     boxes: Boxes | None = None
     filters: Filters | None = None
-    row_actions: Actions | None = None
-    toolbar_actions: Actions | None = None
+    row_actions: Actions | None = empty
+    toolbar_actions: Actions | None = empty
     list_actions: Actions | None = None
     default_sorting: SortingOrStr | None = None
     reference: str | None = None
@@ -1194,8 +1205,10 @@ class ListViewSchemaGenerator(ResourceViewSchemaGeneratorMixin, ViewSchemaGenera
             breadcrumbs (list[MenuSchema] | None, optional): Breadcrumbs of the view. Defaults to None.
             boxes (Boxes, optional): Fields and boxes to display as columns in the list view. Defaults to None.
             filters (Filters, optional): Filters to display in the list view. Defaults to None.
-            row_actions (Actions, optional): Row actions to display in the list view. Defaults to None.
-            toolbar_actions (Actions, optional): Toolbar actions to display in the list view. Defaults to None.
+            row_actions (Actions, optional): Row actions to display in the list view. Left out, the
+                view publishes the listed resource's own record actions; ``None`` or ``[]`` renders none.
+            toolbar_actions (Actions, optional): Toolbar actions to display in the list view. Left out,
+                the view publishes every action the resource supports; ``None`` or ``[]`` renders none.
             list_actions (Actions, optional): Utility actions of the table (export, print, ...) rendered
                 next to the filters, separate from toolbar and row actions. Defaults to None.
             default_sorting (SortingOrStr, optional): Default sorting of the list view. Defaults to None.
@@ -1241,9 +1254,20 @@ class ListViewSchemaGenerator(ResourceViewSchemaGeneratorMixin, ViewSchemaGenera
         ]
 
     def get_row_actions(self) -> Actions | None:
+        """
+        Row buttons act on one record, whose id the row supplies — hence the ``detail`` scope.
+
+        Only a slot nothing was said about gets the default. ``None`` and ``[]`` are both decisions
+        to render nothing, which is why the unset state is a sentinel of its own.
+        """
+        if self.row_actions is empty:
+            return [DefaultActions(scope=ActionScopeType.DETAIL)]
         return self.row_actions
 
     def get_toolbar_actions(self) -> Actions | None:
+        """Everything the resource supports, until the view says otherwise."""
+        if self.toolbar_actions is empty:
+            return [DefaultActions()]
         return self.toolbar_actions
 
     def get_list_actions(self) -> Actions | None:
@@ -1336,7 +1360,7 @@ class DetailViewSchemaGenerator(ResourceViewSchemaGeneratorMixin, ViewSchemaGene
     is_read_only: bool = False
 
     box: BaseBox | None = None
-    toolbar_actions: Actions | None = None
+    toolbar_actions: Actions | None = empty
     bottom_actions: Actions | None = None
 
     def __init__(
@@ -1398,6 +1422,9 @@ class DetailViewSchemaGenerator(ResourceViewSchemaGeneratorMixin, ViewSchemaGene
         self.bottom_actions = bottom_actions if bottom_actions is not empty else self.bottom_actions
 
     def get_toolbar_actions(self) -> Actions | None:
+        """Everything the resource supports, until the view says otherwise — ``None`` or ``[]``."""
+        if self.toolbar_actions is empty:
+            return [DefaultActions()]
         return self.toolbar_actions
 
     def get_bottom_actions(self) -> Actions | None:
@@ -2344,11 +2371,64 @@ class LocalResourceSchemaGenerator(SchemaGenerator):
     def _get_endpoints_schema_generator(self):
         return self.endpoints_schema_generator_class(self._view)
 
+    def _get_update_schema_context_kwargs(self) -> dict[str, Any]:
+        """
+        Stamp the address of the schema being generated, which is what ``CURRENT`` resolves against.
+
+        Deliberately taken from the view's own admin rather than from ``context.resource``: nested
+        generators overwrite that, so a descriptor inside a list box would resolve to the box's
+        reference instead of the page it was authored in. This generator is the root of the tree, so
+        the value it stamps is the page, and the context chain hands it down unchanged.
+
+        All four parts come from the request being served: the resource from the admin, the record
+        from the object, the action from the route, and the query from the parameters that travel
+        with a request.
+        """
+        return {
+            **super()._get_update_schema_context_kwargs(),
+            "schema_source": build_resource_reference(
+                self._view.admin.name,
+                record_pk=self.context.obj.pk if self.context.obj else None,
+                action_name=self._get_source_action_name(),
+                params=self._get_source_params(),
+            ),
+        }
+
+    def _get_source_action_name(self) -> str | None:
+        """
+        The action segment of the schema route being served, or None for a plain list or detail one.
+
+        ``AdminRouter`` names an action route ``<action>-list`` / ``<action>-detail``, which is the
+        form ``ViewSchemaGenerator.get_action_url_name()`` composes; this reads it back.
+        """
+        action_url_name = self.context.action_url_name
+        if not action_url_name:
+            return None
+        action_name, _, _ = action_url_name.rpartition("-")
+        return action_name or None
+
+    def _get_source_params(self) -> dict[str, str] | None:
+        """
+        The query of the request being served, narrowed to the parameters that travel with one.
+
+        ``CLONE_REQUEST_QUERY_PARAMS`` is the pair ``clone_view`` already forwards to a sub-request:
+        the link to the record the schema was asked for. The rest of a query — paging, filters,
+        ordering — describes one list response rather than an address.
+        """
+        request = self.context.request
+        if request is None:
+            return None
+        params = {name: request.GET[name] for name in CLONE_REQUEST_QUERY_PARAMS if name in request.GET}
+        return params or None
+
     def _get_view_schemas(self) -> list[ViewSchema]:
         return self._view.admin.get_view_schemas(self.context.request, self.context.obj)
 
     def _get_object_action_schemas(self) -> list[ResourceActionSchema] | None:
-        requested_fieldset = self.context._requested_fieldset
+        # The public property, not `_requested_fieldset`: the private attribute holds this context's
+        # own value and misses one set further up the chain, and reads as `EMPTY` — which is truthy —
+        # when nothing set it at all.
+        requested_fieldset = self.context.requested_fieldset
         action_schemas = self._get_action_schemas()
 
         if not requested_fieldset:

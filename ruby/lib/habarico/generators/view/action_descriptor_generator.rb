@@ -1,9 +1,14 @@
 module Habarico
   class ActionDescriptorGenerator < AbstractGenerator
 
-    def generate(action_reference, context)
+    # `list_source` is the address of the resource a surrounding box lists, which only that box
+    # knows - it is what `ResourceReference::LIST` resolves to.
+    def generate(action_reference, context, list_source: nil)
       # Fallback to a simple ActionReference object if a string or symbol is provided
       action_reference = Habarico::ActionReference.new(name: action_reference.to_s) if action_reference.is_a?(String) || action_reference.is_a?(Symbol)
+
+      # A group of defaults names no action, so none of the checks below apply to it
+      return generate_default_actions(action_reference, list_source) if action_reference.is_a?(Habarico::DefaultActionsReference)
 
       # Validate arguments
       raise Eluvia::Errors::StandardError.new('Argument `action_reference` must be a Habarico::ActionReference') unless action_reference.is_a?(Habarico::ActionReference)
@@ -25,12 +30,42 @@ module Habarico
         icon: generate_icon(action_reference, context),
         color: generate_color(action_reference, context),
         action: generate_action(action_reference, context),
+        reference: resolve_reference(action_reference.reference, context, list_source),
+        confirm_dialog: generate_confirm_dialog(action_reference, context),
         view: generate_view(action_reference, context),
         menu_items: generate_menu_items(action_reference, context),
       )
     end
 
     protected
+
+    def confirm_dialog_properties_generator
+      @confirm_dialog_properties_generator ||= definition.confirm_dialog_properties_generator.new(definition, resource_path)
+    end
+
+    def generate_default_actions(action_reference, list_source)
+      Habarico::DefaultActionsDescriptor.new(
+        reference: resolve_reference(action_reference.reference, nil, list_source),
+        scope: action_reference.scope,
+      )
+    end
+
+    # The address a descriptor binds to: a name as written, or what a sentinel stands for.
+    #
+    # `CURRENT` is the resource the schema is being generated for, narrowed to the record when the
+    # request has one. `LIST` is the collection the surrounding box lists, which the box passes in.
+    def resolve_reference(reference, context, list_source)
+      case reference
+      when nil then nil
+      when Habarico::ResourceReference then reference
+      when Habarico::ResourceReference::CURRENT
+        Habarico::ResourceReference.build(resource_name, record_pk: context&.record_pk)
+      when Habarico::ResourceReference::LIST
+        raise Eluvia::Errors::StandardError.new('`ResourceReference::LIST` is stamped by the box that lists a resource, so this reference is not inside a list or gallery box') if list_source.nil?
+        list_source
+      else Habarico::ResourceReference.build(reference)
+      end
+    end
 
     def action_schema_generator
       @action_schema_generator ||= definition.action_schema_generator.new(definition, resource_path)
@@ -54,6 +89,12 @@ module Habarico
 
     def generate_color(action_reference, _context)
       action_reference.color
+    end
+
+    def generate_confirm_dialog(action_reference, context)
+      return nil if action_reference.confirm_dialog_title.blank? && action_reference.confirm_dialog_message.blank?
+      raise Eluvia::Errors::StandardError.new('A confirm dialog needs both a title and a message, or neither') if action_reference.confirm_dialog_title.blank? || action_reference.confirm_dialog_message.blank?
+      confirm_dialog_properties_generator.generate(action_reference, context)
     end
 
     def generate_action(action_reference, context)

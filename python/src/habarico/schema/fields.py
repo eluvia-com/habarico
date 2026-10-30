@@ -5,6 +5,7 @@ from typing import Any
 from ..utils import build_validator_rule, merge_dicts, merge_field_schema_dicts, remove_empty
 from .actions import Action, ActionSchema
 from .base import BaseSchema, schema_getter
+from .reference import ContextResourceReference, ResourceReference, generate_resource_reference
 from .types import (
     ColorType,
     DialogWidthType,
@@ -53,7 +54,7 @@ class FieldSchema(BaseSchema):
         sortable: bool = False,
         sort_by: str | None = None,
         nullable: bool = False,
-        reference: str | None = None,
+        reference: ResourceReference | str | ContextResourceReference | None = None,
         enum: EnumType | None = None,
         default_value: Any | None = None,
         items: FieldSchema | None = None,
@@ -98,7 +99,7 @@ class FieldSchema(BaseSchema):
         self._sortable = sortable
         self._sort_by = sort_by
         self._nullable = nullable
-        self._reference = reference
+        self._reference = generate_resource_reference(reference)
         self._enum = enum
         self._default_value = default_value
         self._items = items
@@ -127,7 +128,7 @@ class FilterSchema(BaseSchema):
         help_text: str | None = None,
         type: FieldType,
         format: FieldFormatType | None = None,
-        reference: str | None = None,
+        reference: ResourceReference | str | ContextResourceReference | None = None,
         enum: EnumType | None = None,
         default_value: Any | None = None,
         items: FieldSchema | None = None,
@@ -160,7 +161,7 @@ class FilterSchema(BaseSchema):
         self._help_text = help_text
         self._type = type
         self._format = format
-        self._reference = reference
+        self._reference = generate_resource_reference(reference)
         self._enum = enum
         self._default_value = default_value
         self._items = items
@@ -461,8 +462,7 @@ class ValidatorRule(BaseSchema):
         self._value = value
         self._message = message
 
-    def to_dict(self, **kwargs) -> dict | None:
-        self.setup(**kwargs)
+    def _serialize(self) -> dict | None:
         return build_validator_rule(self._type, self._value, self._message)
 
 

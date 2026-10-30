@@ -44,7 +44,8 @@ Habarico::ShowView.new(
             target: 'order',
             boxes: [:maturity_date, :amount_major, :status],
             row_actions: [:show, :edit],
-            list_toolbar_actions: [:create],
+            # The box has one toolbar, in its header; `LIST` is the resource the box lists
+            toolbar_actions: [Habarico::ActionReference.new(name: 'create', reference: Habarico::ResourceReference::LIST)],
             default_sorting: 'maturity_date:asc',
           ),
         ]
@@ -59,9 +60,10 @@ Habarico::ShowView.new(
             target: 'order',
             boxes: [:title, :reported_at, :status],
             row_actions: [:show, :edit],
-            list_toolbar_actions: [
+            toolbar_actions: [
               Habarico::ActionReference.new(
                 name: 'create',
+                reference: Habarico::ResourceReference::LIST,
                 permission: :update,
                 if: ->(c) { c.record&.guarantee_usable? },
               ),

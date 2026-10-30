@@ -65,20 +65,33 @@ class ViewEndpointParametersGeneratorTest < Minitest::Test
   end
 
   # ---------------------------------------------------------------------------
-  # record_pk is not part of the view endpoint - it belongs to the action and
-  # menu endpoint parameters, which target a record from elsewhere
+  # One address, beside `path` and `method`: how a thing is called is not part
+  # of where it is. `record_pk` is not part of a view endpoint - it belongs to
+  # the action and menu addresses, which target a record from elsewhere
   # ---------------------------------------------------------------------------
 
-  def test_record_pk_is_not_emitted
+  def test_record_pk_is_not_part_of_a_view_endpoint
     view = Habarico::ActionView.new(name: 'approve', endpoint_action_name: 'approve', is_detail: true)
     result = build_generator.generate(view, stub_context(record_pk: 42))
-    refute_includes result.as_json.keys, 'record_pk'
+    assert_nil result.reference.record_pk
   end
 
   def test_emitted_keys_match_the_contract
     view = Habarico::ActionView.new(name: 'approve', endpoint_action_name: 'approve')
     result = build_generator.generate(view, stub_context)
-    assert_equal %w[action_name method path reference], result.as_json.keys.sort
+    assert_equal %w[method path reference], result.as_json.keys.sort
+  end
+
+  def test_the_action_segment_lives_inside_the_address
+    view = Habarico::ActionView.new(name: 'approve', endpoint_action_name: 'approve')
+    reference = build_generator.generate(view, stub_context).reference
+    assert_equal 'approve', reference.action_name
+    assert_equal 'things', reference.resource, 'an action name needs a resource to belong to'
+  end
+
+  def test_a_standard_view_carries_no_address
+    result = build_generator.generate(Habarico::ListView.new, stub_context)
+    assert_nil result.reference, 'absent means the resource the schema was generated for'
   end
 
 end

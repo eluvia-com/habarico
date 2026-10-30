@@ -87,7 +87,8 @@ Habarico::EditView.new(
         reference: 'order_items',
         target: 'order',
         boxes: [:maturity_date, :amount_major, :status],
-        list_toolbar_actions: [:create],
+        # The box has one toolbar, in its header; `LIST` is the resource the box lists
+        toolbar_actions: [Habarico::ActionReference.new(name: 'create', reference: Habarico::ResourceReference::LIST)],
         row_actions: [:edit, :show, :delete],
         default_sorting: 'maturity_date:asc',
       ),
@@ -106,9 +107,10 @@ Habarico::ListBox.new(
   },
   label: 'Related events',
   boxes: [:date, :label, :employee],
-  list_toolbar_actions: [
+  toolbar_actions: [
     Habarico::ActionReference.new(
       name: 'create_reminder_event',
+      reference: Habarico::ResourceReference::LIST,
       action: Habarico::ViewAction.new(
         is_detail: false,
         view_name: 'create',
@@ -166,7 +168,7 @@ Habarico::ShowView.new(
 )
 ```
 
-`GalleryBox` attributes: `reference` (resource name), `target` (foreign key target name), `image_field` (field that holds the image), `extra_filters` (lambda returning extra filter hash), `schema_params` (additional schema parameters). Pass `toolbar_actions` (the common `Box` attribute) to render a manage/upload button in the gallery's own toolbar; omit it for a read-only, display-only gallery.
+`GalleryBox` attributes: `reference` (resource name), `target` (foreign key target name), `image_field` (field that holds the image), `extra_filters` (lambda returning extra filter hash), `schema_params` (additional schema parameters, emitted inside `reference.params`). Pass `toolbar_actions` (the common `Box` attribute) to render a manage/upload button in the gallery's own toolbar — with `reference: Habarico::ResourceReference::LIST` on the descriptor when the button belongs to the resource the gallery reads from; omit the slot for a read-only, display-only gallery.
 
 **Object box** — display a nested object (has-one association or embedded object) inline:
 

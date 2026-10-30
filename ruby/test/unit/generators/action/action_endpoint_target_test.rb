@@ -39,17 +39,21 @@ class ActionEndpointTargetTest < Minitest::Test
   # ---------------------------------------------------------------------------
 
   def view_endpoint(action, context = stub_context)
-    Habarico::ViewActionEndpointParametersGenerator.new(build_definition, ['products']).generate(action, context)
+    Habarico::ViewActionParametersGenerator.new(build_definition, ['products'])
+                                           .send(:view_action_endpoint_reference, action, context)
   end
 
-  def test_view_record_pk_falls_back_to_the_context
-    action = Habarico::ViewAction.new(name: 'edit_price', is_detail: true)
-    assert_equal PRODUCT_PK, view_endpoint(action).record_pk
+  def test_view_record_pk_is_not_taken_from_the_context
+    action = Habarico::ViewAction.new(name: 'edit_price', is_detail: true, endpoint_action_name: 'edit_price')
+    assert_nil view_endpoint(action).record_pk
   end
 
-  def test_view_record_pk_prefers_the_explicit_one
+  def test_view_record_pk_is_the_explicit_one
     action = Habarico::ViewAction.new(name: 'edit_price', is_detail: true, endpoint_record_pk: CATEGORY_PK)
-    assert_equal CATEGORY_PK, view_endpoint(action).record_pk
+    endpoint = view_endpoint(action)
+
+    assert_equal CATEGORY_PK, endpoint.record_pk
+    assert_equal 'products', endpoint.resource
   end
 
   def test_view_record_pk_is_used_even_without_is_detail
@@ -85,7 +89,7 @@ class ActionEndpointTargetTest < Minitest::Test
                                       endpoint_reference: 'categories', endpoint_record_pk: CATEGORY_PK)
     endpoint = view_parameters(action).endpoint
 
-    assert_equal 'categories', endpoint.reference
+    assert_equal 'categories', endpoint.resource
     assert_equal CATEGORY_PK, endpoint.record_pk
   end
 
@@ -126,7 +130,7 @@ class ActionEndpointTargetTest < Minitest::Test
     endpoint = resource_endpoint(action)
 
     assert_equal "/categories/#{CATEGORY_PK}/recount/", endpoint.path
-    assert_equal CATEGORY_PK, endpoint.record_pk
+    assert_equal CATEGORY_PK, endpoint.reference.record_pk
   end
 
   def test_standard_resource_action_without_a_target_has_no_path
@@ -139,7 +143,7 @@ class ActionEndpointTargetTest < Minitest::Test
     endpoint = resource_endpoint(action)
 
     assert_equal "/categories/#{CATEGORY_PK}/", endpoint.path
-    assert_nil endpoint.action_name
+    assert_nil endpoint.reference.action_name
   end
 
   def test_resource_path_raises_for_an_unregistered_reference

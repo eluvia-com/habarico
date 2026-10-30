@@ -54,13 +54,15 @@ require "habarico/search/search_matcher"
 # Shared enum types
 require "habarico/schema/types"
 
+# The address every reference in the schema is written as
+require "habarico/schema/resource_reference"
+
 # Action schema models
 require "habarico/schema/action/link_action_parameters"
 require "habarico/schema/action/resource_action_endpoint_parameters"
 require "habarico/schema/action/resource_action_parameters"
 require "habarico/schema/action/action_schema"
 require "habarico/schema/action/save_action_parameters"
-require "habarico/schema/action/view_action_endpoint_parameters"
 require "habarico/schema/action/view_action_parameters"
 require "habarico/schema/action/confirm_dialog_properties"
 require "habarico/schema/action/global_resource_action_schema"
@@ -100,6 +102,7 @@ require "habarico/schema/resource/object_resource_schema"
 # View schema models
 require "habarico/schema/view/view_action_descriptor_parameters"
 require "habarico/schema/view/action_descriptor"
+require "habarico/schema/view/default_actions_descriptor"
 require "habarico/schema/view/array_box_parameters"
 require "habarico/schema/view/object_box_parameters"
 require "habarico/schema/view/box_schema"
@@ -132,7 +135,6 @@ require "habarico/generators/action/link_action_parameters_generator"
 require "habarico/generators/action/resource_action_endpoint_parameters_generator"
 require "habarico/generators/action/resource_action_parameters_generator"
 require "habarico/generators/action/action_schema_generator"
-require "habarico/generators/action/view_action_endpoint_parameters_generator"
 require "habarico/generators/action/view_action_parameters_generator"
 require "habarico/generators/action/confirm_dialog_properties_generator"
 require "habarico/generators/action/global_resource_action_schema_generator"
@@ -236,6 +238,7 @@ require "habarico/definition/views/show_view"
 
 # Root
 require "habarico/definition/action_reference"
+require "habarico/definition/default_actions_reference"
 require "habarico/definition/field_reference"
 require "habarico/definition/filter_reference"
 require "habarico/definition/response"

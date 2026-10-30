@@ -111,6 +111,14 @@ class ActionType(str, Enum):
     EXPORT = "export"
 
 
+class ActionScopeType(str, Enum):
+    """Which of a resource's actions a ``default_actions`` entry expands."""
+
+    LIST = "list"
+    DETAIL = "detail"
+    ALL = "all"
+
+
 class MenuType(str, Enum):
     VIEW = "view"
     LINK = "link"

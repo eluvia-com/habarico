@@ -34,10 +34,10 @@ module Habarico
     # Actions rendered in this box's local toolbar (box header / card header area), relative to the box root.
     # On a step container (tab/wizard) the actions appear on the last step. For a 'list' box this is the box-level
     # toolbar; the table's own toolbar is carried by 'list.toolbar_actions' instead.
-    has_many_attr :toolbar_actions, 'Habarico::ActionDescriptor'
+    has_many_attr :toolbar_actions, ['Habarico::ActionDescriptor', 'Habarico::DefaultActionsDescriptor'], default: 'Habarico::ActionDescriptor'
 
     # Actions rendered at the bottom of the box, below the fields (similar to form submit buttons at the view level).
-    has_many_attr :bottom_actions, 'Habarico::ActionDescriptor'
+    has_many_attr :bottom_actions, ['Habarico::ActionDescriptor', 'Habarico::DefaultActionsDescriptor'], default: 'Habarico::ActionDescriptor'
 
     # Additional parameters for box type 'tab'
     has_one_attr :tab, 'Habarico::TabBoxParameters'

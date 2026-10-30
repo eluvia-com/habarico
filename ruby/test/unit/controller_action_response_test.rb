@@ -157,13 +157,13 @@ module Habarico
         view: Habarico::ViewActionParameters.new(
           name: 'show',
           mode: :redirect,
-          endpoint: Habarico::ViewActionEndpointParameters.new(reference: 'categories', record_pk: CATEGORY_PK)
+          endpoint: Habarico::ResourceReference.build('categories', record_pk: CATEGORY_PK)
         )
       )
       result = render(Habarico::Response.new(action: schema))
 
       trigger = result['meta']['trigger_action']
-      assert_equal 'categories', trigger['view']['endpoint']['reference']
+      assert_equal 'categories', trigger['view']['endpoint']['resource']
       assert_equal CATEGORY_PK, trigger['view']['endpoint']['record_pk']
     end
 
@@ -185,7 +185,7 @@ module Habarico
       result = render(Habarico::Response.new(action: action))
 
       endpoint = result['meta']['trigger_action']['view']['endpoint']
-      assert_equal 'categories', endpoint['reference']
+      assert_equal 'categories', endpoint['resource']
       assert_equal CATEGORY_PK, endpoint['record_pk']
       # A standard action name must not put the current resource's own action name on the endpoint.
       assert_nil endpoint['action_name']
@@ -199,8 +199,8 @@ module Habarico
       endpoint = result['meta']['trigger_action']['resource']['endpoint']
       assert_equal "/categories/#{CATEGORY_PK}/recount/", endpoint['path']
       assert_equal 'put', endpoint['method']
-      assert_equal 'categories', endpoint['reference']
-      assert_equal CATEGORY_PK, endpoint['record_pk']
+      assert_equal 'categories', endpoint['reference']['resource']
+      assert_equal CATEGORY_PK, endpoint['reference']['record_pk']
     end
 
     def test_trigger_action_targets_another_record_of_the_same_resource
@@ -215,7 +215,7 @@ module Habarico
       schema = @controller.send(:trigger_action_schema, 'edit_price', record_pk: CATEGORY_PK, reference: 'categories')
 
       assert_equal CATEGORY_PK, schema.view.endpoint.record_pk
-      assert_equal 'categories', schema.view.endpoint.reference
+      assert_equal 'categories', schema.view.endpoint.resource
     end
 
     # ***********************************************************************
@@ -240,7 +240,7 @@ module Habarico
               'name' => 'show',
               'mode' => 'redirect',
               'endpoint' => {
-                'reference' => 'categories',
+                'resource' => 'categories',
                 'record_pk' => CATEGORY_PK
               }
             }
@@ -285,7 +285,7 @@ module Habarico
       result = serialize_record(controller, record)
 
       endpoint = result['meta']['trigger_action']['view']['endpoint']
-      assert_equal 'categories', endpoint['reference']
+      assert_equal 'categories', endpoint['resource']
       assert_equal CATEGORY_PK, endpoint['record_pk']
       assert_equal 'dialog', result['meta']['trigger_action']['view']['mode']
     end

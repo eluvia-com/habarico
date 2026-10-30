@@ -15,7 +15,7 @@ module Habarico
     attr_accessor :grid_item
 
     # List
-    attr_accessor :reference, :target, :extra_filters, :row_actions, :list_toolbar_actions, :list_actions, :filters, :default_sorting, # rubocop:disable Lint/DuplicateMethods -- intentional for readability
+    attr_accessor :reference, :target, :extra_filters, :row_actions, :list_actions, :filters, :default_sorting, # rubocop:disable Lint/DuplicateMethods -- intentional for readability
                   :sortable_field_name, :sortable_sort_for_filters, :single_click_action, :double_click_action
 
     # Object
