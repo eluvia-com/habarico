@@ -90,9 +90,12 @@ export {PhoneNumberField} from './fields/PhoneNumberField';
 export {ReferenceArrayField, type ReferenceArrayFieldProps} from './fields/ReferenceArrayField';
 export {ReferenceField, type ReferenceFieldProps} from './fields/ReferenceField';
 export {
-  RecordRepresentationChip,
+  RecordRepresentation,
+  type RecordRepresentationProps,
   type RecordRepresentationChipProps,
-} from './fields/RecordRepresentationChip';
+  type RecordRepresentationLinkProps,
+  type RecordRepresentationVariant,
+} from './fields/RecordRepresentation';
 export {TextField, type TextFieldProps} from './fields/TextField';
 export {TimeField, type TimeFieldProps} from './fields/TimeField';
 export {TreeArrayField, type TreeArrayFieldProps} from './fields/TreeArrayField';

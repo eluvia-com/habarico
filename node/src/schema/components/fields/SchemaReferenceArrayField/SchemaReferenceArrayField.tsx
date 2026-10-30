@@ -6,7 +6,12 @@ import {ReferenceArrayField} from '@admin/components/fields/ReferenceArrayField'
 import {FieldProps} from '@admin/components/fields/types';
 import {useResourceContext} from '@admin/contexts/ResourceContext';
 import {useValueLocationContext} from '@design/contexts/ValueLocationContext';
-import {SchemaRecordRepresentationChip} from '@schema/components/fields/SchemaRecordRepresentationChip';
+import {SchemaRecordRepresentation} from '@schema/components/fields/SchemaRecordRepresentation';
+import {
+  REFERENCE_WIDTH_OFFSET,
+  ReferenceVariant,
+  referenceMaxWidth,
+} from '@schema/components/fields/referenceVariant';
 import {useGlobalResourceSchemaContext} from '@schema/hooks/useGlobalResourceSchemaContext';
 import {FieldSchema, ItemFieldSchema} from '@schema/types';
 import {convertApiSortToRaSort} from '@schema/utils/api';
@@ -16,6 +21,10 @@ import {SchemaTreeReferenceArrayField} from './SchemaTreeReferenceArrayField';
 
 export type SchemaReferenceArrayFieldProps = FieldProps & {
   items: ItemFieldSchema | FieldSchema;
+  // Chip (the default) or a plain text link. `'link'` also stacks the references one per line —
+  // see the `SingleFieldList` below. Not read by the tree branch, which renders a tree rather than
+  // a list of representations.
+  variant?: ReferenceVariant;
 };
 
 export const SchemaReferenceArrayField = ({
@@ -23,6 +32,7 @@ export const SchemaReferenceArrayField = ({
   label,
   emptyText,
   items,
+  variant = 'chip',
 }: SchemaReferenceArrayFieldProps) => {
   const {isInCollection} = useValueLocationContext();
   const reference = useResourceContext(items.reference);
@@ -49,10 +59,18 @@ export const SchemaReferenceArrayField = ({
     if (!value || value.length === 0) {
       return emptyText;
     }
-    const columnWidthVarName = source.replace(/\./g, '__');
-    const maxChipWidth = isInCollection
-      ? `calc(var(--field-${columnWidthVarName}, 500px) - 46px)`
-      : undefined;
+    const isLink = variant === 'link';
+    // A stacked text link only pays the cell's own padding: it has neither the chip's inset nor the
+    // row gap, so the chip's larger offset would ellipsise it well before the column runs out.
+    const widthOffset = isLink ? REFERENCE_WIDTH_OFFSET.cell : REFERENCE_WIDTH_OFFSET.chipRow;
+    const maxWidth = isInCollection ? referenceMaxWidth(source, widthOffset) : undefined;
+
+    const representationProps = {
+      maxWidth,
+      link: items.options?.relation?.showLink ?? true,
+      linkMode: viewModeToPresentation(items.options?.relation?.linkMode),
+      dialogWidth: items.options?.relation?.dialogWidth,
+    };
 
     return (
       <ReferenceArrayField
@@ -63,13 +81,19 @@ export const SchemaReferenceArrayField = ({
         preserveOrder={preserveOrder}
         queryOptions={{meta: {fields: {id: FIELD_DEFAULT, meta: {repr: FIELD_DEFAULT}}}}}
       >
-        <SingleFieldList linkType={false}>
-          <SchemaRecordRepresentationChip
-            maxWidth={maxChipWidth}
-            link={items.options?.relation?.showLink ?? true}
-            linkMode={viewModeToPresentation(items.options?.relation?.linkMode)}
-            dialogWidth={items.options?.relation?.dialogWidth}
-          />
+        <SingleFieldList
+          linkType={false}
+          // One link per line: a row of text links reads as a single run-on sentence, where chips
+          // carry a shape that keeps neighbors apart. `alignItems` keeps each link's click target
+          // to its own text instead of stretching it across the container.
+          //
+          // The axis is the list's own, so it is set here rather than reached through
+          // `ReferenceArrayField`. It applies in a collection cell too: the datagrid row has no
+          // fixed height, so it simply grows.
+          direction={isLink ? 'column' : 'row'}
+          sx={isLink ? {alignItems: 'flex-start'} : undefined}
+        >
+          <SchemaRecordRepresentation variant={variant} {...representationProps} />
         </SingleFieldList>
       </ReferenceArrayField>
     );

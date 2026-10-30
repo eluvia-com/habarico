@@ -5,17 +5,17 @@ import {FieldProps} from '@admin/components/fields/types';
 import {SvgIconComponent} from '@mui/icons-material';
 import {Chip} from '@mui/material';
 
-type chipVariant = 'text' | 'filled' | 'outlined' | 'soft';
+type ChipVariant = 'text' | 'filled' | 'outlined' | 'soft';
 
 export type BooleanFieldProps = FieldProps & {
   color?: boolean;
-  chipVariant?: chipVariant;
+  variant?: ChipVariant;
 };
 
 const makeChipIcon = (
   label: string,
   color: 'success' | 'error' | 'default',
-  variant: chipVariant
+  variant: ChipVariant
 ) => {
   const Icon = forwardRef<HTMLDivElement>(() => {
     return (
@@ -26,16 +26,16 @@ const makeChipIcon = (
   return Icon as unknown as SvgIconComponent;
 };
 
-export const BooleanField = ({color, chipVariant = 'soft', ...rest}: BooleanFieldProps) => {
+export const BooleanField = ({color, variant = 'soft', ...rest}: BooleanFieldProps) => {
   const translate = useTranslate();
   const TrueIcon = useMemo(
-    () => makeChipIcon(translate('ra.message.yes'), color ? 'success' : 'default', chipVariant),
-    [color, chipVariant, translate]
+    () => makeChipIcon(translate('ra.message.yes'), color ? 'success' : 'default', variant),
+    [color, variant, translate]
   );
 
   const FalseIcon = useMemo(
-    () => makeChipIcon(translate('ra.message.no'), color ? 'error' : 'default', chipVariant),
-    [color, chipVariant, translate]
+    () => makeChipIcon(translate('ra.message.no'), color ? 'error' : 'default', variant),
+    [color, variant, translate]
   );
 
   return <RaBooleanField {...rest} TrueIcon={TrueIcon} FalseIcon={FalseIcon} />;

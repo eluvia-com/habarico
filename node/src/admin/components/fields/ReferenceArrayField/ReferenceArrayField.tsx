@@ -5,7 +5,7 @@ import {
   SingleFieldList,
   useLocaleState,
 } from 'react-admin';
-import {RecordRepresentationChip} from '@admin/components/fields/RecordRepresentationChip';
+import {RecordRepresentation} from '@admin/components/fields/RecordRepresentation';
 import {recordLinkSx} from '@admin/components/fields/recordLinkSx';
 import {UseRecordLinkProps} from '@admin/hooks/useRecordLink';
 import {useValueLocationContext} from '@design/contexts/ValueLocationContext';
@@ -19,11 +19,11 @@ export type ReferenceArrayFieldProps = RaReferenceArrayFieldProps & {
 
 /**
  * The array counterpart of `ReferenceField`: resolves a list of references and renders each as a
- * `RecordRepresentationChip`. `preserveOrder` keeps the order stored on the record rather than the
- * order the data provider returned them in.
+ * chip (`RecordRepresentation`). `preserveOrder` keeps the order stored on the record rather than
+ * the order the data provider returned them in.
  *
- * Schema-agnostic, on the same terms as `ReferenceField` — see its note on why a schema-aware chip
- * has to arrive as `children`.
+ * Schema-agnostic, on the same terms as `ReferenceField` — see its note on why a schema-aware
+ * representation has to arrive as `children`.
  */
 export const ReferenceArrayField = ({
   source,
@@ -32,6 +32,7 @@ export const ReferenceArrayField = ({
   preserveOrder,
   queryOptions,
   recordLinkProps,
+  sx,
   ...rest
 }: ReferenceArrayFieldProps) => {
   const {isInCollection} = useValueLocationContext();
@@ -43,15 +44,19 @@ export const ReferenceArrayField = ({
 
   const content = children || (
     <SingleFieldList linkType={linkType}>
-      <RecordRepresentationChip maxWidth={maxChipWidth} {...recordLinkProps} />
+      <RecordRepresentation maxWidth={maxChipWidth} {...recordLinkProps} />
     </SingleFieldList>
   );
 
   return (
     <RaReferenceArrayField
       source={source}
-      sx={recordLinkSx}
       {...rest}
+      // Merged with the caller's own `sx` rather than placed before `{...rest}`, where the spread
+      // would drop it: MUI resolves an array of `sx` values in order, so a caller styles on top of
+      // the link reset instead of silently replacing it. Dropping it would leave React Admin's
+      // anchor styling in place and make a linked field read as a link rather than as its content.
+      sx={[recordLinkSx, ...(Array.isArray(sx) ? sx : [sx ?? false])]}
       queryOptions={{...queryOptions, meta: {locale, ...queryOptions?.meta}}}
     >
       {preserveOrder ? (

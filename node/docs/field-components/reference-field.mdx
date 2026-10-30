@@ -39,6 +39,7 @@ record when you want to show one of its values instead of its representation.
 | `label`             | `string \| ReactElement \| false` | label from the schema | `false` hides the label                                               |
 | `emptyText`         | `string`                          | —                     | Text shown when the reference is empty                                |
 | `options.relation`  | `RelationFieldOptions`            | from the schema       | See the table below                                                   |
+| `variant`           | `'chip' \| 'link'`                | `'chip'`              | Render the referenced record as a chip or as a text link              |
 
 ### `options.relation`
 
@@ -53,8 +54,30 @@ record when you want to show one of its values instead of its representation.
 `showEditButton` and `showCreateButton` also live under `options.relation`, but they are read by
 [SchemaReferenceInput](../input-components/reference-input), not by this field.
 
-In a list the chip is truncated to the column width so a long representation cannot widen the
+In a list the representation is truncated to the column width so a long one cannot widen the
 column.
+
+### `variant`
+
+`'link'` swaps the chip for the text form of
+[RecordRepresentation](./record-representation.mdx) — the same record and the same link, rendered
+as plain text. Nothing else changes: the query, the width
+cap and the schema's say over which view opens and on what surface are the field's either way.
+
+```tsx
+<SchemaReferenceField
+  source="category_id"
+  reference="eshop/category"
+  variant="link"
+/>
+```
+
+It is a prop, not a schema property: the backend describes the relation, the application decides
+how it looks. To switch every reference in a project at once, override
+[fieldProvider](../providers/field-provider.md#rendering-references-as-text).
+
+The `targetSource` branch ignores it — there the field renders a value of the related record, not
+its representation.
 
 :::caution
 When the related resource's schema cannot be loaded, the component degrades to plain text showing
@@ -122,19 +145,20 @@ record comes back translated, and renders its child inside the referenced record
 
 ```tsx
 <ReferenceField reference="eshop/category" source="category_id">
-  <SchemaRecordRepresentationChip link linkMode="dialog" />
+  <SchemaRecordRepresentation link linkMode="dialog" />
 </ReferenceField>
 ```
 
-Its `recordLinkProps` fills the default chip when you pass no child; a schema-aware chip has to
-arrive as a child instead, because the resource it reads is the referenced one and exists only
-inside the field. `ReferenceArrayField` is the same thing for arrays.
+Its `recordLinkProps` fills the default representation when you pass no child; a schema-aware one
+has to arrive as a child instead, because the resource it reads is the referenced one and exists
+only inside the field. `ReferenceArrayField` is the same thing for arrays.
 
 ## See also
 
 - [SchemaReferenceInput](../input-components/reference-input) — the form counterpart
 - [SchemaReferenceArrayField](./reference-array-field.mdx) — an array of foreign keys
-- [RecordRepresentationChip](./record-representation-chip.mdx) — the chip this field renders
+- [RecordRepresentation](./record-representation.mdx) — the chip, or the text link, this field
+  renders
 - [useRecordLink](../hooks/use-record-link.md) — the link behind the chip
 - [Cross-service references](/ruby/cross-service-references) — referencing a resource served by another backend
 - [FieldSchema](../types-and-schemas/field-schema.md#fieldoptions) — the full `RelationFieldOptions` type

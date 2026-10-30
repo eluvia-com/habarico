@@ -2,19 +2,6 @@
 
 ## [Unreleased]
 
-### Fixed
-
-- Every input draws its border in the theme's `palette.divider`. The date, date-time and time
-  pickers used MUI X's own grey (and a different one when disabled); `InputLayout`
-  (`UploadInput`, `TreeArrayInput`), `SchemaWrappedFields` and `SchemaRangeInput` each used a grey of
-  their own. The pickers take the color and the field tint from new `MuiPickersOutlinedInput` and
-  `MuiPickersInputBase` theme overrides. (HAB-1018)
-- A click on a menu group (an item with sub-items) navigated to its first child and only then
-  expanded it. The group now opens or closes its sub-menu in place, and the page changes only once a
-  child is clicked; it is rendered as a button with `aria-expanded` rather than a link. A group
-  holding the current page still starts open and reopens whenever navigation leads into it. In the
-  collapsed rail a click opens the group's sub-menu at once, as hovering does, so it works on touch
-  screens too. The mobile drawer stays open while a group is expanded. (HAB-996)
 ### Added
 
 - `DashboardGridPanelLayout` gained an optional `stackedH` — the panel's height in grid rows when
@@ -25,6 +12,18 @@
   below move along. Panels cannot be dragged there. `onLayoutChange` reports the new height as the
   panel's `stackedH` and passes `x`/`y`/`w`/`h` back unchanged, so the wide layout is left as it
   was — a consumer that copies only `x`/`y`/`w`/`h` from it drops the change. (HAB-1004)
+- Reference fields gained a `variant?: 'chip' | 'link'` prop (default `'chip'`), so a
+  project can render the record a reference points at as a plain text link instead of a chip.
+  `SchemaReferenceField` and `SchemaReferenceArrayField` both take it; the array form also stacks
+  text links one per line (a row of bare links reads as one run-on sentence), in a detail view and
+  in a datagrid cell alike, while the chip form keeps its wrapping row. The representation behind
+  both forms, `RecordRepresentation` (and its schema-aware `SchemaRecordRepresentation`), is
+  exported for direct use as `children` of `ReferenceField` / `ReferenceArrayField`. The default is
+  unchanged, so existing projects look and behave exactly as before. `SchemaReferenceArrayField` is
+  now exported from the package, which it was not. Chosen by the application through a
+  `fieldProvider` override — the schema is untouched, and neither the contract nor the Python/Ruby
+  DSL changes.
+  (HAB-973)
 
 ### Changed
 
@@ -64,9 +63,35 @@
   not rendered and no error is reported; upgrade the backend and the frontend together. To migrate,
   rename `uploadImages` / `imageField` and the `ra.upload_images.*` overrides, and a custom
   `buttonProvider` matching `'upload-images'`. (HAB-1000)
+- **BREAKING:** `RecordRepresentationChip` and `RecordRepresentationLink` are unified into a single
+  `RecordRepresentation`, whose new `variant?: 'chip' | 'link'` prop (default `'chip'`) chooses the
+  shape — the same vocabulary the reference fields' own `variant` already uses, now carried
+  unchanged all the way down. `SchemaRecordRepresentationChip` and `SchemaRecordRepresentationLink`
+  collapse into `SchemaRecordRepresentation` the same way. The MUI chip variant moves from
+  `variant` to **`chipVariant`**, which `variant` is now spent on; `size`, `color` and `icon` are
+  unchanged. Props are discriminated by `variant`, so the chip's look on `variant="link"` is a type
+  error rather than a prop that silently does nothing — `RecordRepresentationChipProps` /
+  `RecordRepresentationLinkProps` (and their `Schema` counterparts) name the two branches for a
+  component that only ever renders one of them, and `RecordRepresentationProps` is their union.
+  To migrate: rename the component, rename a `variant` meant for the chip to `chipVariant`, and add
+  `variant="link"` where the link form was used. Rendering and behaviour are unchanged. (HAB-973)
+- **BREAKING:** `BooleanField`'s `chipVariant` prop is renamed to **`variant`**, so the whole field
+  family names the MUI chip variant the same way. Its values (`'text' | 'filled' | 'outlined' |
+  'soft'`) and the `'soft'` default are unchanged; rename the prop at the call site. (HAB-973)
 
 ### Fixed
 
+- Every input draws its border in the theme's `palette.divider`. The date, date-time and time
+  pickers used MUI X's own grey (and a different one when disabled); `InputLayout`
+  (`UploadInput`, `TreeArrayInput`), `SchemaWrappedFields` and `SchemaRangeInput` each used a grey of
+  their own. The pickers take the color and the field tint from new `MuiPickersOutlinedInput` and
+  `MuiPickersInputBase` theme overrides. (HAB-1018)
+- A click on a menu group (an item with sub-items) navigated to its first child and only then
+  expanded it. The group now opens or closes its sub-menu in place, and the page changes only once a
+  child is clicked; it is rendered as a button with `aria-expanded` rather than a link. A group
+  holding the current page still starts open and reopens whenever navigation leads into it. In the
+  collapsed rail a click opens the group's sub-menu at once, as hovering does, so it works on touch
+  screens too. The mobile drawer stays open while a group is expanded. (HAB-996)
 - The bottom-edge resize handle of a stacked `DashboardGrid` panel (edit mode at a container width
   of 996px or less) is easy to hit with a finger: its hit area is a 96×44px target spanning the
   panel's bottom edge and the gap below it, and dragging it resizes the panel instead of scrolling
@@ -75,6 +100,21 @@
   DOCX, ZIP, …) as its file-type tile instead of a broken-image thumbnail. Only a file whose name
   has an image extension a browser can render (PNG, JPG, GIF, WebP, AVIF, SVG, BMP, ICO) gets a
   thumbnail. (HAB-1000)
+- The datagrid's row hint no longer stacks on top of a control that owns its own click. Hovering a
+  reference chip in a cell used to show two tooltips at once — the chip's "Show object" and the
+  row's "double-click for detail" — and the row's one promised the wrong action, since the click
+  about to happen was the chip's. `useDatagridRowTooltip` now treats a target inside
+  `a[href]`, `button` or `[role="button"]` the way it already treats the row-actions cell, which
+  also covers URL and e-mail fields and any control a project puts in a cell of its own. Decided
+  there rather than by having each control stop the event: a swallowed `mouseover` never reaches
+  the row, so a hint already on screen would stay. `RecordRepresentationLink` gained the button
+  semantics it was missing (`role`, `tabIndex`, Enter / Space) so the text representation is both
+  keyboard-operable and recognised by that test.
+  (HAB-973)
+- `ReferenceField` and `ReferenceArrayField` now merge a caller's `sx` with their own link reset
+  instead of dropping it. The reset sat before the `{...rest}` spread, so any caller passing `sx`
+  replaced it outright and got React Admin's anchor styling back on a field that only looked linked.
+  (HAB-973)
 
 ## [7.2.0] — 2026-10-19
 
