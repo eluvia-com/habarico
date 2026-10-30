@@ -88,8 +88,8 @@ export class MfaRequiredError extends Error {
 
 /**
  * Builds a `ServiceAuthProvider` from the individual auth operations, decoupled from any specific
- * auth library. To wire it up to `@eluvia/auth`, call its hooks in your app and pass the resulting
- * functions in — see the README's "Service Auth Provider" section for a full example.
+ * auth library — plain `fetch` calls are enough. Full example:
+ * https://docs.habarico.com/node/providers/auth-provider
  */
 export function buildServiceAuthProvider({
   login,

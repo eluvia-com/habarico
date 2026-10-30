@@ -1,0 +1,17 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  host: <%= ENV.fetch('PGHOST', 'localhost') %>
+  port: <%= ENV.fetch('PGPORT', '5432') %>
+  username: <%= ENV.fetch('PGUSER', 'eshop') %>
+  password: <%= ENV.fetch('PGPASSWORD', 'eshop') %>
+
+# A database of its own, beside the Django backend's: the two model the same shop but their tables
+# are not the same tables. ../compose.yaml creates the role that owns both.
+development:
+  <<: *default
+  database: <%= ENV.fetch('PGDATABASE', 'eshop_rails') %>
+
+test:
+  <<: *default
+  database: <%= ENV.fetch('PGDATABASE', 'eshop_rails') %>_test

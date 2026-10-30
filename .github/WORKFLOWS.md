@@ -11,15 +11,16 @@ public registries only.
 
 ## What runs
 
-One workflow per versioned unit of the monorepo. Each runs on every pull request, whatever it
-changes, so its jobs can be required checks in the `next` ruleset; job names carry the library
-because the ruleset matches checks by name alone:
+One workflow per versioned unit of the monorepo, plus one for `examples/`, which is none. Each
+runs on every pull request, whatever it changes, so its jobs can be required checks in the `next`
+ruleset; job names carry the library because the ruleset matches checks by name alone:
 
 | Workflow | Jobs |
 |----------|------|
 | `node.yml` | `node-code-quality` (lint + typecheck), `node-unit-tests`, `node-storybook-tests`; on a manual run also `node-pack`, the branch as a tarball artifact |
 | `python.yml` | `python-code-quality` (flake8 + black), `python-unit-tests` (pipenv + pytest) |
 | `ruby.yml` | `ruby-code-quality` (rubocop), `ruby-unit-tests` (`rake test`) |
+| `examples.yml` | `examples-django`, `examples-rails`: `examples/eshop` built against the libraries in the tree, each on a PostgreSQL service |
 | `beta-bump.yml` | `beta-bump` |
 | `major.yml` | `major` (the major button) |
 | `publish.yml` | `detect`, then one job per changed library; on a stable tag `github-release` after it |
