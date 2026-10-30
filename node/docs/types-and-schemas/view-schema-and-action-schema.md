@@ -61,7 +61,7 @@ The list's columns arrive in `list.boxes`, not `list.fields` — the key is name
 type BoxType =
   | 'tab' | 'tab-item' | 'wizard'
   | 'simple' | 'list' | 'array' | 'object'
-  | 'grid' | 'grid-item' | 'gallery';
+  | 'grid' | 'gallery';
 
 // A box holds nested boxes and field descriptors in one ordered list
 type BoxItem = BoxSchema | FieldDescriptor;
@@ -138,8 +138,11 @@ type GalleryBoxParameters = {
 `boxes` array, so the order of a mixed list is the order on screen.
 :::
 
-The `tab-item` and `grid-item` box types are the children of a `tab` / `grid` box; a `tab-item`
-carries no parameters of its own, a `grid-item` carries the breakpoint widths in `gridItem`.
+The `tab-item` box type is the child of a `tab` box and carries no parameters of its own. `gridItem`
+is a placement rather than a box type: any box inside a `grid` box may carry it, so a grid cell is
+simply the box that draws it — a `list` or `gallery` box sizes itself. A grid whose cells carry no
+`gridItem` computes their widths from how many there are; one cell carrying it switches the whole
+grid to explicit widths.
 
 ## ActionSchema
 

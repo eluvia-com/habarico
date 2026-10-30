@@ -286,24 +286,38 @@ class BoxSchemaGeneratorTest < Minitest::Test
   # generate_grid_item
   # ---------------------------------------------------------------------------
 
-  def test_generate_grid_item_returns_nil_for_simple_box
+  def test_generate_grid_item_returns_nil_for_box_without_placement
     assert_nil build_generator.send(:generate_grid_item, build_view, Habarico::Box.new, 0, stub_context)
   end
 
-  def test_generate_grid_item_returns_nil_for_list_box
+  def test_generate_grid_item_returns_nil_for_list_box_without_placement
     assert_nil build_generator.send(:generate_grid_item, build_view, Habarico::ListBox.new, 0, stub_context)
   end
 
-  def test_generate_grid_item_returns_parameters_for_grid_item_box
-    result = build_generator.send(:generate_grid_item, build_view, Habarico::GridItemBox.new, 0, stub_context)
+  def test_generate_grid_item_returns_parameters_for_placed_box
+    box = Habarico::Box.new(grid_item: { md: 6 })
+    result = build_generator.send(:generate_grid_item, build_view, box, 0, stub_context)
     assert_instance_of Habarico::GridItemBoxParameters, result
   end
 
   def test_generate_grid_item_includes_grid_dimensions
-    box = Habarico::GridItemBox.new(xs: 12, md: 6)
+    box = Habarico::Box.new(grid_item: { xs: 12, md: 6 })
     result = build_generator.send(:generate_grid_item, build_view, box, 0, stub_context)
     assert_equal 12, result.xs
     assert_equal 6, result.md
+  end
+
+  def test_generate_grid_item_reads_the_grid_item_hash_of_any_box_type
+    box = Habarico::ListBox.new(reference: 'items', grid_item: { md: 9 })
+    result = build_generator.send(:generate_grid_item, build_view, box, 0, stub_context)
+    assert_instance_of Habarico::GridItemBoxParameters, result
+    assert_equal 9, result.md
+  end
+
+  def test_generate_grid_item_accepts_string_keys_in_the_grid_item_hash
+    box = Habarico::Box.new(grid_item: { 'md' => 4 })
+    result = build_generator.send(:generate_grid_item, build_view, box, 0, stub_context)
+    assert_equal 4, result.md
   end
 
   # ---------------------------------------------------------------------------
@@ -563,8 +577,8 @@ class BoxSchemaGeneratorTest < Minitest::Test
     assert_nil result.gallery
   end
 
-  def test_generate_sets_grid_item_params_for_grid_item_box_and_clears_others
-    box = Habarico::GridItemBox.new(md: 6)
+  def test_generate_sets_grid_item_params_for_placed_box_and_clears_others
+    box = Habarico::Box.new(grid_item: { md: 6 })
     result = build_generator.generate(build_view, box, 0, stub_context)
     assert_instance_of Habarico::GridItemBoxParameters, result.grid_item
     assert_nil result.list
@@ -573,6 +587,16 @@ class BoxSchemaGeneratorTest < Minitest::Test
     assert_nil result.array
     assert_nil result.object
     assert_nil result.gallery
+  end
+
+  # A placement is not a type: a box can be a grid cell and carry its own type parameters at once.
+  def test_generate_sets_grid_item_and_list_params_for_a_placed_list_box
+    box = Habarico::ListBox.new(reference: 'items', target: 'parent_id', grid_item: { md: 9 })
+    result = build_generator.generate(build_view, box, 0, stub_context)
+    assert_equal 'list', result.type
+    assert_instance_of Habarico::ListBoxParameters, result.list
+    assert_instance_of Habarico::GridItemBoxParameters, result.grid_item
+    assert_equal 9, result.grid_item.md
   end
 
   def test_generate_sets_tab_params_for_tab_box_and_clears_others

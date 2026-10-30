@@ -52,8 +52,8 @@ all. See
 | `gallery` | [SchemaGalleryBox](../box-components/gallery-box.md) — an image carousel |
 | anything else | [SchemaSimpleBox](../box-components/simple-box.md) — a plain stack of fields; this is where `simple` lands, and it is also the fallback for an unknown type |
 
-`tab-item` and `grid-item` never reach the provider on their own — the parent `SchemaTabBox` /
-`SchemaGridBox` consumes its own children.
+`tab-item` never reaches the provider on its own — the parent `SchemaTabBox` consumes its own
+children.
 
 ## Example
 

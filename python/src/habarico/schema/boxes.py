@@ -71,6 +71,58 @@ class ConditionalBoxWrapper(BaseSchema):
         return self._get_box().to_dict(**kwargs)
 
 
+class GridItem(BaseSchema):
+
+    def __init__(
+        self,
+        *,
+        xs: int | None = None,
+        sm: int | None = None,
+        md: int | None = None,
+        lg: int | None = None,
+        xl: int | None = None,
+    ):
+        """
+        Placement of a box inside its parent ``GridBox`` - the column span at each breakpoint.
+
+        Args:
+            xs (int, optional): Number of columns for extra small screens. Defaults to None.
+            sm (int, optional): Number of columns for small screens. Defaults to None.
+            md (int, optional): Number of columns for medium screens. Defaults to None.
+            lg (int, optional): Number of columns for large screens. Defaults to None.
+            xl (int, optional): Number of columns for extra large screens. Defaults to None.
+        """
+        self._xs = xs
+        self._sm = sm
+        self._md = md
+        self._lg = lg
+        self._xl = xl
+
+    def can_render(self) -> bool:
+        # A box that sets no span at all must not emit a ``grid_item`` key at all: the frontend
+        # switches the whole grid from computed to explicit spans as soon as one child carries one,
+        # so an empty object would silently turn the computed spans off.
+        return any(span is not None for span in (self._xs, self._sm, self._md, self._lg, self._xl))
+
+
+def generate_grid_item_descriptor(grid_item: GridItem | dict | None) -> GridItem | None:
+    """
+    Generate a grid item descriptor from a descriptor or a plain dict of spans.
+
+    Args:
+        grid_item (GridItem | dict, optional): Grid placement of the box, either as a ``GridItem``
+            descriptor or as a ``{"md": 9}`` style dict of breakpoint spans. Defaults to None.
+
+    Returns:
+        GridItem: Grid item descriptor, or None when no placement was given.
+    """
+    if grid_item is None:
+        return None
+    if isinstance(grid_item, dict):
+        return GridItem(**grid_item)
+    return grid_item
+
+
 class BaseBox(BaseSchema):
 
     def __init__(
@@ -87,6 +139,7 @@ class BaseBox(BaseSchema):
         required_query: str | None = None,
         toolbar_actions: Actions | None = None,
         bottom_actions: Actions | None = None,
+        grid_item: GridItem | dict | None = None,
     ):
         """
         Base schema for all box types.
@@ -110,6 +163,11 @@ class BaseBox(BaseSchema):
                 Defaults to None (no local toolbar).
             bottom_actions (Actions, optional): Actions rendered at the bottom of the box, similar to form submit
                 buttons. Defaults to None (no bottom actions).
+            grid_item (GridItem | dict, optional): Placement of the box inside its parent ``GridBox`` - the
+                column span at each breakpoint, as a ``GridItem`` descriptor or a ``{"md": 9}`` style dict.
+                Any box type accepts it, so a cell of a grid is simply the box that draws it - a list,
+                a gallery or an array box sizes itself. Defaults to None (the frontend computes the
+                span from the number of cells). Ignored outside a ``GridBox``.
         """
         self._type = type
         self._name = name
@@ -120,6 +178,7 @@ class BaseBox(BaseSchema):
         self._read_only = read_only
         self._toolbar_actions = generate_actions_descriptor(toolbar_actions)
         self._bottom_actions = generate_actions_descriptor(bottom_actions)
+        self.__grid_item = generate_grid_item_descriptor(grid_item)
         if show_query or required_query:
             self._options = {
                 "dynamic_render": {
@@ -140,6 +199,14 @@ class BaseBox(BaseSchema):
 
     def get_read_only(self) -> bool:
         return self.context.read_only or self._read_only
+
+    def _get_grid_item(self) -> GridItem | None:
+        """The box's placement in its parent grid. Override to make it context-dependent."""
+        return self.__grid_item
+
+    @schema_getter
+    def get_grid_item(self) -> GridItem | None:
+        return self._get_grid_item()
 
 
 Boxes = list[BaseBox | str | Field]
@@ -313,72 +380,6 @@ class TabItemBox(BaseBox):
             read_only (bool, optional): Flag that indicates if the box is read-only. Defaults to False.
         """
         super().__init__(type=BoxType.TAB_ITEM, label=label, boxes=boxes, read_only=read_only, **kwargs)
-
-
-class GridItemBoxParameters(BaseSchema):
-
-    def __init__(
-        self,
-        *,
-        xs: int | None = None,
-        sm: int | None = None,
-        md: int | None = None,
-        lg: int | None = None,
-        xl: int | None = None,
-    ):
-        """
-        Grid item box parameters.
-
-        Args:
-            xs (int, optional): Number of columns for extra small screens. Defaults to None.
-            sm (int, optional): Number of columns for small screens. Defaults to None.
-            md (int, optional): Number of columns for medium screens. Defaults to None.
-            lg (int, optional): Number of columns for large screens. Defaults to None.
-            xl (int, optional): Number of columns for extra large screens. Defaults to None.
-        """
-        self._xs = xs
-        self._sm = sm
-        self._md = md
-        self._lg = lg
-        self._xl = xl
-
-
-class GridItemBox(BaseBox):
-
-    def __init__(
-        self,
-        *,
-        xs: int | None = None,
-        sm: int | None = None,
-        md: int | None = None,
-        lg: int | None = None,
-        xl: int | None = None,
-        **kwargs,
-    ):
-        """
-        Grid item box that represents a grid item.
-
-        Args:
-            label (str, optional): Label of the box. Defaults to None.
-            boxes (list[BaseBox], optional): List of child boxes. Defaults to None.
-            fields (Fieldset, optional): List of fields that will be displayed in the box. Defaults to None.
-            read_only (bool, optional): Flag that indicates if the box is read-only. Defaults to False.
-            xs (int, optional): Number of columns for extra small screens. Defaults to None.
-            sm (int, optional): Number of columns for small screens. Defaults to None.
-            md (int, optional): Number of columns for medium screens. Defaults to None.
-            lg (int, optional): Number of columns for large screens. Defaults to None.
-            xl (int, optional): Number of columns for extra large screens. Defaults to None.
-        """
-        super().__init__(type=BoxType.GRID_ITEM, **kwargs)
-        self.__grid_item_kwargs = dict(xs=xs, sm=sm, md=md, lg=lg, xl=xl)
-
-    def _get_grid_item_kwargs(self) -> dict:
-        """Constructor kwargs for the grid item params. Override to make them context-dependent."""
-        return self.__grid_item_kwargs
-
-    @schema_getter
-    def get_grid_item(self) -> GridItemBoxParameters:
-        return GridItemBoxParameters(**self._get_grid_item_kwargs())
 
 
 class ListBoxParameters(BaseSchema):
@@ -745,6 +746,29 @@ class ArrayBox(BaseBox):
 
 class GridFieldsBox(GridBox):
 
-    def __init__(self, *fields, xs: int = None, sm: int = None, md: int = None, lg: int = None, xl: int = None):
-        boxes = [Box(boxes=[field]) for field in fields]
-        super().__init__(boxes=boxes)
+    def __init__(
+        self,
+        *fields,
+        xs: int | None = None,
+        sm: int | None = None,
+        md: int | None = None,
+        lg: int | None = None,
+        xl: int | None = None,
+        **kwargs,
+    ):
+        """
+        Grid box with one field per column - a shorthand that wraps each field in its own ``Box``.
+
+        Args:
+            *fields: Fields to lay out, one per grid cell. Field names, Field descriptors or lists
+                of fields (inline rows).
+            xs (int, optional): Number of columns each cell spans on extra small screens. Defaults to None.
+            sm (int, optional): Number of columns each cell spans on small screens. Defaults to None.
+            md (int, optional): Number of columns each cell spans on medium screens. Defaults to None.
+            lg (int, optional): Number of columns each cell spans on large screens. Defaults to None.
+            xl (int, optional): Number of columns each cell spans on extra large screens. Defaults to None.
+        """
+        spans = dict(xs=xs, sm=sm, md=md, lg=lg, xl=xl)
+        # A dict per box: every cell needs its own descriptor instance, not a shared one.
+        boxes = [Box(boxes=[field], grid_item=dict(spans)) for field in fields]
+        super().__init__(boxes=boxes, **kwargs)

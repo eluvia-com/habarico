@@ -9,7 +9,7 @@ import {SchemaGridBox} from './SchemaGridBox';
 const cell = (name: string, label: string, boxes: BoxItem[], spans?: BoxSchema['gridItem']) =>
   box({
     name,
-    type: spans ? 'grid-item' : 'simple',
+    type: 'simple',
     label,
     boxes,
     ...(spans ? {gridItem: spans} : {}),
@@ -23,11 +23,11 @@ const gridBox = (boxes: BoxItem[], overrides: Partial<BoxSchema> = {}): BoxSchem
  *
  * Two ways to divide the row:
  *
- * - **Automatic.** With no `grid-item` child the grid splits the row evenly between its cells,
- *   scaling down responsively (`computeAutoSpans`).
- * - **Explicit.** A `grid-item` child carries `gridItem: {xs, sm, md, lg, xl}` — the MUI breakpoint
- *   spans out of 12 — and the grid stops computing and uses them. The two modes do not mix: one
- *   `grid-item` among the children switches the whole grid to explicit spans.
+ * - **Automatic.** With no child carrying `gridItem` the grid splits the row evenly between its
+ *   cells, scaling down responsively (`computeAutoSpans`).
+ * - **Explicit.** A child carries `gridItem: {xs, sm, md, lg, xl}` — the MUI breakpoint spans out
+ *   of 12 — and the grid stops computing and uses them. The two modes do not mix: one child with
+ *   `gridItem` switches the whole grid to explicit spans.
  *
  * A bare grid (no `label`, no `toolbarActions`, not `collapsible`) draws **no card** — it is a pure
  * layout container, and the cards you see belong to its cells. As the view's root box it keeps the
@@ -58,7 +58,7 @@ export const Default: Story = {
   ),
 };
 
-/** With no `grid-item` child the grid divides the row evenly — two, three, then four cells. */
+/** With no child carrying `gridItem` the grid divides the row evenly — two, three, then four cells. */
 export const AutomaticSpans: Story = {
   render: () => (
     <ShowcaseStack title={'SchemaGridBox — automatic spans'}>
@@ -80,7 +80,7 @@ export const AutomaticSpans: Story = {
 
 /**
  * Explicit spans: an 8/4 split, then 6/6, then 9/3 — the `gridItem` breakpoint values out of 12.
- * One `grid-item` child is enough to switch the whole grid off automatic spans.
+ * One child with `gridItem` is enough to switch the whole grid off automatic spans.
  */
 export const ExplicitSpans: Story = {
   render: () => (

@@ -93,6 +93,11 @@ version and date when a release is finalized.
 
 ### Added
 
+- `grid_item` - the placement of a box inside its parent `GridBox` - is accepted by every box class:
+  `Habarico::ListBox.new(reference: 'documents', grid_item: { md: 9 })` is a grid cell and a list box
+  at once. It takes a hash of breakpoint spans (`{ xs:, sm:, md:, lg:, xl: }`, string or symbol keys),
+  and a box that sets no span emits no `grid_item` key at all, so a grid whose cells carry none still
+  computes their widths itself. (HAB-963)
 - `Habarico::FileValidations` - derives the `max_size` / `accept` field-schema options for any
   `file_attr` from the `content_type:` / `size:` validations a host declares on its underlying
   attachment with the optional `active_storage_validations` gem (not a dependency of this gem - a
@@ -106,6 +111,57 @@ version and date when a release is finalized.
   limits by hand, the same way `resize_width` / `icons_key` already do for their own options. A
   bare symbol field declaration has no such override; only a `FieldReference` does.
   (HAB-966)
+  ([HAB-966](https://sparktech.myjetbrains.com/youtrack/issue/HAB-966))
+
+### Removed
+
+- **BREAKING:** `Habarico::GridItemBox`, the `'grid-item'` box type and the flat
+  `xs`/`sm`/`md`/`lg`/`xl` attributes of `Habarico::Box`. A grid cell is now the box that draws it,
+  carrying `grid_item` - which is also what makes its card stretch to the height of its row, where a
+  wrapper left the card at the height of its content. Replace
+  `Habarico::GridItemBox.new(md: 9, boxes: [x])` with `x` carrying `grid_item: { md: 9 }`, or with
+  `Habarico::Box.new(grid_item: { md: 9 }, boxes: [...])` where the cell really does group several
+  boxes. (HAB-963)
+
+### Changed
+
+- The default save action (`SaveAction`, emitted as the `bottom_actions` of create, edit and
+  action views) now defaults to the `primary` colour with the `Check` icon instead of `success`
+  with `Save`, matching the frontend library's own default form-action button
+  ([HAB-956](https://sparktech.myjetbrains.com/youtrack/issue/HAB-956)).
+
+### Removed
+
+- **BREAKING:** The paid features moved out of this gem into `habarico-enterprise`
+  (HAB-812):
+  - change history — `habarico/contrib/paper_trail` no longer exists; install the paid gem and
+    `require "habarico_enterprise/paper_trail"` instead (the `Habarico::Contrib::PaperTrail::*`
+    constants are now `HabaricoEnterprise::PaperTrail::*`; translation keys keep their names);
+  - the cross-resource spotlight search — `GET /search`, `SearchService`, `SearchHighlighter`,
+    `SearchResourceSchema` and its generator, and the `global_fulltext_search_enabled` DSL option
+    and schema key. Per-resource search (`search_fields`) stays free and unchanged; a list response
+    simply carries no `meta.highlights` without the paid gem;
+  - aggregations and the dashboard — the `/{resource}/aggregate` endpoint and its schema route,
+    `AggregateService`, `AggregateSchema`/`AggregateFieldSchema` and their generator,
+    `AggregateFieldDefinition`, the `aggregate_enabled` / `aggregate_max_buckets` /
+    `aggregate_fields` / `aggregate_schema_generator` / `dashboard_enabled` DSL options,
+    `validate_aggregate_fields!` and the two schema keys. This matches the Python split, where
+    aggregations and the dashboard are paid;
+  - chunked/direct uploads — `habarico/contrib/uploads` no longer exists (it only ever shipped in
+    the 0.57.0 betas). Install the paid gem and `require "habarico_enterprise/uploads"` instead;
+    the `Habarico::Contrib::Uploads::*` constants are now `HabaricoEnterprise::Uploads::*`,
+    `Habarico::UploadOptions` is `HabaricoEnterprise::UploadOptions`, the S3 endpoints are drawn
+    by the routing service instead of being mounted by hand (drop the `post "uploads/…"` lines
+    from `config/routes.rb`), and the tusd helper scripts move to `scripts/` in the
+    `habarico-enterprise` repository. Base64 file/image uploads stay free and unchanged,
+    as does the `{filename:, content:, upload_key:}` permit spec on file fields — a free-only
+    install simply emits no `options.upload` block. This matches the Python split, where chunked
+    uploads are paid.
+
+  User preferences stay free in full, including the `preferences.dashboard` key and the
+  `*.savedQueries` pattern — same as Python, where both live in the free `contrib.preferences`.
+
+### Added
 
 - `default_page_limit` and `max_page_limit` in the resource DSL - the page size of a list endpoint
   and the largest one a request may ask for, per resource. The same two knobs configure every
