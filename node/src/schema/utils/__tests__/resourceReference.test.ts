@@ -211,15 +211,44 @@ describe('the other entry points', () => {
             choices: [],
             mode: 'redirect',
             parameters: {},
-            endpoint: local('course'),
+            reference: local('course'),
           },
         },
       },
     ] as ServiceSchema;
-    expect(resolveReferences(schema, SERVICE)[0].menu?.view?.endpoint).toEqual({
+    expect(resolveReferences(schema, SERVICE)[0].menu?.view?.reference).toEqual({
       service: SERVICE,
       resource: 'course',
     });
+  });
+
+  it('no longer treats a view action key named `endpoint` as a reference', () => {
+    const viewWithEndpointKey = {
+      name: 'list',
+      choices: [],
+      mode: 'redirect',
+      parameters: {},
+      endpoint: local('course'),
+    };
+    const schema = [
+      {
+        name: 'course',
+        pkFieldName: 'id',
+        label: 'Course',
+        views: [],
+        actions: [],
+        url: 'https://example.test/course/',
+        menu: {
+          name: 'course',
+          label: 'Course',
+          priority: 1,
+          type: 'view',
+          view: viewWithEndpointKey,
+        },
+      },
+    ] as ServiceSchema;
+    // the `reference` key is what gets the service filled in; a stray `endpoint` key is left as-is
+    expect(resolveReferences(schema, SERVICE)[0].menu?.view).toEqual(viewWithEndpointKey);
   });
 
   it('resolves an action', () => {
@@ -259,7 +288,7 @@ describe('the other entry points', () => {
               choices: [],
               mode: 'redirect' as const,
               parameters: {},
-              endpoint: local('lesson'),
+              reference: local('lesson'),
             },
           },
         ],
@@ -272,13 +301,13 @@ describe('the other entry points', () => {
           choices: [],
           mode: 'redirect' as const,
           parameters: {},
-          endpoint: local('lesson'),
+          reference: local('lesson'),
         },
       },
     };
     const resolved = resolveReferences(meta, SERVICE);
-    expect(resolved.schema.actions[0].view?.endpoint?.service).toBe(SERVICE);
-    expect(resolved.triggerAction.view?.endpoint?.service).toBe(SERVICE);
+    expect(resolved.schema.actions[0].view?.reference?.service).toBe(SERVICE);
+    expect(resolved.triggerAction.view?.reference?.service).toBe(SERVICE);
   });
 });
 

@@ -117,10 +117,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **BREAKING:** The three endpoint parameter schemas address what they point at with a
   `ResourceReference` instead of spelling the coordinates out themselves, and
   `ViewActionEndpointParameters` is gone. Its three properties — `reference`, `action_name`,
-  `record_pk` — were exactly those coordinates and nothing else, so `ViewActionParameters.endpoint`
-  is a `ResourceReference` now. `ViewEndpointParameters` and `ResourceActionEndpointParameters` keep
-  their `path` and `method`, because how a thing is called is not part of where it is, and collapse
-  their own three into one `reference`.
+  `record_pk` — were exactly those coordinates and nothing else, so `ViewActionParameters.reference`
+  is a `ResourceReference` now — the same key `ViewEndpointParameters` and
+  `ResourceActionEndpointParameters` collapse their own three into. Those two keep `path` and
+  `method` beside it, because how a thing is called is not part of where it is; `ViewActionParameters`
+  has no call to describe, so `reference` is its only property of the three. (`endpoint` was this
+  property's name through the beta; renamed before the first stable release so `reference` means the
+  same thing everywhere in the spec, with no exception left for a view action.)
 
   What made this possible was `action_name` joining `ResourceReference`: a schema route carries that
   segment too (`admin/{resource_name}/{action_name}/schema`), and once the type covered it, each

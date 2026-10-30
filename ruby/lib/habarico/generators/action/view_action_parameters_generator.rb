@@ -13,19 +13,19 @@ module Habarico
         dialog_width: generate_dialog_width(action, context),
         parameters: generate_parameters(action, context),
         choices: generate_choices(action, context),
-        endpoint: generate_endpoint(action, context),
+        reference: generate_reference(action, context),
         keep_linked_parent: generate_keep_linked_parent(action, context)
       )
     end
 
     protected
 
-    # What the view's endpoint addresses, left unaddressed when the action points at nothing of its
+    # What the view action addresses, left unaddressed when the action points at nothing of its
     # own. `action_name` and `record_pk` live inside the address, so an action that has either names
     # the resource it belongs to - the same rule the resource action endpoint follows. Only an
     # explicit `endpoint_record_pk` is carried: the record of the request is the one the frontend
     # already renders.
-    def view_action_endpoint_reference(action, _context)
+    def view_action_reference(action, _context)
       action_name = target_view_action_name(action)
       record_pk = action.endpoint_record_pk.presence
       reference = action.endpoint_reference
@@ -68,12 +68,12 @@ module Habarico
       Habarico::CallableHelper.resolve(action.view_choices, context)
     end
 
-    def generate_endpoint(action, context)
-      # A standard action of the current resource needs no endpoint - the frontend opens the view
-      # over the record it already has. One that names its own target does: the endpoint is where
+    def generate_reference(action, context)
+      # A standard action of the current resource needs no reference - the frontend opens the view
+      # over the record it already has. One that names its own target does: the reference is where
       # the target resource and record are written down.
       return nil if Habarico::ActionHelper.is_standard_action?(action) && !Habarico::ActionHelper.has_explicit_target?(action)
-      view_action_endpoint_reference(action, context)
+      view_action_reference(action, context)
     end
 
     def generate_keep_linked_parent(action, _context)

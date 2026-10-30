@@ -176,7 +176,7 @@ type ViewActionParameters = {
   name: string;
   choices: {label: string; parameters: Record<string, string>}[];
   mode: ViewModeType;
-  endpoint?: ResourceReference;  // absent = the resource the schema was generated for
+  reference?: ResourceReference;  // absent = the resource the schema was generated for
   parameters: Record<string, string>;
   dialogWidth?: string;       // mode: 'dialog' only — MUI breakpoint ("md") or CSS width ("800px")
   keepLinkedParent?: boolean; // keep the linked-parent segments in the redirect path

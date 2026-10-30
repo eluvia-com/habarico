@@ -1708,7 +1708,7 @@ components:
           type: string
           example: view_name
           description: Name of the view which will be opened.
-        endpoint:
+        reference:
           oneOf:
             - $ref: '#/components/schemas/ResourceReference'
           description: |

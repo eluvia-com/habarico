@@ -40,7 +40,7 @@ class ActionEndpointTargetTest < Minitest::Test
 
   def view_endpoint(action, context = stub_context)
     Habarico::ViewActionParametersGenerator.new(build_definition, ['products'])
-                                           .send(:view_action_endpoint_reference, action, context)
+                                           .send(:view_action_reference, action, context)
   end
 
   def test_view_record_pk_is_not_taken_from_the_context
@@ -79,18 +79,18 @@ class ActionEndpointTargetTest < Minitest::Test
     Habarico::ViewActionParametersGenerator.new(build_definition, ['products']).generate(action, context)
   end
 
-  def test_standard_view_action_without_a_target_has_no_endpoint
+  def test_standard_view_action_without_a_target_has_no_reference
     action = Habarico::ViewAction.new(name: 'show', view_name: 'show', is_detail: true)
-    assert_nil view_parameters(action).endpoint
+    assert_nil view_parameters(action).reference
   end
 
-  def test_standard_view_action_with_a_target_keeps_its_endpoint
+  def test_standard_view_action_with_a_target_keeps_its_reference
     action = Habarico::ViewAction.new(name: 'show', view_name: 'show', is_detail: true,
                                       endpoint_reference: 'categories', endpoint_record_pk: CATEGORY_PK)
-    endpoint = view_parameters(action).endpoint
+    reference = view_parameters(action).reference
 
-    assert_equal 'categories', endpoint.resource
-    assert_equal CATEGORY_PK, endpoint.record_pk
+    assert_equal 'categories', reference.resource
+    assert_equal CATEGORY_PK, reference.record_pk
   end
 
   def test_view_choices_are_generated

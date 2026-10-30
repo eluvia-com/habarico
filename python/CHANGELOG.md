@@ -135,7 +135,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `action_name` and `record_pk`. `path` and `method` stay beside it: how a thing is called is not part
   of where it is. A view's endpoint carries no address when it is this admin's own; one with an
   `action_name` names the resource, because the action name lives inside the address and needs one to
-  belong to.
+  belong to. `ViewActionParameters.endpoint` is renamed to `reference` for the same reason: it is a
+  bare `ResourceReference`, not an endpoint, and has no call to describe, so there is no `path`/`method`
+  to go beside it.
   (HAB-938)
 
 - **BREAKING:** A relation's reference on `FieldSchema`, `FilterSchema` and

@@ -353,12 +353,12 @@ describe('getDataProviderFactory', () => {
   });
 
   describe('references in meta', () => {
-    const view = (endpoint: object) => ({
+    const view = (reference: object) => ({
       name: 'show',
       choices: [],
       mode: 'redirect',
       parameters: {},
-      endpoint,
+      reference,
     });
 
     it('fills the service of the resource into the actions a record carries', async () => {
@@ -379,7 +379,7 @@ describe('getDataProviderFactory', () => {
 
       const result = await dataProvider.getOne('blog/articles', {id: 1});
 
-      expect(result.data.meta.schema.actions[0].view.endpoint).toEqual({
+      expect(result.data.meta.schema.actions[0].view.reference).toEqual({
         service: 'blog',
         resource: 'tags',
       });
@@ -403,7 +403,7 @@ describe('getDataProviderFactory', () => {
         data: {},
       });
 
-      expect((result.data as ActionResult).meta.triggerAction?.view?.endpoint).toEqual({
+      expect((result.data as ActionResult).meta.triggerAction?.view?.reference).toEqual({
         service: 'blog',
         resource: 'tags',
         recordPk: 3,
@@ -425,7 +425,7 @@ describe('getDataProviderFactory', () => {
         data: {},
       });
 
-      expect((result.data as ActionResult).meta.triggerAction?.view?.endpoint).toEqual({
+      expect((result.data as ActionResult).meta.triggerAction?.view?.reference).toEqual({
         service: 'shop',
         resource: 'orders',
       });

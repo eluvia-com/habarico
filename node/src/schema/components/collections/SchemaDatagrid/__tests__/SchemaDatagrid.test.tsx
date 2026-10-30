@@ -86,7 +86,7 @@ const action = (name: string, view: Record<string, unknown> = {}) => ({
   isDetail: true,
   showInList: true,
   showInDetail: true,
-  view: {name, endpoint: {service: 'svc', resource: 'res', actionName: name}, ...view},
+  view: {name, reference: {service: 'svc', resource: 'res', actionName: name}, ...view},
 });
 const recordWith = (...actions: ReturnType<typeof action>[]) => ({
   id: 1,

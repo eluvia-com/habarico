@@ -298,7 +298,7 @@ class ResourceActionSchema(GlobalResourceActionSchema):
         if type == ActionType.VIEW:
             self._view = ViewActionParameters(
                 name=view_name,
-                endpoint=build_endpoint_reference(reference, action_name, record_pk),
+                reference=build_endpoint_reference(reference, action_name, record_pk),
                 choices=view_choices,
                 mode=view_mode,
                 parameters=view_parameters,
@@ -418,7 +418,7 @@ class ActionSchema(BaseSchema):
         if type == ActionType.VIEW:
             self._view = ViewActionParameters(
                 name=view_name,
-                endpoint=build_endpoint_reference(reference, view_action_name, record_pk),
+                reference=build_endpoint_reference(reference, view_action_name, record_pk),
                 choices=view_choices,
                 mode=view_mode,
                 parameters=view_parameters,

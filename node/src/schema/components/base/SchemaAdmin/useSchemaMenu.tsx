@@ -99,13 +99,13 @@ export const useSchemaMenu = (extraMenuItems?: ExtraMenuItem[]) => {
           const viewType = resourceSchema.views.find(byName(viewParameters.name))?.type;
           if (!viewType) return; // View was not found
 
-          const menuResource = resourceKey(viewParameters.endpoint) ?? resource.name;
-          const recordPk = viewParameters.endpoint?.recordPk;
+          const menuResource = resourceKey(viewParameters.reference) ?? resource.name;
+          const recordPk = viewParameters.reference?.recordPk;
 
           const path = createPath({
             type: viewType,
             resource: menuResource,
-            actionName: viewParameters.endpoint?.actionName,
+            actionName: viewParameters.reference?.actionName,
             id: recordPk,
           });
 
