@@ -33,4 +33,15 @@ class AdminTest < ActionDispatch::IntegrationTest
     price = response.parsed_body.dig('endpoints', 'get', 'fields').find { |field| field['name'] == 'price_major' }
     assert_equal 'USD', price.dig('options', 'number', 'currency')
   end
+
+  test 'the detail views lay out the resource fields' do
+    get "/api/admin/product/#{Product.first.id}/schema"
+    assert_response :success
+
+    %w[show edit].each do |name|
+      view = response.parsed_body['views'].find { |candidate| candidate['name'] == name }
+      fields = view.dig('detail', 'box', 'boxes').map { |field| field['name'] }
+      assert_includes fields, 'price_major', "the #{name} view renders the product's fields"
+    end
+  end
 end

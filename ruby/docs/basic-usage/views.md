@@ -9,6 +9,9 @@ Basic views can be declared using symbols:
 views [:list, :show, :create, :edit]
 ```
 
+A view declared this way lists the resource's fields: `fields` and `read_only_fields`, plus
+`write_only_fields` on the create and edit forms.
+
 For full control, pass view objects directly:
 
 ```ruby
