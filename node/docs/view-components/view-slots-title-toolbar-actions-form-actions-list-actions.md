@@ -19,7 +19,7 @@ common customization points. All slots accept a `ReactNode` and can be set in tw
 | `listActions`    |     ✓      |     —      |      —       |     —      |
 
 > **Note:** `SchemaAction` renders its title and toolbar directly from `ViewSchema.label` /
-> `ViewSchema.detail.toolbarActions` and its form actions from `SchemaFormActions`. It does not currently
+> `ViewSchema.detail.toolbarActions` and its form actions from `SchemaFormActions`. It does not
 > expose these as top-level props — customize via the `children` prop instead.
 
 ## `title`
@@ -30,7 +30,7 @@ a `DynamicText` node (supports translations).
 - **Default on list views** — `<SchemaViewTitle />` — shows `viewSchema.label`.
 - **Default on detail/edit views** — the same `<SchemaViewTitle />`: it shows `viewSchema.label`
   when set, and falls back to the record's `meta.repr` when the view is opened in a dialog without a
-  label. (The separate `DetailSchemaViewTitle` was folded into it.)
+  label.
 
 ```tsx
 // Hide the title entirely
