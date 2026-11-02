@@ -32,9 +32,13 @@ bundle install                # Install dependencies
 bundle exec rake build        # Build the gem (.gem file in pkg/)
 bundle exec rake install      # Build and install gem locally
 bundle exec rake test         # Run all tests
-bundle exec rake statistics   # Code statistics
 bundle exec rake release      # Release to rubygems.org
+BUNDLE_GEMFILE=gemfiles/rails_8_1.gemfile bundle exec rake test   # Tests against one Rails minor
 ```
+
+CI runs the tests once per `gemfiles/rails_*.gemfile` (Ruby 3.2 + Rails 7.2, 3.4 + 8.0, 4.0 + 8.1).
+Each of them evaluates `Gemfile` and pins only `rails`, so a development dependency goes into
+`Gemfile`.
 
 ## Testing
 
