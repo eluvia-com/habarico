@@ -10,7 +10,7 @@ import {Box, Tabs} from '@mui/material';
 import {BoxLayout, useBoxCard} from '@schema/components/boxes/BoxLayout';
 import {SchemaButtons} from '@schema/components/buttons/SchemaButtons';
 import {ParentBoxProvider, useParentBoxContext} from '@schema/contexts/ParentBoxContext';
-import {useViewSchemaContext} from '@schema/contexts/ViewSchemaContext/useViewSchemaContext';
+import {useIsReadOnly} from '@schema/contexts/ReadOnlyBoxContext';
 import {BoxSchema} from '@schema/types';
 import {isBoxSchema} from '@schema/utils/api';
 import {SchemaBoxTab} from './SchemaBoxTab';
@@ -24,7 +24,7 @@ export const SchemaTabBoxContent = ({
   isRoot,
   label = schema.label,
 }: SchemaTabBoxProps) => {
-  const {readOnly} = useViewSchemaContext();
+  const readOnly = useIsReadOnly();
   const isLast = useIsLastPanel();
   // Card evaluation as on the grid box, minus the toolbar: a label or `collapsible` turn the card
   // on and an explicit `card` wins both ways, but toolbar actions do not — they live in the tab

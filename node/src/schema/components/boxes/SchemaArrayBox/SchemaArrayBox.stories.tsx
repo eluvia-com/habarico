@@ -30,8 +30,9 @@ const arrayBox = (overrides: Partial<BoxSchema> = {}): BoxSchema =>
  *   gutter around its inputs.
  * - **`array.listed`** switches to a different component entirely — `defaultBoxProvider` routes a
  *   `listed` array to `SchemaChoicesArrayBox`, the enum checklist, which has its own story.
- * - **Read vs. write** follows the view's `readOnly` **or** the target field's, like the object box.
- *   The writable branch owns the add / remove / reorder row affordances.
+ * - **Read vs. write** follows the surrounding scope (a read-only view, or an enclosing read-only
+ *   box), the box's own `readOnly`, or the target field's — like the object box. The writable branch
+ *   owns the add / remove / reorder row affordances, and a read-only box closes its rows too.
  */
 const meta = {
   title: 'schema/boxes/SchemaArrayBox',

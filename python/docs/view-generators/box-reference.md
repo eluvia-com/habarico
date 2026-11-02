@@ -54,7 +54,7 @@ Accepted by every class (they come from `BaseBox`):
 | `card` | `bool` | `None` | Card frame: `True` always, `False` never (even with a label), `None` leaves it to the frontend — see below |
 | `collapsible` | `'open' \| 'closed'` | `None` | Makes the box collapsible; the value is the initial state |
 | `boxes` | `list[BaseBox \| str \| Field]` | `None` | Children: nested boxes, field names, or `Field` descriptors |
-| `read_only` | `bool` | `False` | Renders every field inside as a display field |
+| `read_only` | `bool` | `False` | Renders the box, and everything under it, as display fields — see below |
 | `show_query` | `str` | `None` | Condition expression; the box disappears when it is falsy |
 | `required_query` | `str` | `None` | Condition expression; the box's fields become required when it is truthy |
 | `toolbar_actions` | `Actions` | `None` | Buttons in the box header |
@@ -62,6 +62,14 @@ Accepted by every class (they come from `BaseBox`):
 | `grid_item` | `GridItem \| dict` | `None` | Column span inside the parent `GridBox` — see [`grid_item`](#grid_item) |
 
 `show_query` and `required_query` are stored under `options.dynamic_render`.
+
+`read_only=True` applies in an edit or create view as much as in a show one, and it covers the
+box's whole subtree: nested boxes, an array box's rows, an object box's properties. It only ever
+closes, never re-opens — a nested box passing `read_only=False` inside a read-only one stays
+read-only, the same way `BaseBox.get_read_only()` reads `context.read_only or self._read_only`. To
+keep part of a form editable, put the flag on the inner boxes rather than on the container. Use it
+to present a field the endpoint itself accepts: the field schema stays writeable, only this layout
+closes it.
 
 Left at `None`, `card` is decided by the frontend: a box takes the card when it has a label,
 toolbar actions or is collapsible, and the view's first box takes it on a page surface — inside a

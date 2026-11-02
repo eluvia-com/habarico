@@ -229,6 +229,10 @@ HABARICO_PATH=<this monorepo> npm run build   # fails on a broken link
 or a moved page fails here rather than at publish time. The `docs-check` workflow runs the same build on
 every pull request that touches `*/docs/**`.
 
+## Comments
+
+Write in English. Do not reference YouTrack issues in the text.
+
 ## Changelog
 
 Keep `CHANGELOG.md` up to date **as part of development** — whenever you implement a

@@ -29,9 +29,10 @@ const objectBox = (overrides: Partial<BoxSchema> = {}): BoxSchema =>
  * - **`object.target`** names the field. The box looks that field up in the method schema and
  *   renders **nothing at all** if it is missing or carries no `properties` — an object box is a
  *   view onto a declared nested structure, never a free-form group.
- * - **Read vs. write** is not only the box's own flag: `SchemaObjectBox` splits into
- *   `SchemaReadonlyObjectBox` / `SchemaWriteableObjectBox` on the *view's* `readOnly` **or** the
- *   target field's `readOnly`. A writable box inside a `show` view is still read-only.
+ * - **Read vs. write** has three sources: `SchemaObjectBox` splits into `SchemaReadonlyObjectBox` /
+ *   `SchemaWriteableObjectBox` on the surrounding scope — a read-only *view*, or an enclosing
+ *   read-only box — **or** the box's own `readOnly`, **or** the target field's. A writable box
+ *   inside a `show` view is still read-only, and a read-only box closes its children too.
  * - **Children** are field descriptors naming the object's own properties.
  *
  * The writable branch is what adds and clears the nested value, so an absent object can be filled
