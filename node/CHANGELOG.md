@@ -28,6 +28,8 @@
 
 ### Changed
 
+- The `react-admin`, `ra-core`, `ra-ui-materialui` and `ra-i18n-polyglot` peer ranges are `^5.14.5`
+  (were `~5.14.5`), so a project can run any React Admin 5 release from 5.14.5 on, including 5.15. (HAB-1046)
 - **BREAKING:** `Panel`'s resize affordance is switched on by `resizable?: boolean` (default
   `false`) and placed by `resizeHandle?: 'corner' | 'bottom'` (default `'corner'`): `bottom` draws
   it in the middle of the bottom edge, for a panel resized in height only. `resizeHandle` is no
