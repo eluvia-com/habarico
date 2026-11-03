@@ -1,0 +1,9 @@
+{
+  "label": "Guides",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "slug": "/guides",
+    "description": "Task-oriented walkthroughs that cross both halves of the stack — a backend declaration and the frontend it produces, in one page."
+  }
+}

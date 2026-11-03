@@ -1,0 +1,303 @@
+---
+title: Quickstart
+sidebar_position: 1
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+A working admin for one resource — backend and frontend — in about ten minutes.
+
+The example is an e-shop product catalogue, the domain used throughout this documentation. Pick
+your backend in the tabs; the frontend part differs only in the URL and resource names the chosen
+backend serves.
+
+## 1. Install the backend library
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```bash
+pip install habarico
+```
+
+```python
+# settings.py
+INSTALLED_APPS = [
+    ...,
+    "habarico",
+    "rest_framework",   # must come after habarico
+    ...
+]
+```
+
+```python
+# urls.py
+from django.urls import include, path
+from habarico import site
+
+urlpatterns = [
+    path("api/v1/eshop/admin/", include(site.urls)),
+]
+```
+
+See [Configuration](/python/configuration) for permissions and authentication.
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+# Gemfile
+gem 'habarico'
+```
+
+```ruby
+# config/initializers/habarico.rb
+Habarico.setup do |config|
+  config.resources = [{ admin: [:products, :categories] }]
+  config.routing_url_prefix = 'api/v1/eshop'
+  config.routing_scope = 'apps'
+  config.currency = 'CZK'
+end
+```
+
+See [Installation](/ruby/installation) and [Configuration](/ruby/configuration) for the rest, and
+[Authentication](/ruby/authentication) for the `authenticate_request` hook every endpoint runs.
+
+</TabItem>
+</Tabs>
+
+## 2. Declare one resource
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+# models.py
+from django.db import models
+from habarico.models import MoneyField
+
+
+class Category(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+
+class Product(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        PUBLISHED = "published", "Published"
+
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
+    category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="products")
+    price = MoneyField(currency="CZK")
+    stock = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+```
+
+```python
+# admin.py
+from habarico import ModelAdmin
+
+from .models import Category, Product
+
+
+class CategoryAdmin(ModelAdmin):
+    model = Category
+    can_create = True
+    can_update = True
+    fields = ["name"]
+    search_fields = ["name"]
+
+
+class ProductAdmin(ModelAdmin):
+    model = Product
+    can_create = True
+    can_update = True
+    fields = ["name", "description", "status", "category", "price", "stock", "created_at"]
+    read_only_fields = ["created_at"]
+    search_fields = ["name", "description"]
+    filter_fields = ["status", "category", "price"]
+    ordering_fields = ["name", "price", "created_at"]
+```
+
+`can_read` is on by default; `can_create` and `can_update` are not — without them the schema
+contains no create or edit view.
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+# app/controllers/apps/admin/products_controller.rb
+class Apps::Admin::ProductsController < ApplicationController
+  include Habarico::Controller
+
+  model Product
+  includes [:category]
+
+  label 'Products'
+  icon 'Inventory'
+
+  can_read true
+  can_create { |c| c.policy.create? }
+  can_update { |c| c.policy.update? }
+  can_delete false
+
+  fields [:id, :name, :description, :status, :category, :price, :stock, :created_at]
+  read_only_fields [:id, :created_at]
+  search_fields [:name, :description]
+  filters [:status, :category, :price]
+  sorting_fields [:name, :price, :created_at]
+
+  views [:list, :show, :create, :edit]
+  actions [:show, :create, :edit]
+end
+```
+
+```ruby
+# app/controllers/apps/admin/categories_controller.rb
+class Apps::Admin::CategoriesController < ApplicationController
+  include Habarico::Controller
+
+  model Category
+  label 'Categories'
+
+  can_read true
+  can_create { |c| c.policy.create? }
+  can_update { |c| c.policy.update? }
+  can_delete false
+
+  fields [:id, :name]
+  read_only_fields [:id]
+  search_fields [:name]
+
+  views [:list, :show, :create, :edit]
+  actions [:show, :create, :edit]
+end
+```
+
+</TabItem>
+</Tabs>
+
+That is the whole backend. The schema endpoint now describes a list, a detail, a create form and
+an edit form — check it with `curl` before moving on:
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/eshop/admin/schema/
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/eshop/admin/schema
+```
+
+</TabItem>
+</Tabs>
+
+## 3. Mount the frontend
+
+```bash
+npm install habarico
+```
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```tsx
+// App.tsx
+import {SchemaAdmin, SchemaResource} from 'habarico';
+
+const SERVICES = {
+  eshop: {
+    url: 'http://localhost:8000/api/v1/eshop/admin',
+    label: 'E-shop',
+  },
+} as const;
+
+const App = () => (
+  <SchemaAdmin serviceConfigMap={SERVICES} authProvider={authProvider} columnSelector>
+    <SchemaResource name="eshop/product" />
+    <SchemaResource name="eshop/category" />
+  </SchemaAdmin>
+);
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```tsx
+// App.tsx
+import {SchemaAdmin, SchemaResource} from 'habarico';
+
+const SERVICES = {
+  eshop: {
+    url: 'http://localhost:3000/api/v1/eshop/admin',
+    label: 'E-shop',
+  },
+} as const;
+
+const App = () => (
+  <SchemaAdmin serviceConfigMap={SERVICES} authProvider={authProvider} columnSelector>
+    <SchemaResource name="eshop/products" />
+    <SchemaResource name="eshop/categories" />
+  </SchemaAdmin>
+);
+```
+
+</TabItem>
+</Tabs>
+
+The two variants differ in two places. The service `url` points at wherever the backend from
+step 1 is mounted — `:8000` is Django's development default, `:3000` is Rails'. And the resource
+name after the `eshop/` service prefix is the name the backend emits in its schema: Python names
+a resource after its model, singular and lowercase (`product`), while Ruby names it after the
+route drawn from the config, so it stays plural (`products`).
+
+The data and schema providers are not passed in: `SchemaAdmin` builds them itself from
+`authProvider.getAuthHeaders`, which is where the token comes from. Replace one only for a backend
+that does not speak the Habarico REST contract, and then pass the **factory** rather than its
+result — `dataProviderFactory={getDataProviderFactory}`, `schemaProviderFactory={getSchemaProvider}`
+— because `SchemaAdmin` calls it once the schemas and the identity are known. See
+[DataProvider](/node/providers/data-provider) and [SchemaProvider](/node/providers/schema-provider).
+
+`authProvider` is the one piece that depends on how you authenticate. `buildServiceAuthProvider`
+builds one from the individual auth operations (`login`, `logout`, password reset, MFA, …) —
+with an auth library, pass its hooks straight through; hand-rolled auth state works the same way.
+Implementing the `ServiceAuthProvider` interface directly is always an option too; see
+[Auth provider](/node/providers/auth-provider).
+
+## What you get
+
+Opening the app shows a menu with Products and Categories, and for each:
+
+| Screen | Built from |
+|---|---|
+| List with filters, sorting and search | `filter_fields`, `ordering_fields`, `search_fields` — in the Ruby DSL `filters`, `sorting_fields`, `search_fields` |
+| Detail | the show view schema |
+| Create and edit forms | `fields` minus the read-only ones |
+| A status chip, a category link, a currency-formatted price | each field's `type` + `format` |
+
+Nothing above configured a single component: the frontend chose them from the schema, which is
+what [How it works](../how-it-works.md) describes in detail.
+
+## Where to go next
+
+| You want to | Guide |
+|---|---|
+| Lay the form out in tabs or a grid | [Forms and layout](./forms-and-layout.mdx) |
+| Add an operation that is not CRUD | [Actions and dialogs](./actions-and-dialogs.mdx) |
+| Accept file uploads | [File uploads](./file-uploads.mdx) |
+| Render one field your own way | [Custom field type](./custom-field-type.mdx) |
+| Restrict what a user may see | [Permissions and visibility](./permissions.mdx) |

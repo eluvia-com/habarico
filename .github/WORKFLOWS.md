@@ -27,7 +27,7 @@ ruleset; job names carry the library because the ruleset matches checks by name 
 | `release.yml` | `release` (the finalize button) |
 | `patch.yml` | `patch` (the patch button, on a maintenance branch) |
 | `storybook.yml` | `publish-storybook`: uploads Storybook to storybook.habarico.com on a `node@X.Y.0` tag, or the `next/` preview by hand |
-| `docs-check.yml` | `docs-check`: builds the documentation site on a pull request touching `*/docs/**` or the contract |
+| `docs-check.yml` | `docs-check`: builds the documentation site on a pull request touching `*/docs/**`, `concepts/**` or the contract |
 | `changelog-check.yml` | `changelog-check`: reads the changelogs the way the site does, on a pull request touching one |
 
 Both documentation checks clone `hab-docs` from GitLab, and `docs-check` also `habarico-enterprise`,
@@ -128,6 +128,6 @@ The library checks read no secrets, so `pull_request` runs from forks work uncha
 ## What deliberately does not run
 
 - **The documentation site** has no workflow, and no directory here either: it is its own
-  repository (`hab-docs`), which clones the pages out of `<lib>/docs/` and publishes them. Nothing
-  in this repository starts that publish on either CI — since HAB-872 it is started by a stable tag
-  of `habarico-enterprise`, the release that closes every cycle.
+  repository (`hab-docs`), which clones the pages out of `<lib>/docs/` and `concepts/` and
+  publishes them. Nothing in this repository starts that publish on either CI — since HAB-872 it
+  is started by a stable tag of `habarico-enterprise`, the release that closes every cycle.

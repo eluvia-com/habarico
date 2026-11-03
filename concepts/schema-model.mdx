@@ -1,0 +1,36 @@
+---
+title: Schema model
+sidebar_position: 3
+---
+
+import SchemaDiagram from "@site/src/components/SchemaDiagram";
+
+The [API reference](/api) describes the contract one endpoint at a time. This is the same contract
+seen from the other side: every component schema it defines, and how they refer to one another.
+
+The model is drawn as a UML class diagram from the same contract as the API reference, so it is
+worth reading next to the reference rather than instead of it.
+
+## The model
+
+<SchemaDiagram />
+
+Reading it:
+
+- The lanes group the schemas by what they serve. **core** is the admin schema itself — resources,
+  views, fields, filters, actions and the menu. **preferences**, **search**, **results**,
+  **uploads** and **aggregations & dashboard** are the areas built on top of it.
+- Boxes marked `«enumeration»` are the closed value sets of the contract: `ViewType`, `FieldType`,
+  `FieldFormatType`, `ActionType`, `RequestMethodType`, `ColorType`. A backend that sends a value
+  outside one of these is sending something the frontend has no component for.
+- The arrows are the references between schemas, labelled with the property that holds them.
+
+## Where it fits
+
+The schema endpoints return instances of these schemas — see
+[How it works](./how-it-works.md) for which endpoint returns which level of detail, and the
+[API reference](/api) for the exact fields of each one.
+
+The diagram belongs to the contract, so it is versioned with it: what you see here is the model of
+the contract this documentation is showing. Which contract a library release speaks is named in the
+bar above every library page.
