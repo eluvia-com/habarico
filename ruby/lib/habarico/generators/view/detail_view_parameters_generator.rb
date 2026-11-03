@@ -14,6 +14,7 @@ module Habarico
     end
 
     BOTTOM_ACTION_VIEW_TYPES = %i[create edit action].freeze
+    DEFAULT_BOX_VIEW_TYPES = %i[show create edit].freeze
 
     protected
 
@@ -30,7 +31,18 @@ module Habarico
     # ***********************************************************************
 
     def generate_box(view, context)
-      box_schema_generator.generate(view, view.box, 0, context)
+      box_schema_generator.generate(view, view.box || default_box(view), 0, context)
+    end
+
+    # A standard view that lays out nothing shows the resource's fields, as the list does.
+    def default_box(view)
+      return nil if view.boxes.present? || !DEFAULT_BOX_VIEW_TYPES.include?(view.type.to_sym)
+
+      fields = definition.fields + definition.read_only_fields
+      fields += definition.write_only_fields unless view.type.to_sym == :show
+      # A `{ name => subfields }` entry is laid out as the field `name`.
+      fields = fields.map { |field| field.is_a?(::Hash) ? field.keys.first : field }
+      Habarico::Box.new(boxes: fields.uniq { |field| field.is_a?(Habarico::FieldReference) ? field.name.to_s : field.to_s })
     end
 
     # Everything the resource supports, until the view says otherwise. Only a slot the author never

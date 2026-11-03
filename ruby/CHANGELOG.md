@@ -172,6 +172,10 @@ version and date when a release is finalized.
   `uninitialized constant ActiveRecord::Generators`. The generator reuses Active Record's
   migration numbering, which railties does not autoload. (HAB-829)
 
+- A `show`, `create` or `edit` view that declares neither `box` nor `boxes` shows the resource's
+  fields - `fields` and `read_only_fields`, plus `write_only_fields` on a form - as the Python
+  library does, instead of an empty box that rendered a blank page. (HAB-1074)
+
 ## [7.2.0] — 2026-10-19
 
 ### Changed
