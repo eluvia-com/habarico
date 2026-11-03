@@ -14,7 +14,7 @@ import {BoxLayout, useBoxCard} from '@schema/components/boxes/BoxLayout';
 import {SchemaBoxProps} from '@schema/components/boxes/types';
 import {SchemaButtons} from '@schema/components/buttons/SchemaButtons';
 import {useParentBoxContext} from '@schema/contexts/ParentBoxContext';
-import {useViewSchemaContext} from '@schema/contexts/ViewSchemaContext/useViewSchemaContext';
+import {useIsReadOnly} from '@schema/contexts/ReadOnlyBoxContext';
 import {BoxItem, BoxSchema, BoxType, FieldDescriptor} from '@schema/types';
 import {isBoxSchema} from '@schema/utils/api';
 import {SchemaWizardBoxStep} from './SchemaWizardBoxStep';
@@ -73,7 +73,7 @@ export const SchemaWizardBoxContent = ({schema, isRoot, label = schema.label}: S
   const formTrigger = formContext?.trigger;
   const record = useRecordContext();
   const hasRecord = record !== undefined;
-  const {readOnly} = useViewSchemaContext();
+  const readOnly = useIsReadOnly();
 
   const parentBoxName = getBoxName(schema.name);
   // Claims the path for as long as the wizard is on screen - see `useTabBox`.

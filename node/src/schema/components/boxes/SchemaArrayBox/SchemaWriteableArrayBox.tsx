@@ -59,6 +59,11 @@ export const SchemaWriteableArrayBox = ({schema}: SchemaWriteableArrayBoxProps) 
           schema={field}
           key={field.name}
           source={field.name}
+          // `SchemaInputBody` reads `readOnly` off its props only, so a column whose field (or
+          // field descriptor) is read-only has to be told here — otherwise an otherwise editable
+          // array list renders every column as an input. The choices iterator does the same for
+          // its own rows.
+          readOnly={field.readOnly}
           hiddenEl={<Box />}
         />
       )),

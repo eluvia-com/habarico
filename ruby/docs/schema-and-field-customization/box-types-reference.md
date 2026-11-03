@@ -24,7 +24,7 @@ All available box types and their attributes:
 | `label` | Section heading text |
 | `name` | Box name (used for `ListBox` referencing) |
 | `boxes` | Child boxes or field symbols |
-| `read_only` | Mark all fields in this box as read-only |
+| `read_only` | Render this box, and everything under it, as display fields — in an edit or create view as much as in a show one. It covers the whole subtree (nested boxes, an array box's rows, an object box's properties) and only ever closes: a nested box with `read_only false` inside a read-only one stays read-only. To keep part of a form editable, put the flag on the inner boxes rather than on the container |
 | `card` | Render the box as a card component. Three states: `true` always, `false` never (even with a label, whose text then becomes a plain section heading), and omitted - the frontend decides from the label, the toolbar actions, the collapsible flag and the surface (the view's first box takes the card on a page, not in a dialog or side panel; a first box that only wraps other boxes - `GridBox`, `TabBox`, `WizardBox`, a `Box` without fields - hands that default to its children, so the card lands on the first box holding fields) |
 | `collapsible` | Make the box collapsible; `'open'` (expanded) or `'closed'` (collapsed) sets the default state. Omit for a non-collapsible box |
 | `show_query` | Condition expression to conditionally show the entire box |

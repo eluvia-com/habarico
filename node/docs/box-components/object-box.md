@@ -36,8 +36,10 @@ EditViewSchemaGenerator(box=Box(boxes=[
 
 - The box installs a `SourceContext` that prefixes every child's source with the target, so a child
   declared as `city` binds to `shipping_address.city`. Write the children with their plain names.
-- Read-only views, and a target field marked `readOnly` in the schema, render the display variant;
-  everything else renders inputs.
+- Read-only views, an enclosing read-only box, the box's own `readOnly` and a target field marked
+  `readOnly` in the schema all render the display variant; everything else renders inputs. A
+  read-only object box closes its properties too — see
+  [Read-only boxes](./index.md#read-only-boxes).
 - The writeable variant adds **add** and **remove** buttons: an optional object starts absent, the
   add button seeds it with the box's default values, and remove clears it back to null.
 - Nothing renders when `object.target` is missing, or when the target field has no `properties` in

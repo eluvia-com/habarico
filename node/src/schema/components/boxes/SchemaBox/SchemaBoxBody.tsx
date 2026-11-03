@@ -3,6 +3,7 @@ import {DynamicText} from '@admin/components/common/DynamicText';
 import {useResourceContext} from '@admin/contexts/ResourceContext';
 import {SchemaBoxProps} from '@schema/components/boxes/types';
 import {DynamicRequiredWrapper} from '@schema/components/dynamic/DynamicRequiredWrapper';
+import {ReadOnlyBoxProvider} from '@schema/contexts/ReadOnlyBoxContext';
 import {useGetBox} from '@schema/contexts/ResourceBoxContext/useGetBox';
 
 /**
@@ -23,10 +24,16 @@ const SchemaBoxBodyComponent = ({schema, label, excludeFields, isRoot}: SchemaBo
   const boxEl = getBoxEl({resource, schema, excludeFields, props: boxProps});
   if (!boxEl) return null;
 
+  // `read_only: true` on the box closes its whole subtree, not just the box's own leaves: every
+  // nested box and field below renders as a value even though the view is an `edit` / `create`
+  // one. Scoped here, around the dispatched element, so it holds for every box type rather than
+  // each one having to remember it.
   return (
-    <DynamicRequiredWrapper requiredQuery={schema.options?.dynamicRender?.requiredQuery}>
-      {boxEl}
-    </DynamicRequiredWrapper>
+    <ReadOnlyBoxProvider readOnly={Boolean(schema.readOnly)}>
+      <DynamicRequiredWrapper requiredQuery={schema.options?.dynamicRender?.requiredQuery}>
+        {boxEl}
+      </DynamicRequiredWrapper>
+    </ReadOnlyBoxProvider>
   );
 };
 

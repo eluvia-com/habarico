@@ -39,8 +39,10 @@ even with a label. See [Card frame](./index.md#card-frame) for the third state.
 
 ## Read-only and writeable
 
-The box picks its rendering from the view and the field schema — a read-only view, or a
-`readOnly` target field, gives the read-only variant:
+The box picks its rendering from three sources, any one of which gives the read-only variant: the
+surrounding scope (a read-only view, or an enclosing read-only box), the box's own `readOnly`, or a
+`readOnly` target field. A read-only array box closes its rows too — see
+[Read-only boxes](./index.md#read-only-boxes):
 
 | Variant | Rendering |
 |---|---|
@@ -51,6 +53,9 @@ The box picks its rendering from the view and the field schema — a read-only v
 
 Nothing renders when the target field is missing from the schema or has no `items.properties` — an
 array box always needs an object array behind it.
+
+A writeable box can still hold a read-only column: a field descriptor (or the field schema behind
+it) marked `readOnly` renders that cell as a value while the rest of the row stays editable.
 
 ## The `listed` variant
 

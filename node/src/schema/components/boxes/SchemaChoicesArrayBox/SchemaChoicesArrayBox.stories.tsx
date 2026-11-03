@@ -91,8 +91,9 @@ const withFeatures = (features: Record<string, unknown>[], fieldOverrides = {}) 
  *   rows have no choice to toggle and ignore the gesture entirely (HAB-879).
  * - **Only a free row carries a delete action.** On a checklist row the checkbox already is one.
  *
- * **Read-only falls back to `SchemaArrayBox`** — a checklist has nothing to toggle in a read view —
- * and the fallback is driven by the *view* or the *target field*, not by `schema.readOnly`.
+ * **Read-only falls back to `SchemaArrayBox`** — a checklist has nothing to toggle in a read view.
+ * The fallback is driven by the surrounding scope (a read-only view, or an enclosing read-only box),
+ * the box's own `readOnly`, or the target field's.
  *
  * Rows render through the design `FormTable`, so the row card, the row count and the Add / Clear
  * list footer are its.

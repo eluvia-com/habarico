@@ -4,6 +4,17 @@
 
 ### Fixed
 
+- A box declaring `read_only: true` is now rendered read-only in `edit` and `create` views too, and
+  so is everything under it — nested boxes, an array box's rows, an object box's properties. Until
+  now only the view's own mode and an array/object box's target field were consulted, so a box
+  marked read-only by the backend still rendered inputs; that is also how a field had to be made
+  writeable in the endpoint schema and presentation-only in one layout. The scope only ever closes:
+  a nested box declaring `read_only: false` inside a read-only one stays read-only, matching
+  `BaseBox.get_read_only()` in the backends. New `useIsReadOnly` is what a custom box, field or
+  input should branch on — `useViewSchemaContext().readOnly` stays the view's own flag. (HAB-1038)
+- A read-only field inside a writeable array box renders as a value instead of an input. The column
+  inputs were handed the field schema but never its `readOnly`, so a `read_only` field descriptor
+  had no effect on an editable array list. (HAB-1038)
 - Every input draws its border in the theme's `palette.divider`. The date, date-time and time
   pickers used MUI X's own grey (and a different one when disabled); `InputLayout`
   (`UploadInput`, `TreeArrayInput`), `SchemaWrappedFields` and `SchemaRangeInput` each used a grey of
