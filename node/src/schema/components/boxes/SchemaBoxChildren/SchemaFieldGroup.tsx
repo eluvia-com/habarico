@@ -3,7 +3,7 @@ import {useSettingsContext} from '@design/layouts/contexts/SettingsContext';
 import {PropertyList} from '@design/molecules/PropertyList';
 import {FieldSchemaMapProvider} from '@schema/contexts/FieldSchemaMapContext';
 import {useFieldSchemaMapContext} from '@schema/contexts/FieldSchemaMapContext/useFieldSchemaMapContext';
-import {useViewSchemaContext} from '@schema/contexts/ViewSchemaContext/useViewSchemaContext';
+import {useIsReadOnly} from '@schema/contexts/ReadOnlyBoxContext';
 import {FieldDescriptor} from '@schema/types';
 import {generateFieldSchemaMap} from '@schema/utils/generateFieldSchemaMap';
 import {SchemaPropertyItem} from './SchemaPropertyItem';
@@ -23,7 +23,7 @@ type SchemaFieldGroupProps = {
  */
 const SchemaFieldGroupComponent = ({fields, columns = 1}: SchemaFieldGroupProps) => {
   const parentFieldSchemaMap = useFieldSchemaMapContext();
-  const {readOnly} = useViewSchemaContext();
+  const readOnly = useIsReadOnly();
   const {density} = useSettingsContext();
 
   // Build the run's field-schema map from the parent map. Wrapper fields contribute their inner

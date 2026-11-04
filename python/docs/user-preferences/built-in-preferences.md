@@ -10,7 +10,6 @@ UI preferences:
 | ---------------------------------------------- | ------------------------- | ------------------------------------------ |
 | `locale`                                       | `LocalePreference`        | UI locale code (e.g. `cs`, `en`)           |
 | `theme`                                        | `ThemePreference`         | `"light"` or `"dark"`                      |
-| `preferences.dashboard`                        | `DashboardPreference`     | Dashboard widget layout                    |
 | `preferences.layout.app.pageWidth`             | `AppPageWidthPreference`  | `"full"` or `"centered"` page width        |
 | `preferences.layout.app.contrastMode`          | `ContrastModePreference`  | High-contrast mode toggle                  |
 | `preferences.layout.app.stripedRows`           | `StripedRowsPreference`   | Datagrid striped-rows toggle               |
@@ -38,6 +37,10 @@ HABARICO_PREFERENCES = {
     },
 }
 ```
+
+The dashboard is stored in a preference too, under `preferences.dashboard`, but its key is
+registered by `habarico-enterprise`: a widget is defined and drawn there, so its shape belongs there
+as well. Without the paid package the key is not registered and writing it is refused.
 
 `HABARICO_PREFERENCES["DEFAULTS"]` is consumed **only at registration time** by
 `register_base_preferences`. To make a preference react to runtime changes, register

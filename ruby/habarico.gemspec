@@ -25,5 +25,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rails", "~> 7.0"
   spec.add_dependency "pundit", "~> 2.5"
   spec.add_dependency "kaminari", "~> 1.0"
-  spec.add_dependency "eluvia-base", ">= 3.39.0"
+  spec.add_dependency "eluvia-base", ">= 3.42.0"
 end

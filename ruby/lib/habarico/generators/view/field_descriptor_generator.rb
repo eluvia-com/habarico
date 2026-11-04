@@ -73,7 +73,7 @@ module Habarico
     end
 
     def generate_sort_by(model, field_reference, _context)
-      Habarico::SortingHelper.descriptor_sort_by(model, field_reference)
+      Habarico::SortingResolver.new(model).descriptor_sort_by(field_reference)
     end
 
     def generate_read_only(_model, field_reference, _context)

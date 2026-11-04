@@ -65,67 +65,101 @@ carries these fields, no specific package required.
 
 ## buildServiceAuthProvider
 
-A plain function, not a hook — call your auth library's hooks (or write plain `fetch` calls) in
-your own component, and pass the resulting functions in.
+A plain function, not a hook. Hand it one function per operation; what they do inside is yours.
+Below is a whole provider over a session-cookie backend — no auth library, just `fetch`:
 
-```tsx
-import {useMemo} from 'react';
-import {buildServiceAuthProvider, SchemaAdmin} from 'habarico';
-import {
-  usePasswordLoginWithMfa, useLogout, useForgottenPassword,
-  useResetPassword, useChangePassword, useCurrentUser,
-  getAuthData, clearAuthData, getAuthHeaders,
-} from '@eluvia/auth';
+```typescript
+// src/auth.ts
+import {buildServiceAuthProvider, type ServiceAuthData, type ServiceAuthUser} from 'habarico';
 
-const App = () => {
-  const {login, getMethods, requestEmailChallenge, verifyEmailCode} = usePasswordLoginWithMfa();
-  const {logout} = useLogout();
-  const {forgottenPassword} = useForgottenPassword();
-  const {resetPassword} = useResetPassword();
-  const {post: changePassword} = useChangePassword();
-  const {patch: updateUser} = useCurrentUser();
+// The backend authenticates with its session cookie; the signed-in user is kept here only so the
+// admin can answer "who is signed in" without a request. A 401 from the API clears it.
+const USER_KEY = 'eshop.user';
 
-  const authProvider = useMemo(
-    () => buildServiceAuthProvider({
-      login, logout, forgottenPassword, resetPassword, changePassword, updateUser,
-      getAuthData, clearAuthData, getAuthHeaders,
-      getMfaMethods: getMethods,
-      requestMfaChallenge: (method) => {
-        if (method === 'email') return requestEmailChallenge();
-        throw new Error(`Unsupported MFA method: ${method}`);
-      },
-      verifyMfaCode: (method, code, trustDevice) => {
-        if (method === 'email') return verifyEmailCode(code, trustDevice);
-        throw new Error(`Unsupported MFA method: ${method}`);
-      },
-    }),
-    [login, logout, forgottenPassword, resetPassword, changePassword, updateUser,
-     getMethods, requestEmailChallenge, verifyEmailCode],
-  );
+const getCsrfToken = () => document.cookie.match(/(?:^|; )csrftoken=([^;]*)/)?.[1];
 
-  return (
-    <SchemaAdmin authProvider={authProvider} /* … */>
-      <SchemaResource name="eshop/product" />
-    </SchemaAdmin>
-  );
+const getAuthHeaders = (): Record<string, string> => {
+  const token = getCsrfToken();
+  return token ? {'X-CSRFToken': decodeURIComponent(token)} : {};
 };
+
+const getAuthData = (): ServiceAuthData => {
+  const user = localStorage.getItem(USER_KEY);
+  return user ? {user: JSON.parse(user) as ServiceAuthUser} : {};
+};
+
+const setUser = (user: ServiceAuthUser) => localStorage.setItem(USER_KEY, JSON.stringify(user));
+
+const clearAuthData = () => localStorage.removeItem(USER_KEY);
+
+// Throws the failed `Response` itself: `buildServiceAuthProvider` maps it onto the form's fields.
+const request = async (path: string, method: string, body?: unknown): Promise<Response> => {
+  const response = await fetch(`/api/auth/${path}`, {
+    method,
+    headers: {'Content-Type': 'application/json', ...getAuthHeaders()},
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!response.ok) throw response;
+  return response;
+};
+
+export const authProvider = buildServiceAuthProvider({
+  login: async ({username, password}) => {
+    const user = await (await request('login/', 'POST', {username, password})).json();
+    setUser(user);
+    return {data: user, isMfaRequired: false};
+  },
+  logout: async () => {
+    clearAuthData();
+    await request('logout/', 'POST');
+  },
+  forgottenPassword: ({email}) => request('forgotten-password/', 'POST', {email}),
+  resetPassword: (token, {password}) => request('reset-password/', 'POST', {token, password}),
+  changePassword: (payload) => request('current-user/change-password/', 'POST', payload),
+  updateUser: async (user) => {
+    const response = await request('current-user/', 'PATCH', user);
+    setUser(await response.clone().json());
+    return response;
+  },
+  getAuthData,
+  clearAuthData,
+  getAuthHeaders,
+  // This backend has no second factor: `login` never reports one, so these are never called.
+  getMfaMethods: async () => ({available_methods: []}),
+  requestMfaChallenge: async () => undefined,
+  verifyMfaCode: () => Promise.reject(new Error('MFA is not supported')),
+});
 ```
 
-`getMfaMethods`, `requestMfaChallenge`, `verifyMfaCode`, `getAuthData`, `clearAuthData` and
-`getAuthHeaders` are **required** — the login flow always asks the backend whether a second factor
-is needed, and every other method reads or clears the local auth state through `getAuthData` /
-`clearAuthData`. `login` therefore has to come from `usePasswordLoginWithMfa`, not
-`usePasswordLogin`, when using `@eluvia/auth`.
+```tsx
+import {SchemaAdmin, SchemaResource} from 'habarico';
+import {authProvider} from './auth';
 
-`buildServiceAuthProvider` isn't tied to `@eluvia/auth` at all — the same factory works with
-hand-rolled `fetch` calls and your own `localStorage`-backed auth state; only the function
-signatures need to match. Throw the raw `Response` from a failed `fetch` (not a parsed error) —
+const App = () => (
+  <SchemaAdmin authProvider={authProvider} /* … */>
+    <SchemaResource name="eshop/product" />
+  </SchemaAdmin>
+);
+```
+
+That module and the two backends it talks to are the
+[e-shop example](https://github.com/eluvia-com/habarico/tree/master/examples/eshop), which runs
+against a Django and a Rails backend without a change.
+
+`getMfaMethods`, `requestMfaChallenge`, `verifyMfaCode`, `getAuthData`, `clearAuthData` and
+`getAuthHeaders` are **required** — the login flow always asks whether a second factor is needed,
+and every other method reads or clears the local auth state through `getAuthData` /
+`clearAuthData`. A backend without MFA stubs the three MFA functions as above: `login` returning
+`isMfaRequired: false` means they are never reached.
+
+Throw the raw `Response` from a failed `fetch` (not a parsed error) —
 `buildServiceAuthProvider` catches `instanceof Response` and maps it to react-admin form errors.
 
 :::caution
-Memoise the provider. A new object on every render restarts the identity query, which in turn
-invalidates the schema cache — the schema key includes the identity, because permissions change
-what the schema contains.
+Build the provider once, at module scope as above. Built inside a component it has to be
+memoised: a new object on every render restarts the identity query, which in turn invalidates the
+schema cache — the schema key includes the identity, because permissions change what the schema
+contains.
 :::
 
 :::tip
@@ -157,12 +191,12 @@ type LoginSsoMethod = {
 ```
 
 `buildServiceAuthProvider` takes an optional `ssoLoginMethods: LoginSsoMethod[]` param and exposes
-it as `getSsoLoginMethods` for you. With `@eluvia/auth`'s `useGoogleLogin` (any OAuth hook that
-fits the shape works the same way, wrapped to close over its own config):
+it as `getSsoLoginMethods` for you. Any OAuth hook that fits the shape above works, wrapped to
+close over its own config — here a `useGoogleLogin` from whichever library drives the flow:
 
 ```tsx
 import {LoginSsoMethod, buildServiceAuthProvider, Iconify} from 'habarico';
-import {useGoogleLogin} from '@eluvia/auth';
+import {useGoogleLogin} from './sso/google';
 
 const googleSsoMethod: LoginSsoMethod = {
   id: 'google',

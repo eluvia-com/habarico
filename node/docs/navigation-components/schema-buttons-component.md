@@ -12,7 +12,7 @@ toolbar. Use it directly when you build a screen of your own that should offer t
 ## Example
 
 ```tsx
-<SchemaButtons record={order} isList={false} maxVisibleButtons={4} />
+<SchemaButtons record={order} descriptors={[{type: 'default_actions'}]} maxVisibleButtons={4} />
 ```
 
 ## Props
@@ -23,9 +23,8 @@ redefines below so they can be set per action.
 | Name | Type | Default | Description |
 |---|---|---|---|
 | `record` | `HabRecord` | record from context | Record whose actions are rendered; also provides the record context to the buttons |
-| `descriptors` | `ActionDescriptor[]` | all actions in the schema | Restricts and reorders the actions, and can override their label, icon or colour |
-| `isList` | `boolean` | `false` | Renders the compact variant used in datagrid rows |
-| `onlyDetail` | `boolean` | `false` | Keeps only the actions meant for a detail view |
+| `descriptors` | `AnyActionDescriptor[]` | — | The action slot to render, in order; absent renders nothing. A `DefaultActions` entry expands into the resource's actions, a descriptor can override their label, icon or colour |
+| `isList` | `boolean` | `false` | The surface a `DefaultActions` entry expands for: a list keeps `showInList` actions, a detail `showInDetail` ones |
 | `target` | `string` | — | Marks the current screen as the origin, so the action can return to it |
 | `variant` | `ButtonVariant \| ((name: string) => ButtonVariant)` | — | MUI variant, optionally per action |
 | `showLabel` | `boolean \| ((name: string) => boolean)` | `true` | Whether to show labels, optionally per action |
@@ -39,6 +38,10 @@ redefines below so they can be set per action.
 Actions live in the record's `meta.schema.actions`, which the backend fills per record. A user
 without permission for an action simply does not receive it, so nothing has to be hidden on the
 frontend.
+
+A descriptor with a `reference` takes its action from the schema that address loads and runs it
+against that resource and record instead — see
+[linking an action](../types-and-schemas/view-schema-and-action-schema.md#linking-an-action-from-another-schema).
 
 :::tip
 A descriptor may nest `menuItems`, which groups several actions under one button. A group whose

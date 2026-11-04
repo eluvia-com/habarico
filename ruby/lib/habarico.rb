@@ -1,5 +1,11 @@
 require "eluvia-base"
 
+# Runtime dependencies of the gemspec. Bundler.require in a host app only requires what that app
+# lists itself, so without these a host gets `undefined method 'page'` on its first list request
+# (kaminari) or an uninitialised constant from a permission callable (pundit).
+require "kaminari"
+require "pundit"
+
 # *****************************************************************************
 # Basic library
 # *****************************************************************************
@@ -15,6 +21,7 @@ require "habarico/authenticatable"
 # *****************************************************************************
 
 require "habarico/active_model/references"
+require "habarico/active_model/extensible_enum"
 
 # *****************************************************************************
 # Helpers
@@ -24,11 +31,18 @@ require "habarico/helpers/action_helper"
 require "habarico/helpers/attributes_helper"
 require "habarico/helpers/box_helper"
 require "habarico/helpers/callable_helper"
-require "habarico/helpers/filter_params_helper"
 require "habarico/helpers/order_by_helper"
 require "habarico/helpers/reflection_helper"
-require "habarico/helpers/sorting_helper"
-require "habarico/file_validations"
+
+# *****************************************************************************
+# Resolvers
+# *****************************************************************************
+
+require "habarico/resolvers/field_path_resolver"
+require "habarico/resolvers/file_rules_resolver"
+require "habarico/resolvers/filter_params_resolver"
+require "habarico/resolvers/record_params_resolver"
+require "habarico/resolvers/sorting_resolver"
 
 # *****************************************************************************
 # Search
@@ -37,7 +51,6 @@ require "habarico/file_validations"
 # Free per-resource search. The global spotlight search and its highlighter are a paid feature and
 # are not required here - habarico-enterprise loads them and registers itself through
 # `Config.search_highlighter_class` (HAB-812).
-require "habarico/search/field_resolver"
 require "habarico/search/search_matcher"
 
 # *****************************************************************************
@@ -46,7 +59,9 @@ require "habarico/search/search_matcher"
 
 # Shared enum types
 require "habarico/schema/types"
-require "habarico/schema/extensible_enum"
+
+# The address every reference in the schema is written as
+require "habarico/schema/resource_reference"
 
 # Action schema models
 require "habarico/schema/action/link_action_parameters"
@@ -54,7 +69,6 @@ require "habarico/schema/action/resource_action_endpoint_parameters"
 require "habarico/schema/action/resource_action_parameters"
 require "habarico/schema/action/action_schema"
 require "habarico/schema/action/save_action_parameters"
-require "habarico/schema/action/view_action_endpoint_parameters"
 require "habarico/schema/action/view_action_parameters"
 require "habarico/schema/action/confirm_dialog_properties"
 require "habarico/schema/action/global_resource_action_schema"
@@ -94,6 +108,7 @@ require "habarico/schema/resource/object_resource_schema"
 # View schema models
 require "habarico/schema/view/view_action_descriptor_parameters"
 require "habarico/schema/view/action_descriptor"
+require "habarico/schema/view/default_actions_descriptor"
 require "habarico/schema/view/array_box_parameters"
 require "habarico/schema/view/object_box_parameters"
 require "habarico/schema/view/box_schema"
@@ -126,7 +141,6 @@ require "habarico/generators/action/link_action_parameters_generator"
 require "habarico/generators/action/resource_action_endpoint_parameters_generator"
 require "habarico/generators/action/resource_action_parameters_generator"
 require "habarico/generators/action/action_schema_generator"
-require "habarico/generators/action/view_action_endpoint_parameters_generator"
 require "habarico/generators/action/view_action_parameters_generator"
 require "habarico/generators/action/confirm_dialog_properties_generator"
 require "habarico/generators/action/global_resource_action_schema_generator"
@@ -214,7 +228,6 @@ require "habarico/definition/boxes/box"
 require "habarico/definition/boxes/array_box"
 require "habarico/definition/boxes/gallery_box"
 require "habarico/definition/boxes/grid_box"
-require "habarico/definition/boxes/grid_item_box"
 require "habarico/definition/boxes/list_box"
 require "habarico/definition/boxes/object_box"
 require "habarico/definition/boxes/tab_box"
@@ -231,6 +244,7 @@ require "habarico/definition/views/show_view"
 
 # Root
 require "habarico/definition/action_reference"
+require "habarico/definition/default_actions_reference"
 require "habarico/definition/field_reference"
 require "habarico/definition/filter_reference"
 require "habarico/definition/response"
@@ -241,12 +255,16 @@ require "habarico/definition/definition"
 # *****************************************************************************
 
 # Controller
+require "habarico/queries/records_query"
+require "habarico/validators/order_by_validator"
 require "habarico/controller"
 
 # Serializer
-require "habarico/serializers/serializer"
+require "habarico/serializers/compact_json"
+require "habarico/serializers/fields_serializer"
 require "habarico/serializers/meta_serializer"
 require "habarico/serializers/record_serializer"
+require "habarico/serializers/response_serializer"
 
 # *****************************************************************************
 # Services

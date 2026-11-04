@@ -57,13 +57,6 @@ the appearance controls with their defaults.
 | `status` | `StatusSlot` | `{version?, environment?, labels?}` — the version / environment strip |
 | `sx` | `SxProps<Theme>` | MUI style override |
 
-:::caution
-There is no `LogoComponent`, `FooterComponent`, `BreadcrumbsComponent`, `SearchComponent`,
-`onModeChange` or `onLanguageChange` prop. Every one of them became a slot: the component goes
-inside the slot object (`logo={{Component: Logo}}`), and the toggles write to the settings context
-rather than calling back.
-:::
-
 ## Breadcrumbs and actions in the header
 
 The breadcrumb trail and the current view's actions share the header row, and the header keeps a

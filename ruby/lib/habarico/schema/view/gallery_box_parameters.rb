@@ -3,8 +3,8 @@ module Habarico
     include ::ActiveModel::Model
     include Eluvia::ActiveModel::Attributes
 
-    # Reference to another resource
-    string_attr :reference
+    # Address of the resource the gallery reads from, carrying the query its schema request is made with
+    has_one_attr :reference, 'Habarico::ResourceReference'
 
     # Name of the field containing the image ({url, filename})
     string_attr :image_field
@@ -23,9 +23,6 @@ module Habarico
 
     # Additional filters to be applied to the gallery by default
     any_attr :extra_filters
-
-    # Additional parameters sent with the get schema request
-    has_many_attr :schema_params, 'String', underlying_type: :hash
 
   end
 end

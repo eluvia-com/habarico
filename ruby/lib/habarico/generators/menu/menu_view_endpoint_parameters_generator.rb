@@ -7,10 +7,10 @@ module Habarico
       raise Eluvia::Errors::StandardError.new('Argument `menu_item` must be of :view type') unless menu_item.type.to_sym == :view
 
       # Create model
-      Habarico::ViewActionEndpointParameters.new(
-        reference: generate_reference(menu_item),
+      Habarico::ResourceReference.build(
+        generate_reference(menu_item) || resource_name,
         action_name: generate_action_name(menu_item),
-        record_pk: generate_record_pk(menu_item)
+        record_pk: generate_record_pk(menu_item),
       )
     end
 

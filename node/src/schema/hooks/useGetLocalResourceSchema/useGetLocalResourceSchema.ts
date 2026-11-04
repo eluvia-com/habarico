@@ -1,9 +1,13 @@
-import {useGetIdentity, useLocaleState} from 'react-admin';
-import {useResourceContextOrUndefined} from '@admin/contexts/ResourceContext';
-import {useSchemaRootContext} from '@schema/contexts/SchemaRootContext/useSchemaRootContext';
+import {useMemo} from 'react';
+import {useResourceContext as useRaResourceContext} from 'react-admin';
 import {LocalResourceSchema, RequestMethodType} from '@schema/types';
+import {
+  hasUnresolvedReferences,
+  resolveReferences,
+  serviceOfKey,
+} from '@schema/utils/resourceReference';
 import {useQuery} from '@tanstack/react-query';
-import {useGetGlobalResourceSchema} from '../useGetGlobalResourceSchema';
+import {useLocalResourceSchemaQueryOptions} from './useLocalResourceSchemaQueryOptions';
 
 type GetLocalResourceSchemaProps = {
   schema?: LocalResourceSchema;
@@ -29,49 +33,40 @@ export const useGetLocalResourceSchema = ({
 }: GetLocalResourceSchemaProps) => {
   // tolerate a missing resource / ResourceContext (e.g. dashboard widgets): the query is
   // gated on globalResourceSchema, so without a resource it simply stays disabled
-  const resource = useResourceContextOrUndefined(rest.resource);
-  const [locale] = useLocaleState();
-  const globalResourceSchema = useGetGlobalResourceSchema()(resource ?? '');
-
-  const {schemaProvider, isLoaded} = useSchemaRootContext();
-  const {identity} = useGetIdentity();
-
-  const paramsKey = JSON.stringify(params ?? {});
-
-  const url = globalResourceSchema?.url || '';
+  const resource = useRaResourceContext(rest);
+  const service = resource && serviceOfKey(resource);
+  const {query, isUnknown} = useLocalResourceSchemaQueryOptions()({
+    resource: resource ?? '',
+    recordId,
+    actionName,
+    params,
+  });
 
   const {
     data: fetchedSchema,
     isLoading,
     error,
     isError,
-  } = useQuery({
-    queryKey: [
-      'resourceSchema',
-      url,
-      resource,
-      recordId,
-      paramsKey,
-      locale,
-      identity?.id,
-      actionName,
-    ],
-    queryFn: async () =>
-      await schemaProvider.getRecordSchema(url, actionName, recordId, {
-        params: params,
-        meta: {locale},
-      }),
-    enabled: enabled && !!globalResourceSchema && !schema && !!identity,
-    retry: false,
-  });
+  } = useQuery({...query, enabled: enabled && query.enabled && !schema});
 
-  const resourceSchema = fetchedSchema || schema;
+  // a schema handed in is resolved against the resource's service like a fetched one; without a
+  // service to resolve against, its references must already name theirs
+  const givenSchema = useMemo(
+    () => (schema && service ? resolveReferences(schema, service) : schema),
+    [schema, service]
+  );
+  const unresolvedSchemaError =
+    givenSchema && !service && hasUnresolvedReferences(givenSchema)
+      ? new Error(
+          'useGetLocalResourceSchema was given a schema whose references lack a service and no resource to take it from'
+        )
+      : undefined;
 
-  // once the service schemas are loaded, a resource that resolves to no global schema (missing /
-  // unknown resource, or none resolvable from context) with no schema prop supplied can never
-  // yield a schema: surface it as an error instead of silently returning an empty one. Gated on
-  // isLoaded so a valid resource doesn't flash an error while servicesSchema is still loading.
-  const cannotResolveSchema = isLoaded && !globalResourceSchema && !schema;
+  const resourceSchema = fetchedSchema || givenSchema;
+
+  // an unknown resource (or none resolvable from context) with no schema handed in can never yield
+  // one: surface it as an error instead of silently returning an empty schema
+  const cannotResolveSchema = isUnknown && !schema;
   const resolveError = cannotResolveSchema
     ? new Error(
         'useGetLocalResourceSchema could not resolve a schema: no matching resource was found and no schema was provided'
@@ -113,8 +108,8 @@ export const useGetLocalResourceSchema = ({
 
   return {
     isLoading,
-    error: resolveError ?? error,
-    isError: cannotResolveSchema || isError,
+    error: resolveError ?? unresolvedSchemaError ?? error,
+    isError: cannotResolveSchema || !!unresolvedSchemaError || isError,
     schema: resourceSchema,
     getMethodSchema,
     getViewSchema,

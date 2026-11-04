@@ -1,5 +1,8 @@
 require "rails/generators"
 require "rails/generators/migration"
+# Defines ActiveRecord::Generators::Base, whose next_migration_number is reused below. Railties
+# does not autoload it, so without this require the generator fails with a NameError.
+require "rails/generators/active_record"
 
 module Habarico
   module Preferences

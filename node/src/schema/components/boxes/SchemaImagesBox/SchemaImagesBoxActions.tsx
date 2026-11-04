@@ -1,42 +1,36 @@
-import React from 'react';
+import React, {ReactElement} from 'react';
 import {InputProps, TopToolbar} from 'react-admin';
 import {FilterDrawerButton} from '@admin/components/buttons/FilterDrawerButton';
 import {SchemaButtons} from '@schema/components/buttons/SchemaButtons';
-import {useLocalResourceSchemaContext} from '@schema/contexts/LocalResourceSchemaContext/useLocalResourceSchemaContext';
-import {ActionDescriptor} from '@schema/types';
-import {generateDescriptorsFromSchema} from '@schema/utils/generateDescriptorsFromSchema';
+import {useResolvedDescriptors} from '@schema/hooks/useResolvedDescriptors';
+import {AnyActionDescriptor} from '@schema/types';
 
 type ActionsProps = {
-  descriptors?: ActionDescriptor[];
+  descriptors?: AnyActionDescriptor[];
   target?: string;
-  filters?: React.ReactElement<InputProps>[];
+  filters?: ReactElement<InputProps>[];
 };
 
-export const SchemaImagesBoxActions = ({filters = [], descriptors, target}: ActionsProps) => {
-  const {actions} = useLocalResourceSchemaContext();
-  // Fall back to the referenced resource's collection actions (create / export / bulk — `!is_detail`)
-  // when the box schema does not define `listActions`. An explicit `[]` means "no toolbar actions" and
-  // is respected (only `undefined`/absent triggers the fallback).
-  const recordDescriptors =
-    descriptors ?? generateDescriptorsFromSchema(actions ?? [], true, 'list');
-  const hasActions = recordDescriptors.length > 0;
-  const hasFilters = filters.length > 0;
+export const SchemaImagesBoxActions = ({filters, descriptors, target}: ActionsProps) => {
+  const hasActions =
+    useResolvedDescriptors({descriptors, isList: true}).resolvedDescriptors.length > 0;
 
   // Nothing to put in the toolbar (no filters, no list actions) → render no toolbar at all, so it does
   // not take up space above the image grid.
-  if (!hasFilters && !hasActions) return null;
+  if (!filters?.length && !hasActions) return null;
 
   return (
     <TopToolbar sx={{justifyContent: 'flex-start'}}>
-      {hasFilters && (
+      {filters?.length ? (
         <FilterDrawerButton filters={filters} size="small" color="inherit" showLabel={false} />
-      )}
+      ) : null}
       {hasActions && (
         <SchemaButtons
           surface="button"
           variant="outlined"
           size="small"
-          descriptors={recordDescriptors}
+          isList
+          descriptors={descriptors}
           target={target}
         />
       )}

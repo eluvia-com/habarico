@@ -89,9 +89,9 @@ module Habarico
     end
 
     def generate_endpoints(_context, endpoint_parameters)
-      # Determine endpoint methods to be included, base for the selection ale endpoint parameters collected from the
-      # actions and views without action name and without reference. Additionally, always include GET.
-      methods = endpoint_parameters.select { |e| e.action_name.blank? && e.reference.blank? }.map { |e| e.method.to_sym }
+      # Determine endpoint methods to be included from the endpoint parameters of the actions and views that address
+      # the resource itself (no reference; an action name always comes with one). Additionally, always include GET.
+      methods = endpoint_parameters.select { |e| e.reference.blank? }.map { |e| e.method.to_sym }
       methods << :get # Ensure GET is always present
       methods = methods.uniq
 

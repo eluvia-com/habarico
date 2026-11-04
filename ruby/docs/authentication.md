@@ -14,15 +14,20 @@ not respond to that method, the request fails with `NotImplementedError`.
 ## Implementing the hook
 
 Implement it once in the `ApplicationController` your admin controllers already inherit from, and it
-covers every resource:
+covers every resource. Raise `Eluvia::Errors::Unauthorized` (from `eluvia-base`, which Habarico
+depends on) on failure, so the error is rendered through the same pipeline as the rest of the API:
 
 ```ruby
 class ApplicationController < ActionController::API
-  # e.g. using eluvia-auth
-  include Eluvia::Auth::AuthHandler
+  include ActionController::Cookies
+  include Eluvia::ErrorHandler
 
   def authenticate_request
-    authenticate(['public'])
+    raise Eluvia::Errors::Unauthorized.new('Sign in first.') if current_user.nil?
+  end
+
+  def current_user
+    @current_user ||= User.find_by(id: session[:user_id])
   end
 end
 ```
@@ -35,6 +40,11 @@ class Apps::Admin::ProductsController < ApplicationController
   # …
 end
 ```
+
+That is the whole integration — a session here, but nothing in Habarico knows or cares which
+mechanism fills `current_user`. The
+[e-shop example](https://github.com/eluvia-com/habarico/tree/master/examples/eshop) is a working
+Rails backend built on exactly this, down to the login and password-reset endpoints.
 
 `current_user` has to be available on the controller as well — Habarico reads it through
 [`context.current_user`](./basic-usage/context-object.md), which is what `can_read`, `can_update`
@@ -53,9 +63,8 @@ end
 ```
 
 :::caution
-`authenticate_method` holds a method name, not a call. A method that takes arguments (such as
-`eluvia-auth`'s `authenticate(['public'])`) still needs the one-line `authenticate_request` wrapper
-shown above.
+`authenticate_method` holds a method name, not a call. A method that takes arguments still needs
+the one-line `authenticate_request` wrapper shown above.
 :::
 
 ## The engine's own endpoints
@@ -80,11 +89,10 @@ runs twice per request — Habarico adds its own. Keep the authentication method
 `base_controller_class` at its default and let Habarico be the only caller.
 :::
 
-## Custom authentication
+## A bearer token instead of a session
 
-With no auth gem at all, `authenticate_request` is the whole integration point. Raise
-`Eluvia::Errors::Unauthorized` (from `eluvia-base`, which Habarico depends on) on failure so the
-error is rendered through the same pipeline as the rest of the API:
+Nothing above depends on the session — the hook only has to leave a user behind. The same
+controller against a JWT, for an admin whose frontend is served from another origin:
 
 ```ruby
 class ApplicationController < ActionController::API

@@ -12,11 +12,8 @@ module Habarico
     string_attr :method
     enum_attr :method, Types::REQUEST_METHOD_TYPE
 
-    # Reference to another resource, if applicable
-    string_attr :reference
-
-    # Name of the controller action associated with the endpoint, if applicable
-    string_attr :action_name
+    # What the endpoint addresses. Absent means the resource the schema was generated for.
+    has_one_attr :reference, 'Habarico::ResourceReference'
 
   end
 end

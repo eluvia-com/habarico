@@ -7,7 +7,7 @@ import {SchemaArrayBox} from '@schema/components/boxes/SchemaArrayBox';
 import {SchemaBoxProps} from '@schema/components/boxes/types';
 import {SchemaButtons} from '@schema/components/buttons/SchemaButtons';
 import {useFieldSchemaMapContext} from '@schema/contexts/FieldSchemaMapContext/useFieldSchemaMapContext';
-import {useViewSchemaContext} from '@schema/contexts/ViewSchemaContext/useViewSchemaContext';
+import {useIsReadOnly} from '@schema/contexts/ReadOnlyBoxContext';
 import {SchemaChoicesFormIterator} from './SchemaChoicesFormIterator';
 
 export const SchemaChoicesArrayBox = ({schema, label = schema.label, isRoot}: SchemaBoxProps) => {
@@ -16,12 +16,13 @@ export const SchemaChoicesArrayBox = ({schema, label = schema.label, isRoot}: Sc
   const targetFieldSchema = fieldSchemas[target || ''];
   const isLast = useIsLastPanel();
 
-  const {readOnly: readOnlyView} = useViewSchemaContext();
+  const readOnlyScope = useIsReadOnly();
   const card = useBoxCard(schema, Boolean(label), isRoot);
 
   if (!target || !targetFieldSchema || !targetFieldSchema.items?.properties) return;
 
-  const readOnly = readOnlyView || targetFieldSchema.readOnly;
+  // Same three sources as the array box it falls back to — see `SchemaArrayBox`.
+  const readOnly = readOnlyScope || Boolean(schema.readOnly) || Boolean(targetFieldSchema.readOnly);
 
   if (readOnly) {
     return <SchemaArrayBox schema={schema} label={label} isRoot={isRoot} />;

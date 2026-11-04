@@ -27,11 +27,14 @@ form by hand or override one field.
 | `helperText` | `string \| ReactElement \| false` | `schema.helpText` | Text under the input |
 | `readOnly` | `boolean` | from the view | Renders the value read-only instead of an input |
 | `showLabel` | `boolean` | `true` | Renders the label |
-| `defaultValue` | `string \| boolean \| number` | — | Currently has no effect — the value is not forwarded to the input. Create-form defaults come from the form itself, which collects every `schema.defaultValue` into its default values |
 | `disabled` | `boolean` | `false` | Disables the input while keeping it in the form |
 | `record` | `RaRecord` | record from context | Renders a record other than the one in context |
 | `onChange` | `() => void` | — | Called after the value changes |
 | `hiddenEl` | `ReactElement` | — | Rendered in place of the input when `dynamicRender.showQuery` hides it |
+
+:::caution
+`SchemaInput` does not forward `defaultValue`; create-form defaults come from each field's `schema.defaultValue`.
+:::
 
 ## What it does
 

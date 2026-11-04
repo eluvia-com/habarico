@@ -119,9 +119,9 @@ const CATEGORY_CONTEXT = {
  * | `wizard` | `SchemaWizardBox` |
  * | *anything else* | `SchemaSimpleBox` |
  *
- * Note the last row: `simple` is not a case in the switch but its **default**, so `tab-item`,
- * `grid-item` and any unrecognised type all render as a simple box. That is what makes a tab item
- * or a grid cell an ordinary box able to hold any other box.
+ * Note the last row: `simple` is not a case in the switch but its **default**, so `tab-item` and
+ * any unrecognised type render as a simple box. That is what makes a tab item an ordinary box able
+ * to hold any other box.
  */
 const meta = {
   title: 'schema/boxes/SchemaBox',

@@ -28,7 +28,7 @@ const result = useGetLocalResourceSchema({
 | Name | Type | Default | Description |
 |---|---|---|---|
 | `resource` | `string` | resource from context | Resource in `"service/resource"` form |
-| `schema` | `LocalResourceSchema` | — | Skips the request and uses this schema |
+| `schema` | `LocalResourceSchema` | — | Skips the request and uses this schema; its references get the service of `resource` |
 | `actionName` | `string` | — | Requests the schema of a specific action |
 | `recordId` | `string \| number` | — | Requests the schema for one record — this is how per-record actions and permissions arrive |
 | `params` | `Record<string, string \| number \| boolean>` | — | Appended to the schema request |
@@ -76,6 +76,10 @@ one user is never reused for another, because permissions can change what the sc
 The query stays disabled until the identity is known, so `isLoading` is `true` for a moment on
 every hard reload.
 :::
+
+Every `ResourceReference` in the returned schema names its `service`: one the backend left out gets
+the service of `resource`, the schema it was sent in. A `schema` handed in with no resource to take
+the service from must name it in every reference, otherwise the hook reports `isError`.
 
 A resource that resolves to no entry in the service schemas — a typo, or a resource the backend
 does not expose — surfaces as `isError` once the service schemas are loaded, rather than silently

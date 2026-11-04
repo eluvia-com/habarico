@@ -7,12 +7,14 @@
 - `DashboardGridPanelLayout` gained an optional `stackedH` — the panel's height in grid rows when
   `DashboardGrid` stacks its panels into one column (container width at or below 996px). Without
   it the stacked panel keeps its `h`, so existing layouts render unchanged. (HAB-1004)
+
 - `DashboardGrid` in `edit` mode on a narrow grid (container width at or below 996px) keeps the
   panels stacked in one column and lets each be resized in height from its bottom edge; the panels
   below move along. Panels cannot be dragged there. `onLayoutChange` reports the new height as the
   panel's `stackedH` and passes `x`/`y`/`w`/`h` back unchanged, so the wide layout is left as it
   was — a consumer that copies only `x`/`y`/`w`/`h` from it drops the change. (HAB-1004)
-- Reference fields gained a `variant?: 'chip' | 'link'` prop (default `'chip'`), so a
+
+- Reference fields gained a `variant?: 'chip' | 'link'` prop (`'chip'` out of the box), so a
   project can render the record a reference points at as a plain text link instead of a chip.
   `SchemaReferenceField` and `SchemaReferenceArrayField` both take it; the array form also stacks
   text links one per line (a row of bare links reads as one run-on sentence), in a detail view and
@@ -20,20 +22,58 @@
   both forms, `RecordRepresentation` (and its schema-aware `SchemaRecordRepresentation`), is
   exported for direct use as `children` of `ReferenceField` / `ReferenceArrayField`. The default is
   unchanged, so existing projects look and behave exactly as before. `SchemaReferenceArrayField` is
-  now exported from the package, which it was not. Chosen by the application through a
-  `fieldProvider` override — the schema is untouched, and neither the contract nor the Python/Ruby
-  DSL changes.
+  now exported from the package, which it was not. Chosen by the application — per field, or
+  project-wide through `fieldDefaults.reference` (below) — so the schema is untouched, and neither
+  the contract nor the Python/Ruby DSL changes.
   (HAB-973)
 
+- `SchemaAdmin` and `SchemaResource` gained an optional `fieldDefaults` prop — the shape each kind of
+  field takes across a project, declared once instead of rebuilt in a `fieldProvider` override:
+  `<SchemaAdmin fieldDefaults={{reference: 'link', boolean: 'text', choices: 'text'}} />`. It is a
+  record per kind of field, not one value for all of them: a reference's `'link'` means nothing to a
+  boolean, and a kind taught a second shape later arrives as a new key nobody has set, so a version
+  bump cannot quietly change how an existing project looks. Resolved nearest-first — the field's own
+  `variant` prop, the nearest `SchemaResource`, `SchemaAdmin`, then the built-in `'chip'` — with a
+  resource merging over the admin key by key rather than replacing it, so `fieldDefaults` composes
+  with a `fieldProvider` instead of competing with it. Read through the new `useFieldDefaults` hook,
+  which returns resolved values and answers outside a provider (a field renders in a test and in a
+  story with no admin above it). Omitting the prop is identical to the previous behaviour.
+  (HAB-984)
+
+- `BooleanField` gained `variant?: 'chip' | 'text' | 'icon'` (default `'chip'`): the yes/no chip it
+  has always rendered, the same word as plain text, or a tick / cross glyph. `'icon'` is a list
+  affordance — it draws the glyph inside a collection, where a column has no width to spare, and
+  resolves to `'text'` in a detail view, where the word reads better than the symbol; that mirrors
+  `EnumChip`, which likewise collapses to a bare glyph only in a collection. Every shape still goes
+  through React Admin's `TrueIcon` / `FalseIcon`, so all three keep its handling of a missing value
+  (`emptyText`, never a "No") and its yes/no tooltip. Picked project-wide by
+  `fieldDefaults.boolean`. The MUI style the chip shape is drawn in keeps its own prop,
+  `chipVariant`, unchanged.
+  (HAB-984)
+
+- `ChoicesField` and `ChipArrayField` gained `variant?: 'chip' | 'text'` (default `'chip'`), which
+  renders the resolved label as plain text instead of a chip — the array form stacking the labels one
+  per line, as the reference array does its links. `'text'` is deliberately **not** unconditional: an
+  enum whose options define an explicit color keeps its chips, because the color is information plain
+  text cannot carry. The test (`choicesCarryColor`, exported) runs over the whole option list rather
+  than per value, so one field never mixes chips and bare words down a column; `'inherit'` counts as
+  no color, and raw values with no enum behind them always honour `'text'`. Picked project-wide by
+  `fieldDefaults.choices`. (HAB-984)
+
 ### Changed
+
+- The `react-admin`, `ra-core`, `ra-ui-materialui` and `ra-i18n-polyglot` peer ranges are `^5.14.5`
+  (were `~5.14.5`), so a project can run any React Admin 5 release from 5.14.5 on, including 5.15. (HAB-1046)
 
 - **BREAKING:** `Panel`'s resize affordance is switched on by `resizable?: boolean` (default
   `false`) and placed by `resizeHandle?: 'corner' | 'bottom'` (default `'corner'`): `bottom` draws
   it in the middle of the bottom edge, for a panel resized in height only. `resizeHandle` is no
   longer a boolean — replace `resizeHandle` with `resizable`. (HAB-1004)
+
 - `DashboardGrid` stacks its panels on a narrow grid in the reading order of the 12-column layout
   — top to bottom, then left to right — instead of in the order of the `panels` array. A panel
   placed at the top of the dashboard is now at the top of the stack too. (HAB-1004)
+
 - **BREAKING:** the `upload-images` action is renamed to `upload-files` — it bulk-uploads documents
   (PDF, DOCX, XLSX, ZIP, …) as much as images, and the name said otherwise. No alias keeps the old
   names:
@@ -63,6 +103,7 @@
   not rendered and no error is reported; upgrade the backend and the frontend together. To migrate,
   rename `uploadImages` / `imageField` and the `ra.upload_images.*` overrides, and a custom
   `buttonProvider` matching `'upload-images'`. (HAB-1000)
+
 - **BREAKING:** `RecordRepresentationChip` and `RecordRepresentationLink` are unified into a single
   `RecordRepresentation`, whose new `variant?: 'chip' | 'link'` prop (default `'chip'`) chooses the
   shape — the same vocabulary the reference fields' own `variant` already uses, now carried
@@ -75,31 +116,50 @@
   component that only ever renders one of them, and `RecordRepresentationProps` is their union.
   To migrate: rename the component, rename a `variant` meant for the chip to `chipVariant`, and add
   `variant="link"` where the link form was used. Rendering and behaviour are unchanged. (HAB-973)
-- **BREAKING:** `BooleanField`'s `chipVariant` prop is renamed to **`variant`**, so the whole field
-  family names the MUI chip variant the same way. Its values (`'text' | 'filled' | 'outlined' |
-  'soft'`) and the `'soft'` default are unchanged; rename the prop at the call site. (HAB-973)
+
+- `ReferenceVariant` is now exported from `@schema/types` rather than from the schema components
+  barrel, alongside the new `BooleanVariant`, `ChoicesVariant` and `FieldDefaults`. The name and the
+  type are unchanged and it is still reached from the package root, so an existing
+  `import {ReferenceVariant} from 'habarico'` keeps working. (HAB-984)
 
 ### Fixed
+
+- A box declaring `read_only: true` is now rendered read-only in `edit` and `create` views too, and
+  so is everything under it — nested boxes, an array box's rows, an object box's properties. Until
+  now only the view's own mode and an array/object box's target field were consulted, so a box
+  marked read-only by the backend still rendered inputs; that is also how a field had to be made
+  writeable in the endpoint schema and presentation-only in one layout. The scope only ever closes:
+  a nested box declaring `read_only: false` inside a read-only one stays read-only, matching
+  `BaseBox.get_read_only()` in the backends. New `useIsReadOnly` is what a custom box, field or
+  input should branch on — `useViewSchemaContext().readOnly` stays the view's own flag. (HAB-1038)
+
+- A read-only field inside a writeable array box renders as a value instead of an input. The column
+  inputs were handed the field schema but never its `readOnly`, so a `read_only` field descriptor
+  had no effect on an editable array list. (HAB-1038)
 
 - Every input draws its border in the theme's `palette.divider`. The date, date-time and time
   pickers used MUI X's own grey (and a different one when disabled); `InputLayout`
   (`UploadInput`, `TreeArrayInput`), `SchemaWrappedFields` and `SchemaRangeInput` each used a grey of
   their own. The pickers take the color and the field tint from new `MuiPickersOutlinedInput` and
   `MuiPickersInputBase` theme overrides. (HAB-1018)
+
 - A click on a menu group (an item with sub-items) navigated to its first child and only then
   expanded it. The group now opens or closes its sub-menu in place, and the page changes only once a
   child is clicked; it is rendered as a button with `aria-expanded` rather than a link. A group
   holding the current page still starts open and reopens whenever navigation leads into it. In the
   collapsed rail a click opens the group's sub-menu at once, as hovering does, so it works on touch
   screens too. The mobile drawer stays open while a group is expanded. (HAB-996)
+
 - The bottom-edge resize handle of a stacked `DashboardGrid` panel (edit mode at a container width
   of 996px or less) is easy to hit with a finger: its hit area is a 96×44px target spanning the
   panel's bottom edge and the gap below it, and dragging it resizes the panel instead of scrolling
   the page. (HAB-1004)
+
 - A file row of `UploadInput` and of the `upload-files` dialog shows an uploaded document (PDF,
   DOCX, ZIP, …) as its file-type tile instead of a broken-image thumbnail. Only a file whose name
   has an image extension a browser can render (PNG, JPG, GIF, WebP, AVIF, SVG, BMP, ICO) gets a
   thumbnail. (HAB-1000)
+
 - The datagrid's row hint no longer stacks on top of a control that owns its own click. Hovering a
   reference chip in a cell used to show two tooltips at once — the chip's "Show object" and the
   row's "double-click for detail" — and the row's one promised the wrong action, since the click
@@ -111,6 +171,7 @@
   semantics it was missing (`role`, `tabIndex`, Enter / Space) so the text representation is both
   keyboard-operable and recognised by that test.
   (HAB-973)
+
 - `ReferenceField` and `ReferenceArrayField` now merge a caller's `sx` with their own link reset
   instead of dropping it. The reset sat before the `{...rest}` spread, so any caller passing `sx`
   replaced it outright and got React Admin's anchor styling back on a field that only looked linked.
@@ -126,6 +187,30 @@
   needed to install it.
 
 ## [7.1.0] — 2026-10-12
+
+### Removed
+
+- **BREAKING:** the `grid-item` box type is gone from `BoxType`. A grid cell is the box that draws
+  it, carrying its own `gridItem` placement - which is also what makes its card stretch to the
+  height of its row, where a wrapper left the card at the height of its content. A schema from an
+  older backend still renders: an unknown box type falls back to `SchemaSimpleBox` as it always has,
+  and the cell's `gridItem` is read whatever its type. What such a schema loses is the type as an
+  opt-out signal - a `grid-item` cell that carried no spans at all used to switch the grid to
+  explicit widths, and now only a `gridItem` does. (HAB-963)
+
+### Fixed
+
+- `SchemaGridBox` decides whether to compute its cells' widths from the presence of `gridItem`
+  rather than from the box type. A grid whose cells are boxes carrying their own `gridItem` (a
+  `list` box sizing itself) was switching to the computed widths and overriding them breakpoint by
+  breakpoint, so every cell without an explicit span took a computed width instead of the full row
+  it takes in an explicit grid. (HAB-963)
+
+- `SchemaWizardBox` collects the field names of a step by what a box type is *not*: only the
+  collection box types (`list`, `gallery`) hold no form fields of their own, and `object` / `array`
+  keep their own path handling, so any other type - including one a backend of another version sends
+  - contributes its children instead of dropping them. Step validation therefore no longer depends
+  on a closed list of layout types. (HAB-963)
 
 ### Added
 
@@ -147,46 +232,6 @@
   it to whether its `filters` prop is passed. New translation key `ra.action.reset_datagrid_filters`
   in every bundled locale. (VD-2875)
 
-- `SchemaAdmin` and `SchemaResource` gained an optional `fieldDefaults` prop — the shape each kind of
-  field takes across a project, declared once instead of rebuilt in a `fieldProvider` override:
-  `<SchemaAdmin fieldDefaults={{reference: 'link', boolean: 'text', choices: 'text'}} />`. It is a
-  record per kind of field, not one value for all of them: a reference's `'link'` means nothing to a
-  boolean, and a kind taught a second shape later arrives as a new key nobody has set, so a version
-  bump cannot quietly change how an existing project looks. Resolved nearest-first — the field's own
-  `variant` prop, the nearest `SchemaResource`, `SchemaAdmin`, then the built-in `'chip'` — with a
-  resource merging over the admin key by key rather than replacing it, so `fieldDefaults` composes
-  with a `fieldProvider` instead of competing with it. Read through the new `useFieldDefaults` hook,
-  which returns resolved values and answers outside a provider (a field renders in a test and in a
-  story with no admin above it). Omitting the prop is identical to the previous behaviour.
-  (HAB-984)
-- `BooleanField` gained `variant?: 'chip' | 'text' | 'icon'` (default `'chip'`): the yes/no chip it
-  has always rendered, the same word as plain text, or a tick / cross glyph. `'icon'` is a list
-  affordance — it draws the glyph inside a collection, where a column has no width to spare, and
-  resolves to `'text'` in a detail view, where the word reads better than the symbol; that mirrors
-  `EnumChip`, which likewise collapses to a bare glyph only in a collection. Every shape still goes
-  through React Admin's `TrueIcon` / `FalseIcon`, so all three keep its handling of a missing value
-  (`emptyText`, never a "No") and its yes/no tooltip. Picked project-wide by `fieldDefaults.boolean`.
-  (HAB-984)
-- `ChoicesField` and `ChipArrayField` gained `variant?: 'chip' | 'text'` (default `'chip'`), which
-  renders the resolved label as plain text instead of a chip — the array form stacking the labels one
-  per line, as the reference array does its links. `'text'` is deliberately **not** unconditional: an
-  enum whose options define an explicit color keeps its chips, because the color is information plain
-  text cannot carry. The test (`choicesCarryColor`, exported) runs over the whole option list rather
-  than per value, so one field never mixes chips and bare words down a column; `'inherit'` counts as
-  no color, and raw values with no enum behind them always honour `'text'`. Picked project-wide by
-  `fieldDefaults.choices`. (HAB-984)
-- Reference fields gained a `variant?: 'chip' | 'link'` prop (default `'chip'`), so a
-  project can render the record a reference points at as a plain text link instead of a chip.
-  `SchemaReferenceField` and `SchemaReferenceArrayField` both take it; the array form also stacks
-  text links one per line (a row of bare links reads as one run-on sentence), in a detail view and
-  in a datagrid cell alike, while the chip form keeps its wrapping row. The representation behind
-  both forms, `RecordRepresentation` (and its schema-aware `SchemaRecordRepresentation`), is
-  exported for direct use as `children` of `ReferenceField` / `ReferenceArrayField`. The default is
-  unchanged, so existing projects look and behave exactly as before. `SchemaReferenceArrayField` is
-  now exported from the package, which it was not. Chosen by the application through a
-  `fieldProvider` override — the schema is untouched, and neither the contract nor the Python/Ruby
-  DSL changes.
-  (HAB-973)
 - `SchemaAdmin` gained an optional `rowTooltip?: boolean` prop (default `true`). `false` hides the
   gesture tooltip ("Double-click: Show") on list rows across the whole admin, while clicking and
   double-clicking a row still open it. The value reaches `SchemaDatagrid` through the new optional
@@ -198,6 +243,17 @@
   render of `<AdminContext>` and loses a redirect issued after one. Inside the application's router
   it renders its children unchanged; when it provides the router, pass it the `basename` instead
   of `<AdminContext>`. (HAB-978)
+- An `ActionDescriptor` with a `reference` takes its action from the schema that address loads and
+  runs it against that resource and record, not the surrounding ones: `SchemaButtons`, menu items,
+  field actions and the datagrid row-click slots. The linked schemas are fetched once per distinct
+  reference, sharing the cache of `useGetLocalResourceSchema`; a linked button stays out of the
+  slot until its schema has loaded. `SchemaButton` and `SchemaActionTrigger` take the `actionContext` it
+  resolves to. (HAB-987)
+- `DefaultActionsDescriptor` (`{type: 'default_actions', reference?, scope?}`) in every action slot
+  (`AnyActionDescriptor`): the client expands it into one descriptor per action of the resource it
+  addresses, keeping the ones the surface shows and leaving out an action opening the very view.
+  With a `reference`, a `recordPk` makes it that record's detail and its absence the collection's
+  list. `SchemaDatagrid` and `SchemaImages` take the row slot as `rowActions`. (HAB-987)
 - `PanelHeader` gained an optional `status` prop — a soft tinted chip with a colored icon shown
   next to the label, with the status text revealed in a tooltip to save space. It sits in the header
   row after the help icon, uses a semantic palette color (`{label, color, icon}`) and mirrors the
@@ -437,28 +493,47 @@
 
 ### Changed
 
-- **BREAKING:** `BooleanField`'s `variant` prop was renamed to `chipVariant`, the same way
-  `RecordRepresentation`'s was below. `variant` now names the shape the value takes
-  (`'chip' | 'text' | 'icon'`, see above) rather than the MUI style the chip is drawn in, and the two
-  vocabularies share `'text'` with different meanings — keeping one name for both would make
-  `variant="text"` mean one thing on this field and another everywhere else. Rename the prop at the
-  call site; nothing else about the chip changed. (HAB-984)
-- `ReferenceVariant` is now exported from `@schema/types` rather than from the schema components
-  barrel, alongside the new `BooleanVariant`, `ChoicesVariant` and `FieldDefaults`. The name and the
-  type are unchanged and it is still reached from the package root, so an existing
-  `import {ReferenceVariant} from '@eluvia/habarico'` keeps working. (HAB-984)
-- **BREAKING:** `RecordRepresentationChip` and `RecordRepresentationLink` are unified into a single
-  `RecordRepresentation`, whose new `variant?: 'chip' | 'link'` prop (default `'chip'`) chooses the
-  shape — the same vocabulary the reference fields' own `variant` already uses, now carried
-  unchanged all the way down. `SchemaRecordRepresentationChip` and `SchemaRecordRepresentationLink`
-  collapse into `SchemaRecordRepresentation` the same way. The MUI chip variant moves from
-  `variant` to **`chipVariant`**, which `variant` is now spent on; `size`, `color` and `icon` are
-  unchanged. Props are discriminated by `variant`, so the chip's look on `variant="link"` is a type
-  error rather than a prop that silently does nothing — `RecordRepresentationChipProps` /
-  `RecordRepresentationLinkProps` (and their `Schema` counterparts) name the two branches for a
-  component that only ever renders one of them, and `RecordRepresentationProps` is their union.
-  To migrate: rename the component, rename a `variant` meant for the chip to `chipVariant`, and add
-  `variant="link"` where the link form was used. Rendering and behaviour are unchanged. (HAB-973)
+- **BREAKING:** an action slot renders exactly what it lists — the resource's actions are no longer
+  added when a slot is absent. `SchemaButtons` without `descriptors`, the list and images box
+  toolbars without `listActions`, and `SchemaDatagrid` / `SchemaImages` without `rowActions` render
+  no buttons; list a `DefaultActionsDescriptor` instead, which the backend sends for every slot its
+  author left unset — deploy it together with this version. `SchemaButtons` loses `scope`. The row
+  column of `SchemaDatagrid` and the cancel / save of an edit view decide from the slot as it
+  renders, and custom `rowActionButtons` always get their column. (HAB-987)
+- **BREAKING:** a list or images box has one header toolbar, the box's `toolbarActions`.
+  `ListBoxParameters.toolbarActions` and `SchemaReferenceToolbarActions` are removed, and
+  `buildBoxHeaderActions` takes just that slot. An entry acting on the listed resource names it in
+  its `reference`; when the reference's `params._target` links back to the record shown, the button
+  puts that record on the parent stack — for that entry alone — so a record created through it gets
+  the foreign key, and opens views with that column as `target`. `ActionContext` carries the link as
+  `parent`. (HAB-987)
+- `ExportButton` no longer needs a surrounding list: outside the list of its resource — a box header,
+  a detail — it exports every record of its resource that belongs to the parent record it is linked
+  to, or every record when linked to none, instead of failing. Next to its table it still exports
+  the selection or the current filters and sort. (HAB-987)
+- An action on a detail surface no longer disappears when no view name is given — only the action
+  opening the view the slot belongs to is left out. (HAB-987)
+- **BREAKING:** every schema reference is a `ResourceReference` object
+  (`{service, resource, recordPk?, actionName?, params?}`) instead of a `"service/resource"` string:
+  `FieldSchema`, `FilterSchema`, `ItemFieldSchema` and `FieldDescriptor` relations,
+  `ListBoxParameters`, `GalleryBoxParameters`, `UploadImagesActionParameters`, the view endpoint
+  (`ViewEndpointParameters.reference`), the resource action endpoint
+  (`ResourceActionEndpointParameters.reference`) and `ViewActionParameters.reference`, which is the
+  reference itself. `ActionDescriptor` gained `reference`. `actionName` and `recordPk` moved from the
+  endpoints into their reference, `schemaParams` of list and gallery boxes into `reference.params`,
+  and `ViewActionEndpointParameters` is removed. `resourceKey(reference)` composes the
+  `"service/resource"` key React Admin and the data provider use. (HAB-987)
+- **BREAKING:** the client fills in the `service` a backend leaves out of a reference, from the
+  schema it arrived in: `useGetServiceSchemas` and `useGetLocalResourceSchema` for loaded schemas,
+  the data provider for the actions in a record's `meta` and an action result's `triggerAction`.
+  `service` is therefore always set, and `useResourceContext(resource)` no longer prefixes a bare
+  resource name with the service of the surrounding context — pass the full `"service/resource"`
+  key. A `schema` handed to `useGetLocalResourceSchema` is resolved against its `resource`; with no
+  resource to take the service from, a reference without one makes the hook report an error. The
+  `resolveReferences(value, service)` helper doing it is exported for a package that loads schemas
+  of its own. (HAB-987)
+- The schema provider keeps the keys of `reference.params` as the backend sent them instead of
+  converting them to camelCase — they are the query string of the addressed request. (HAB-987)
 - **BREAKING:** `SchemaRootContextProvider` no longer resolves the identity itself: its `value`
   takes `userIdentity` and `setUserIdentity`, which `SchemaAdmin` supplies from the identity it
   scopes the per-user store to. `SchemaAdmin` users are unaffected; a hand-assembled
@@ -1537,6 +1612,161 @@ Requires a backend on Python ≥ 6.0.0 or Ruby ≥ 1.0.0 (HAB-730, HAB-732).
   was indistinguishable and the location-based default (wrap outside a collection) always won.
   It now uses `multiline ?? !isInCollection`, so a `multiline` explicitly passed as `true` or
   `false` always wins, and only an unset one falls back to the per-location default. (HAB-941)
+
+### Security
+
+- Record ids and record-schema query params are now percent-encoded before being placed in a
+  request URL. `getOne`, `update`, `delete` and `callAction` interpolated the record id straight
+  into the path, and `getRecordSchema` joined its `params` into a query string by hand, so a value
+  containing `/`, `&`, `#` or similar could change the request's route or inject extra query
+  params. `getRecordSchema` now builds its query string with `query-string`, already used
+  elsewhere in this package.
+  ([HAB-919](https://sparktech.myjetbrains.com/youtrack/issue/HAB-919))
+- A link is opened only when its URL is `http:`, `https:` or relative, and always with
+  `noopener,noreferrer`. A link action templates record values into its URL (`%{data.website}`),
+  so a `javascript:` URL saved by anyone with write access to that field used to run in the
+  admin's session — through `LinkButton` on click, and through `LinkActionTrigger` with no click
+  at all, since it fires from an effect. The same check now guards `openByMode` (ctrl/shift-click
+  navigation) and the `url` field, which renders an unsafe value as plain text instead of a link.
+  Validation goes through the platform URL parser rather than a pattern match, so the
+  `javascript:` variants that hide an embedded tab or newline inside the scheme are caught too.
+  **Potentially breaking:** a schema shipping a `mailto:` or `tel:` link action stops opening it —
+  use a `string` field with format `email` or `phone` for a contact instead.
+  (HAB-908)
+- **BREAKING:** `createConditionFunction` (which evaluates the schema's `showQuery` /
+  `requiredQuery` conditions) no longer compiles the expression with `new Function` — the previous
+  character-class guard could be bypassed to run arbitrary JavaScript in the admin's session (e.g.
+  `a == Function("…")()`), finding 5 of the
+  HAB-894 security audit. Expressions
+  are now parsed with `jsep` (new dependency) and interpreted over the AST, so no schema text is
+  ever executed and `unsafe-eval` is no longer needed in the CSP. The supported grammar is
+  identifiers with dot paths, string / number / boolean / `null` / `undefined` literals,
+  `==` `!=` `===` `!==` `<` `<=` `>` `>=` comparisons, `&&` / `||` / `!` and parentheses; string
+  literals are no longer restricted to ASCII, and relational operators (previously rejected by the
+  guard) now work. Anything outside the grammar — function calls, arithmetic, indexing,
+  `__proto__` / `constructor` / `prototype` path segments — throws `Invalid expression.` at
+  creation, where such expressions previously either ran as JavaScript or silently evaluated to
+  `false`. The returned function now always returns a `boolean`.
+  (HAB-901)
+- A schema `regex` validation rule is no longer matched against values longer than 1000 characters;
+  those are left to the backend, which enforces the rule anyway. Regex matching backtracks
+  super-linearly on a long input for patterns as ordinary as `^a*a*$` (38 ms at 8 000 characters,
+  0.6 s at 32 000), and validation re-runs on every keystroke. An ambiguous pattern can still
+  occupy the tab on a short value — refusing such patterns was measured against three checkers and
+  dropped, because every one of them also refused ordinary patterns like `^\d+(\.\d+)?$` or
+  `^\w+( \w+)*$`, which would have silently disabled their client-side check. The documentation
+  now states what makes a pattern ambiguous. Found in the
+  HAB-894 security audit.
+  (HAB-920)
+- Fixed the `js-yaml`, `svgo`, `colord` and `decode-uri-component` transitive vulnerabilities
+  found in the HAB-894 security
+  audit (`npm audit fix` plus `overrides` for `decode-uri-component` ≥0.5.0, which was not
+  reachable through `audit fix` alone). Also corrected the `lodash` dependency, which was pinned
+  to the non-existent `^4.18.1` on npm; it now resolves to `^4.17.21`.
+  (HAB-896)
+- `'sms'` is now a recognized `MfaMethod` alongside `'email'`, so a backend can offer SMS as a
+  second-factor verification method and `AuthPage` renders it on the method-selection step.
+  (HAB-883)
+- `snakeCaseToCamelCase` no longer lets an API response replace the prototype of the object it
+  builds. A key that camel-cased to `__proto__` was stored with a plain assignment, which hits the
+  `Object.prototype.__proto__` accessor: instead of adding a key it swapped the result's prototype
+  for a server-supplied value, so the converted schema or record silently read back properties it
+  did not own — and `_.merge`, which copies inherited keys, turned them into real ones. The key is
+  now dropped (`____proto____` was one that reached it), and the conversion reads only the input's
+  own properties.
+  (HAB-921)
+
+### Changed
+
+- List box **default (auto-generated) actions are now scoped by `is_detail`**: when `list.list_actions`
+  is not set, the datagrid toolbar falls back only to the reference's **collection** actions
+  (`show_in_list && !is_detail`, e.g. create/export/bulk), and the per-row buttons fall back only to its
+  **record** actions (`show_in_list && is_detail`, e.g. detail/edit/delete). Previously both used the
+  same `show_in_list` set, so record actions leaked into the list toolbar. The **images box** now
+  scopes its per-image buttons the same way — they too fall back only to record actions, so a
+  collection action like create no longer leaks onto individual images. Explicitly listed actions are
+  unaffected. `is_detail` is the record-vs-collection discriminator (URL with/without a pk). The
+  `generateDescriptorsFromSchema` helper's third argument changed from `onlyDetail: boolean` to
+  `scope: 'detail' | 'list' | 'all'`, and `SchemaButtons`' `onlyDetail` prop is now `scope`.
+- The **images box list-actions toolbar** (`SchemaImagesBoxActions`) now renders its buttons as
+  `size="small"`, `variant="outlined"` (with the filter button matched to `small`), the same compact
+  look as the datagrid list box's list-actions toolbar — replacing the previous `medium`/`contained`
+  buttons. Button color still follows each action's schema `color` (defaulting to `inherit`).
+- The **images box per-image row actions** now render as dense `surface="iconButton"`, `size="small"`
+  buttons, matching the datagrid's per-row actions, instead of the previous default-size buttons.
+- The **images box list-actions toolbar is now hidden entirely when empty** — with no filters and no
+  list actions (e.g. `list.list_actions: []`), `SchemaImagesBoxActions` renders nothing instead of an
+  empty `TopToolbar` taking up space above the image grid.
+- An **empty `list.list_actions` (`[]`) now suppresses** the datagrid toolbar actions instead of
+  triggering the default fallback; only an absent/`undefined` value falls back (aligning it with
+  `row_actions`, where `[]` already meant "none").
+- Box **toolbar actions** (`box.toolbar_actions` and `list.toolbar_actions`) now render as
+  `size="small"`, `variant="contained"` buttons across every box type (simple, list, gallery/images,
+  wizard, array, grid, tab and object), for a consistent header-toolbar look. Footer
+  (`bottom_actions`), the datagrid list-actions toolbar and per-row actions are unchanged.
+- `snakeCaseToCamelCase` converts a key only when it is plain `snake_case` — words of letters and
+  digits joined by single underscores. Any other key is not a valid name of the schema contract and
+  now passes through exactly as it arrived, rather than being rewritten into one neither side
+  recognizes: a run of two or more underscores (the lookup `created_at__gte`), a leading or trailing
+  one (`_target`). The previous conversion collapsed such runs, because its regex counted an
+  underscore as a word character, silently turning `created_at__gte` into `createdAt_gte`. Of the
+  390 property names in `contract/openapi.yaml` only the aggregate bucket key `category__name`
+  converts differently, and it now survives intact.
+  (HAB-921)
+- `AuthPage` no longer switches between the login, forgotten-password and register screens with a
+  MUI `Slide`. All three screens were mounted at once and slid horizontally, so the card flickered
+  and jumped in height as two differently sized screens briefly co-existed. Only the active screen
+  is rendered now, wrapped in a keyed `Fade`, so it fades in cleanly without resizing mid-transition
+  (the horizontal-scroll wrapper that `Slide` needed is gone too).
+  (HAB-883)
+- The auth form layouts (`AuthPage`'s login / forgotten-password / MFA steps and
+  `ResetPasswordPage`) now share one spacing convention matching the design system's auth blueprint:
+  inputs render with `margin="none"` and explicit bottom spacing, right-aligned within a
+  full-width column, replacing the per-form mix of `gap`, default input margins and ad-hoc
+  margin hacks. (HAB-883)
+- **BREAKING:** the account dialog slots now take the **whole dialog**, not just its form, and
+  `BaseAdmin`'s slots are renamed to match `SchemaAdmin` (its source of truth): `updateIdentity` /
+  `changePassword` (`ReactNode | false`) become `UpdateIdentityComponent` / `ChangePasswordComponent`
+  (`FC | false`), the same names and shape `SchemaAdmin` already uses. Both entry points render the
+  component through the account menu with `open` / `onClose` injected; the default
+  `UpdateIdentityDialog` / `ChangePasswordDialog` now own their `CustomDialog`, header and footer
+  Save button and close themselves on a successful submit. Previously the slot was only the dialog's
+  content (a form receiving `onSuccess`) and the dialog chrome was supplied by the library. A custom
+  override must now render its own `CustomDialog` and call `onClose`.
+  (HAB-883)
+- `AvatarField`'s hover UI is reworked: instead of a single frosted "remove" band (whose
+  `backdrop-filter` also smeared the round border, notably inside the MUI `Dialog`), hovering a
+  filled avatar now blurs the image directly (a plain `filter`, clipped by the circle) under a scrim
+  with two explicit `IconButton`s — change and remove — so the two actions are finally distinct. Adds
+  a `ChangeIcon` prop; the default glyphs are `AddAPhoto` (empty / change) and `NoPhotography`
+  (remove). (HAB-883)
+- The update-identity and change-password dialogs now show a subtitle (new
+  `ra.auth.update_identity_subtitle` / `ra.auth.change_password_subtitle` keys, translated in every
+  bundled locale). (HAB-883)
+
+### Removed
+
+- **BREAKING:** `useResourceContextOrUndefined` is removed. Since references name their service,
+  it only fell back to the surrounding `ResourceContext`, which is what React Admin's own
+  `useResourceContext` does — call that one instead: `useResourceContext({resource})` for a
+  reference that may override the context, `useResourceContext()` for the context alone. Our
+  `useResourceContext` is unchanged and still throws when neither resolves. (HAB-987)
+- **BREAKING:** `createPerUserStore` no longer takes `getUserId`: pass the signed-in user as
+  `identity` instead — or use the new `usePerUserStore` hook, which resolves the user and creates a
+  new store when someone else signs in. Backend sync (`backendApi` + `whitelist`) starts only once
+  a user is signed in; an unscoped store stays local. A callback resolved on every access kept one store across a change of
+  user, so what was already on screen stayed with the previous user and could be written under the
+  next one's keys. (HAB-971)
+- **BREAKING:** `UpdateIdentityForm` and `ChangePasswordForm` are removed — they are merged into
+  `UpdateIdentityDialog` / `ChangePasswordDialog`, which are now the full, overridable account
+  dialogs (see the Changed entry above).
+  (HAB-883)
+- **BREAKING:** `DialogActionsPortal` is removed. It only existed so a form nested in an account
+  dialog could portal its Save button into the dialog footer; now that each account dialog owns its
+  own footer, the button sits there directly and the portal is no longer needed.
+  (HAB-883)
+
+### Fixed
 
 - Extended the `design/atoms/**` / `design/molecules/**` / `design/organisms/**` /
   `design/layouts/**` Storybook Controls/"Show code" fix pass to `design/pages/NewOwnerDialog` and

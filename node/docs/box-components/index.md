@@ -16,7 +16,7 @@ the containers it can pick.
 | [SchemaSimpleBox](./simple-box.md) | `simple` | A labelled stack of fields — also the fallback for an unknown type |
 | [SchemaTabBox](./tab-box.md) | `tab` | Tabbed sections, with the open tab kept in the URL |
 | [SchemaWizardBox](./wizard-box.md) | `wizard` | A stepped form that validates each step before advancing |
-| [SchemaGridBox](./grid-box.md) | `grid` / `grid-item` | A responsive 12-column grid |
+| [SchemaGridBox](./grid-box.md) | `grid` | A responsive 12-column grid |
 | [SchemaListBox](./list-box.md) | `list` | An embedded list of a related resource |
 | [SchemaArrayBox](./array-box.md) | `array` | A repeatable group of fields; an array with `array.listed` renders as `SchemaChoicesArrayBox` — one checkbox row per enum value |
 | [SchemaObjectBox](./object-box.md) | `object` | The properties of a nested object |
@@ -40,10 +40,39 @@ Every box type reads these from its `BoxSchema`, whatever the `type`:
 | `card` | `boolean \| null` | Three-state card frame — see [Card frame](#card-frame) |
 | `collapsible` | `'open' \| 'closed'` | Makes the box collapsible and sets its initial state |
 | `boxes` | `BoxItem[]` | Children: nested boxes, field descriptors, or both |
-| `readOnly` | `boolean` | Renders every field inside as a display field |
-| `toolbarActions` | `ActionDescriptor[]` | Buttons in the box header, next to the label |
-| `bottomActions` | `ActionDescriptor[]` | Buttons below the box's fields, e.g. a section-level save |
+| `readOnly` | `boolean` | Closes the box and everything under it — see [Read-only boxes](#read-only-boxes) |
+| `toolbarActions` | `AnyActionDescriptor[]` | Buttons in the box header, next to the label — acting on the box's record, or on what an entry's `reference` addresses |
+| `bottomActions` | `AnyActionDescriptor[]` | Buttons below the box's fields, e.g. a section-level save |
 | `options.dynamicRender` | `DynamicRenderOptions` | `showQuery` / `requiredQuery` — see [SchemaBox](./schema-box.md#conditional-rendering) |
+
+## Read-only boxes
+
+`readOnly: true` on a box renders its fields as display fields instead of inputs — in an `edit` or
+`create` view as much as in a `show` one. Use it for a part of a form that presents data the user
+cannot change here, while the fields themselves stay writeable elsewhere in the same endpoint.
+
+The flag covers the box's **whole subtree**: nested boxes, the rows of an array box, the properties
+of an object box. It only ever closes, never re-opens — a nested box declaring `readOnly: false`
+inside a read-only one stays read-only, which is what the backends emit, since `false` is the box
+default. To keep a part of a form editable, put the flag on the inner boxes rather than on the
+container.
+
+A box is also read-only without the flag when the view is (`list` / `show`), and an array or object
+box is read-only when its target field is `readOnly` in the field schema.
+
+```json
+{
+  "type": "array",
+  "name": "parts",
+  "label": "Rooms",
+  "read_only": true,
+  "array": {"target": "parts", "inline": false},
+  "boxes": [{"type": "field", "name": "kind"}]
+}
+```
+
+A custom box or field that needs the same answer reads
+[`useIsReadOnly`](../hooks/context-hooks.md#useisreadonly), not `viewSchema.type`.
 
 ## Card frame
 

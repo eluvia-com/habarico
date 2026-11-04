@@ -337,13 +337,13 @@ export const getFormData = (
   return {...base, ...viewFormData};
 };
 
-export const getTargetValues = (data: Record<string, string> | undefined) => {
-  if (data && data['_target']) {
-    try {
-      return JSON.parse(data['_target']); // validate that it's a valid JSON
-    } catch {
-      return undefined;
-    }
+/** The `_target` query value parsed, or undefined when it is absent or not valid JSON. */
+export const getTargetValues = (data: Record<string, string | number | boolean> | undefined) => {
+  const raw = data?._target;
+  if (typeof raw !== 'string' || !raw) return undefined;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return undefined;
   }
-  return undefined;
 };

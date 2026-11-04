@@ -11,7 +11,7 @@ module Habarico
         name: generate_name(menu_item),
         mode: generate_mode(menu_item),
         dialog_width: generate_dialog_width(menu_item),
-        endpoint: generate_endpoint(menu_item),
+        reference: generate_reference(menu_item),
         keep_linked_parent: generate_keep_linked_parent(menu_item)
       )
     end
@@ -38,7 +38,7 @@ module Habarico
       menu_item.dialog_width
     end
 
-    def generate_endpoint(menu_item)
+    def generate_reference(menu_item)
       menu_view_endpoint_parameters_generator.generate(menu_item)
     end
 

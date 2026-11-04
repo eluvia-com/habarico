@@ -53,8 +53,8 @@ module Habarico
     # Name of the method Habarico calls (via `send`) as its authentication before_action, on both
     # Habarico::Controller and Habarico::ApplicationController. Point this at an existing no-argument
     # auth method on your ApplicationController (e.g. `:authenticate_user!`) to reuse it directly. If
-    # your auth method needs arguments (e.g. eluvia-auth's `authenticate(['public'])`), define a
-    # one-line wrapper method instead and point this at that.
+    # your auth method takes arguments, define a one-line wrapper method instead and point this at
+    # that.
     mattr_accessor :authenticate_method
     @@authenticate_method = :authenticate_request
 

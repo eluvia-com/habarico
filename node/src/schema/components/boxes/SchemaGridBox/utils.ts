@@ -29,8 +29,14 @@ export const partitionCells = (items: BoxItem[]): GridCell[] => {
   return cells;
 };
 
+// Whether the grid computes the spans of its cells itself. A cell opts the whole grid out by
+// carrying an explicit `gridItem` — a placement any box type may have (HAB-963), so this is read
+// from the placement rather than from the box's type. A field descriptor never carries one.
+export const shouldAutoComputeSpans = (items: BoxItem[]): boolean =>
+  items.every((item) => !(isBoxSchema(item) && item.gridItem));
+
 // Auto-computed responsive spans (up to 4/3/2/1 columns), splitting the parent's 12-col grid across
-// the cells — mirrors the legacy default. Returns empty spans when `grid-item` boxes set them.
+// the cells — mirrors the legacy default. Returns empty spans when the cells set them themselves.
 export const computeAutoSpans = (
   parentColumns: PanelColumns,
   cellCount: number,
@@ -51,8 +57,8 @@ export const computeAutoSpans = (
 // Resolve a cell's actually-rendered span at every breakpoint: its own `gridItem` override where
 // set, else the box's auto-computed span, cascading exactly like `PanelGridItem`'s own defaults
 // (`xs = 12, sm = xs, md = sm, lg = md, xl = lg`) — mirrored here because `computeAutoSpans`
-// returns `{}` for every breakpoint as soon as *any* cell in the box is a `grid-item` box (mixing
-// auto and explicit spans), so `xs/sm/md/lg/xl` can't be used as a reference width on their own.
+// returns `{}` for every breakpoint as soon as *any* cell in the box carries its own `gridItem`
+// (mixing auto and explicit spans), so `xs/sm/md/lg/xl` can't be used as a reference width alone.
 export const resolveCellSpans = (autoSpans: GridSpans, gridItem?: GridSpans): PanelColumns => {
   const xs = gridItem?.xs || autoSpans.xs || 12;
   const sm = gridItem?.sm || autoSpans.sm || xs;

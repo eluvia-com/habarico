@@ -17,6 +17,7 @@ module Habarico
       Habarico::FieldSchema.enum_attr(:type, Types::FIELD_TYPE)
       Habarico::FilterSchema.enum_attr(:type, Types::FIELD_TYPE)
       Habarico::BoxSchema.enum_attr(:type, Types::BOX_TYPE)
+      Habarico::BoxSchema.intended_for_types(*Types::BOX_TYPE)
       Habarico::ActionSchema.enum_attr(:type, Types::ACTION_TYPE)
     end
 
@@ -77,6 +78,15 @@ module Habarico
       Types.register(:BOX_TYPE, :"test-only-value")
 
       assert_includes Habarico::BoxSchema.find_enum_attr(:type).keys, 'test-only-value'
+    end
+
+    # A box of a registered type must deserialize as a BoxSchema, not fall through as a field.
+    def test_registered_box_type_is_one_box_schema_is_intended_for
+      refute_includes Habarico::BoxSchema.intended_for_types, 'test-only-value'
+
+      Types.register(:BOX_TYPE, :"test-only-value")
+
+      assert_includes Habarico::BoxSchema.intended_for_types, 'test-only-value'
     end
 
     def test_registered_action_type_is_accepted_by_action_schema

@@ -13,6 +13,7 @@ and that push is what triggers `publish.yml`.
 |-----|---------|------|
 | `release-next-auto` | push to `next` | Finds libraries whose directory differs from the tag of their current version, bumps each to the next beta, one `Bump version to …` commit, one tag per library, pushes both. |
 | `release-next-final` | manual button | Releases every library sitting on a pre-release: writes the stable version, stamps the changelog, one commit, one tag per library, pushes `next`, fast-forwards `master`, pushes tags, creates `release/<lib>@vX.Y` branches. |
+| `release-patch` | manual button on `release/<lib>@vX.Y` | Bumps the library to its next patch version, stamps the changelog, commits and tags on the maintenance branch; merges nothing back. |
 | `publish` | tag `<lib>@X.Y.Z` | Builds and pushes to the registry. |
 
 ## What it becomes
@@ -22,6 +23,7 @@ and that push is what triggers `publish.yml`.
 | `beta-bump.yml` | push to `next` | Finds libraries whose directory moved since their last bump commit, bumps each to the next beta via `pydev` (continuing an open prerelease cycle, or starting one), one `Bump version to …` commit, no tag, pushes `next`. Publishes nothing — its own push is what starts `publish.yml`. |
 | `publish.yml` | push to `next`, tag `<lib>@X.Y.Z`, and `workflow_dispatch` | The **only** workflow that publishes. On `next` it reads the version straight off the bump commit that triggered its run (nothing derived — see "Version derivation" below); on a tag it publishes the stable artifact and creates a GitHub Release from the changelog section; a manual run publishes one library again at the version its file carries on the chosen ref. Writes nothing to git. |
 | `major.yml` | `workflow_dispatch` | The major button, only with `SHARED_MINOR_MAJOR`. Moves every library onto the first beta of the next major, one `Bump version to …` commit, pushes `next`; that push starts `publish.yml`. |
+| `patch.yml` | `workflow_dispatch` on `release/<lib>@vX.Y` | The patch button. Next patch version of that library, changelog stamped (a generic entry when `[Unreleased]` has none), one commit, pushes the branch, then the tag that starts `publish.yml`. Merges nothing back. |
 | `release.yml` | `workflow_dispatch` | The finalize button. Stamps the changelog, one commit, one tag per library, pushes `next`, fast-forwards `master`, creates maintenance branches. Publishes nothing — the tags it pushes are what start `publish.yml`. |
 
 **One publishing workflow, not several, and no reusable `workflow_call` split.** Every registry
@@ -149,13 +151,13 @@ engineered around, the same call GitLab's own template makes for the equivalent 
 
 ## Credentials
 
-**Writing to the repository** (`release.yml`'s finalize, and `beta-bump.yml`'s bump commit) uses a
-GitHub App token via `actions/create-github-app-token`, not `GITHUB_TOKEN`, in both workflows.
-Pushes made with `GITHUB_TOKEN` deliberately do not start further workflow runs — for `release.yml`
-that would mean the release tags never trigger `publish.yml`; for `beta-bump.yml` it would mean its
-own bump commit never triggers `publish.yml` either, and no beta would ever actually publish. Both
-workflows share the one App, which needs `contents: write` and a ruleset bypass on `next` and
-`master`.
+**Writing to the repository** (`release.yml`'s finalize, `patch.yml`, and `beta-bump.yml`'s bump
+commit) uses a GitHub App token via `actions/create-github-app-token`, not `GITHUB_TOKEN`. Pushes
+made with `GITHUB_TOKEN` deliberately do not start further workflow runs — for `release.yml` and
+`patch.yml` that would mean the release tags never trigger `publish.yml`; for `beta-bump.yml` it
+would mean its own bump commit never triggers `publish.yml` either, and no beta would ever actually
+publish. The workflows share the one App, which needs `contents: write` and a ruleset bypass on `next`,
+`master` and `release/*`.
 
 `publish.yml` itself needs no write token at all — it publishes and writes nothing.
 

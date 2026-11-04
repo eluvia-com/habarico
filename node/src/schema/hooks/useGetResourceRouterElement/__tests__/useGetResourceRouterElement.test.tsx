@@ -49,7 +49,7 @@ const view = (
   type,
   isDetail,
   mode,
-  endpoint: {method: 'get', actionName: name},
+  endpoint: {method: 'get', reference: {service: 'svc', resource: 'res', actionName: name}},
 });
 
 const buildSchema = (views: GlobalViewSchema[]): GlobalResourceSchema => ({

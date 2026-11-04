@@ -50,7 +50,6 @@ class BoxType(str, Enum):
     OBJECT = "object"
     ARRAY = "array"
     GRID = "grid"
-    GRID_ITEM = "grid-item"
     GALLERY = "gallery"
 
 
@@ -110,6 +109,14 @@ class ActionType(str, Enum):
     AI_ASSISTANT = "ai-assistant"
     UPLOAD_FILES = "upload-files"
     EXPORT = "export"
+
+
+class ActionScopeType(str, Enum):
+    """Which of a resource's actions a ``default_actions`` entry expands."""
+
+    LIST = "list"
+    DETAIL = "detail"
+    ALL = "all"
 
 
 class MenuType(str, Enum):

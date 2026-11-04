@@ -3,7 +3,7 @@ import {DynamicText} from '@admin/components/common/DynamicText';
 import {FormStatusLabel} from '@admin/components/common/FormStatusLabel';
 import {Tab, TabProps} from '@mui/material';
 import {useParentBoxContext} from '@schema/contexts/ParentBoxContext';
-import {useViewSchemaContext} from '@schema/contexts/ViewSchemaContext/useViewSchemaContext';
+import {useIsReadOnly} from '@schema/contexts/ReadOnlyBoxContext';
 import {BoxSchema} from '@schema/types';
 
 export type SchemaBoxTabProps = {
@@ -11,7 +11,7 @@ export type SchemaBoxTabProps = {
 } & TabProps;
 
 export const SchemaBoxTab = ({schema, ...props}: SchemaBoxTabProps) => {
-  const {readOnly} = useViewSchemaContext();
+  const readOnly = useIsReadOnly();
   const {getBoxName} = useParentBoxContext();
 
   return readOnly ? (

@@ -7,8 +7,8 @@ class GalleryBoxParametersTest < Minitest::Test
   # ---------------------------------------------------------------------------
 
   def test_reference_is_set
-    params = Habarico::GalleryBoxParameters.new(reference: 'images')
-    assert_equal 'images', params.reference
+    params = Habarico::GalleryBoxParameters.new(reference: Habarico::ResourceReference.build('images'))
+    assert_equal 'images', params.reference.resource
   end
 
   def test_reference_defaults_to_nil
@@ -73,38 +73,23 @@ class GalleryBoxParametersTest < Minitest::Test
   end
 
   # ---------------------------------------------------------------------------
-  # schema_params
+  # reference - one address carrying the query its schema request is made with
   # ---------------------------------------------------------------------------
 
-  def test_schema_params_is_set
-    params = Habarico::GalleryBoxParameters.new(schema_params: { mode: 'full' })
-    assert_equal({ mode: 'full' }, params.schema_params)
+  def test_reference_is_an_address
+    params = Habarico::GalleryBoxParameters.new(reference: Habarico::ResourceReference.build('eshop/images'))
+    assert_equal 'eshop', params.reference.service
+    assert_equal 'images', params.reference.resource
   end
 
-  def test_schema_params_defaults_to_nil
-    params = Habarico::GalleryBoxParameters.new
-    assert_nil params.schema_params
+  def test_the_query_travels_inside_the_reference
+    reference = Habarico::ResourceReference.build('images', params: { 'mode' => 'full' })
+    params = Habarico::GalleryBoxParameters.new(reference: reference)
+    assert_equal({ 'mode' => 'full' }, params.reference.params)
   end
 
-  def test_map_sets_schema_params_as_string_hash
-    params = Habarico::GalleryBoxParameters.map(
-      'reference' => 'images',
-      'schema_params' => { 'mode' => 'full', 'locale' => 'cs' }
-    )
-    assert_equal({ 'mode' => 'full', 'locale' => 'cs' }, params.schema_params)
-  end
-
-  def test_map_coerces_schema_params_values_to_strings
-    params = Habarico::GalleryBoxParameters.map(
-      'reference' => 'images',
-      'schema_params' => { 'page' => 3 }
-    )
-    assert_equal({ 'page' => '3' }, params.schema_params)
-  end
-
-  def test_map_with_nil_schema_params_sets_empty_hash
-    params = Habarico::GalleryBoxParameters.map('reference' => 'images')
-    assert_equal({}, params.schema_params)
+  def test_no_schema_params_attribute_remains
+    refute Habarico::GalleryBoxParameters.new.respond_to?(:schema_params)
   end
 
   # ---------------------------------------------------------------------------

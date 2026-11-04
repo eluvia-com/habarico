@@ -8,6 +8,7 @@ import {SchemaCreateButton} from '@schema/components/buttons/SchemaCreateButton'
 import {FieldSchema, ItemFieldSchema} from '@schema/types';
 import {convertApiSortToRaSort} from '@schema/utils/api';
 import {FIELD_DEFAULT} from '@schema/utils/fieldSelection';
+import {resourceKey} from '@schema/utils/resourceReference';
 import {SchemaTreeReferenceArrayInput} from './SchemaTreeReferenceArrayInput';
 
 export type SchemaReferenceArrayInputProps = InputProps & {
@@ -24,7 +25,7 @@ export const SchemaReferenceArrayInput = ({
   ...rest
 }: SchemaReferenceArrayInputProps) => {
   const [focused, setFocused] = useState(false);
-  const reference = useResourceContext(items.reference);
+  const reference = useResourceContext(resourceKey(items.reference));
   const [locale] = useLocaleState();
 
   if (!items.reference) {

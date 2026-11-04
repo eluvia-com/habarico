@@ -37,7 +37,7 @@ records of another resource use [SchemaArrayInput](./array-input.mdx).
 {"name": "items", "type": "array",
  "items": {"type": "object",
    "properties": [
-     {"name": "product", "type": "integer", "format": "relation", "reference": "eshop/product"},
+     {"name": "product", "type": "integer", "format": "relation", "reference": {"resource": "product"}},
      {"name": "quantity", "type": "integer", "required": true}
    ]}}
 ```

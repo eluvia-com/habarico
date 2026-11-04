@@ -5,24 +5,25 @@ from .base import BaseSchema
 from .boxes import BaseBox, Boxes, generate_boxes_descriptor
 from .fields import Filters, SortingOrStr, generate_filters_descriptor, generate_sorting_descriptor
 from .menu import MenuSchema
+from .reference import ResourceReference
 from .types import ViewModeType, ViewType
 
 
 class ViewEndpointParameters(BaseSchema):
 
-    def __init__(self, *, method: str, reference: str | None = None, action_name: str | None, path: str | None = None):
+    def __init__(self, *, method: str, reference: ResourceReference | None = None, path: str | None = None):
         """
         Object represents schema of the endpoint parameters.
 
         Args:
             method (str): Method of the endpoint.
-            reference (str, optional): Reference of the endpoint. Defaults to None.
-            action_name (str, optional): Action name of the endpoint. Defaults to None.
+            reference (ResourceReference, optional): What the endpoint addresses — the resource, and
+                where applicable the record and the action. Defaults to None, which the client reads
+                as the resource the schema was generated for.
             path (str, optional): Path of the endpoint. Defaults to None.
         """
         self._method = method
         self._reference = reference
-        self._action_name = action_name
         self._path = path
 
 

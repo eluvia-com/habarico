@@ -19,7 +19,7 @@ common customization points. All slots accept a `ReactNode` and can be set in tw
 | `listActions`    |     ✓      |     —      |      —       |     —      |
 
 > **Note:** `SchemaAction` renders its title and toolbar directly from `ViewSchema.label` /
-> `ViewSchema.detail.toolbarActions` and its form actions from `SchemaFormActions`. It does not currently
+> `ViewSchema.detail.toolbarActions` and its form actions from `SchemaFormActions`. It does not
 > expose these as top-level props — customize via the `children` prop instead.
 
 ## `title`
@@ -30,7 +30,7 @@ a `DynamicText` node (supports translations).
 - **Default on list views** — `<SchemaViewTitle />` — shows `viewSchema.label`.
 - **Default on detail/edit views** — the same `<SchemaViewTitle />`: it shows `viewSchema.label`
   when set, and falls back to the record's `meta.repr` when the view is opened in a dialog without a
-  label. (The separate `DetailSchemaViewTitle` was folded into it.)
+  label.
 
 ```tsx
 // Hide the title entirely
@@ -74,11 +74,17 @@ screens), elsewhere three to five depending on the breakpoint; the rest collapse
 
 **Backend schema fields:**
 
-- `ListViewParameters.toolbarActions` — array of `ActionDescriptor` for list views.
-- `DetailViewParameters.toolbarActions` — array of `ActionDescriptor` for detail/edit/show views.
+- `ListViewParameters.toolbarActions` — the action slot of list views.
+- `DetailViewParameters.toolbarActions` — the action slot of detail/edit/show views.
 
 Each `ActionDescriptor` references an action by `name`. The library resolves the button type (create,
 edit, custom action, …) from the resource schema automatically.
+
+A slot renders exactly what it lists: absent or empty, it renders nothing — the frontend never adds
+the resource's actions on its own. A `DefaultActionsDescriptor` entry (`{type: 'default_actions'}`)
+stands for them instead, and expands into one button per action of its `scope` (`list`, `detail` or
+`all`); a backend sends it for every slot its author left unset. See
+[ActionDescriptor](../types-and-schemas/view-schema-and-action-schema.md#defaultactionsdescriptor).
 
 ## `formActions`
 

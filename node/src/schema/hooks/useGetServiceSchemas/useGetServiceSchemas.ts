@@ -1,6 +1,7 @@
 import {UserIdentity} from 'react-admin';
 import {SchemaProvider} from '@schema/providers/types';
 import {ServicesSchema} from '@schema/types';
+import {resolveReferences} from '@schema/utils/resourceReference';
 import {useQueries} from '@tanstack/react-query';
 import {ServiceConfigMap} from '@typing';
 
@@ -24,7 +25,10 @@ export function useGetServiceSchemas(
         return {
           queryKey: ['serviceSchema', key, locale, identity?.id],
           queryFn: async () => {
-            return await schemaProvider.getServiceSchema(key, config.url, {meta: {locale}});
+            const schema = await schemaProvider.getServiceSchema(key, config.url, {
+              meta: {locale},
+            });
+            return resolveReferences(schema, key);
           },
         };
       }),

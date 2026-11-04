@@ -31,7 +31,11 @@ vi.mock('@schema/hooks/useGlobalResourceSchemaContext', () => ({
   useGlobalResourceSchemaContext: () => ({schema: {name: 'tag'}}),
 }));
 
-const items = {reference: 'eshop/tag'} as ItemFieldSchema;
+const items: ItemFieldSchema = {
+  type: 'integer',
+  format: 'relation',
+  reference: {service: 'eshop', resource: 'tag'},
+};
 
 const renderField = (
   props: Partial<React.ComponentProps<typeof SchemaReferenceArrayField>> = {},

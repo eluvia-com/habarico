@@ -13,11 +13,10 @@ module Habarico
       # no limit. Mirrors the Python `HABARICO_PREFERENCES["MAX_VALUE_BYTES"]` setting.
       #
       # The values below sit an order of magnitude above what the frontend actually writes:
-      # 100 datagrid columns are ~2 KB of `columns`/`columnWidths`, a 30-widget dashboard
-      # ~19 KB and 20 saved queries ~11 KB at their fullest.
+      # 100 datagrid columns are ~2 KB of `columns`/`columnWidths` and 20 saved queries ~11 KB at
+      # their fullest. A package registering its own key brings its own limit with it.
       mattr_accessor :max_value_bytes, default: {
         "default" => 16 * 1024,
-        "preferences.dashboard" => 32 * 1024,
         %r{[a-zA-Z][a-zA-Z0-9_./-]*\.savedQueries} => 32 * 1024,
       }
 

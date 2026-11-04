@@ -11,7 +11,7 @@ import {templateToStr} from '@foundation/utils/template';
 import {Box, FormHelperText, Stack, Theme} from '@mui/material';
 import {FieldSchemaMapProvider} from '@schema/contexts/FieldSchemaMapContext';
 import {useFieldSchemaMapContext} from '@schema/contexts/FieldSchemaMapContext/useFieldSchemaMapContext';
-import {useViewSchemaContext} from '@schema/contexts/ViewSchemaContext/useViewSchemaContext';
+import {useIsReadOnly} from '@schema/contexts/ReadOnlyBoxContext';
 import {FieldDescriptor} from '@schema/types';
 import {generateFieldSchemaMap} from '@schema/utils/generateFieldSchemaMap';
 import {SchemaFieldOrInput} from '../SchemaFieldOrInput';
@@ -43,7 +43,7 @@ export const SchemaWrappedFields = ({
     () => generateFieldSchemaMap(fieldSchemaValues, fields),
     [fieldSchemaValues, fields]
   );
-  const {readOnly} = useViewSchemaContext();
+  const readOnly = useIsReadOnly();
   const {isInCollection} = useValueLocationContext();
 
   if (fields.length === 0) return;

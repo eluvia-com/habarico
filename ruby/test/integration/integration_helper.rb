@@ -87,7 +87,7 @@ Habarico::IntegrationHarness.setup!
 #
 # Habarico's search discovers enum ("choices") fields through a small duck-typed contract: the
 # model class answers `has_enum_attr?` / `find_enum_attr`, and each record exposes a `{field}_obj`
-# accessor returning the matched choice hash (`SearchMatcher`, `FieldResolver`, `SearchHighlighter`
+# accessor returning the matched choice hash (`SearchMatcher`, `FieldPathResolver`, `SearchHighlighter`
 # consume nothing else). We implement exactly that contract here rather than mixing in the real
 # `Eluvia::ActiveModel::EnumAttribute`: that module's DTO-oriented `initialize` is incompatible with
 # ActiveRecord on Rails 7.1, where it runs `assign_attributes` before `@attributes` is built and

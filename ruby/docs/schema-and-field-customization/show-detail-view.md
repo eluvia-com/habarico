@@ -22,12 +22,12 @@ Habarico::ShowView.new(
         boxes: [
           Habarico::GridBox.new(
             boxes: [
-              Habarico::GridItemBox.new(
-                md: 6,
+              Habarico::Box.new(
+                grid_item: { md: 6 },
                 boxes: [:product, :customer, :status],
               ),
-              Habarico::GridItemBox.new(
-                md: 6,
+              Habarico::Box.new(
+                grid_item: { md: 6 },
                 boxes: [:placed_at, :delivered_at, :outstanding_amount],
               ),
             ]
@@ -44,7 +44,8 @@ Habarico::ShowView.new(
             target: 'order',
             boxes: [:maturity_date, :amount_major, :status],
             row_actions: [:show, :edit],
-            list_toolbar_actions: [:create],
+            # The box has one toolbar, in its header; `LIST` is the resource the box lists
+            toolbar_actions: [Habarico::ActionReference.new(name: 'create', reference: Habarico::ResourceReference::LIST)],
             default_sorting: 'maturity_date:asc',
           ),
         ]
@@ -59,9 +60,10 @@ Habarico::ShowView.new(
             target: 'order',
             boxes: [:title, :reported_at, :status],
             row_actions: [:show, :edit],
-            list_toolbar_actions: [
+            toolbar_actions: [
               Habarico::ActionReference.new(
                 name: 'create',
+                reference: Habarico::ResourceReference::LIST,
                 permission: :update,
                 if: ->(c) { c.record&.guarantee_usable? },
               ),
