@@ -1,0 +1,176 @@
+---
+title: Actions and dialogs
+sidebar_position: 4
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+Operations that are not create, read, update or delete: publishing a product, refunding an order,
+closing an accounting period.
+
+An action is two declarations on the backend: the **endpoint** that does the work, and the entry in
+the resource **schema** that turns it into a button. Both live in the backend; the frontend needs no
+change either way. Whether the button asks for confirmation, opens a form, or runs in the
+background is part of the schema entry.
+
+## Three shapes of action
+
+| Shape | The user sees | Declare it with |
+|---|---|---|
+| Immediate | A button that acts at once | An action with no form and no dialog |
+| Confirmed | A confirmation dialog first | A confirm dialog on the action |
+| Form-driven | A form collecting parameters | An action view with its own fields |
+
+## An immediate action
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+from rest_framework.decorators import action
+from habarico import ModelAdmin
+from habarico.response import ActionResponse
+from habarico.schema.generators import RequestMethodType, ResourceActionSchemaGenerator
+from habarico.views import AdminModelViewSet
+
+
+class ProductViewSet(AdminModelViewSet):
+    @action(detail=True, methods=["post"], url_path="publish")
+    def publish(self, request, pk=None):
+        product = self.get_object()
+        product.status = "published"
+        product.save(update_fields=["status"])
+        return ActionResponse(message="Product published.")
+
+
+class ProductAdmin(ModelAdmin):
+    model = Product
+    base_viewset = ProductViewSet
+    action_schema_generators = [
+        ResourceActionSchemaGenerator(
+            name="publish",
+            endpoint_action_name="publish",
+            is_detail=True,
+            method=RequestMethodType.POST,
+            label="Publish",
+        ),
+    ]
+```
+
+`ActionResponse` builds the `meta` envelope the frontend reads; the `@action` alone is only the
+endpoint, and without the generator no button is rendered.
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+register_action :publish, method: :put, permission: :update do
+  @record.update!(status: :published)
+  Habarico::Response.new(message: 'Product published.')
+end
+
+actions [
+  :show,
+  :edit,
+  Habarico::ResourceAction.new(
+    name: 'publish',
+    label: 'Publish',
+    is_detail: true,
+    endpoint_method: :put,
+    permission: :update,
+  ),
+]
+```
+
+`register_action` defines the endpoint and routes it; the entry in `actions` is what puts the
+button in the schema.
+
+</TabItem>
+</Tabs>
+
+## A confirmed action
+
+Confirmation is a property of the action, not of the button:
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+ResourceActionSchemaGenerator(
+    name="close_accounting_period",
+    endpoint_action_name="close_accounting_period",
+    is_detail=True,
+    method=RequestMethodType.PUT,
+    label="Close period",
+    confirm_dialog_title="Close the accounting period?",
+    confirm_dialog_message="Orders in this period can no longer be edited.",
+)
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+Habarico::ResourceAction.new(
+  name: 'close_accounting_period',
+  label: 'Close period',
+  endpoint_method: :put,
+  confirm_dialog_title: 'Close the accounting period?',
+  confirm_dialog_message: 'Orders in this period can no longer be edited.',
+)
+```
+
+</TabItem>
+</Tabs>
+
+:::caution
+The confirmation keys belong to the action, so they exist on `ResourceAction` and `ViewAction` —
+not on the plain `Habarico::ActionReference` a menu entry uses. A Ruby definition object ignores a
+key it does not declare without a word, so a confirmation put on the wrong class simply never
+appears.
+:::
+
+The confirmation texts reach the button through the schema, so a custom button built with the
+[ButtonProvider](/node/providers/button-provider) must pass them on — dropping them silently
+removes a confirmation the backend asked for.
+
+## A form-driven action
+
+An action that needs input gets its own view: the schema for
+`…/{id}/{action}/schema/` describes the fields, and
+[SchemaAction](/node/view-components/schema-action-component) renders them as a form.
+
+Because the schema is fetched per record, the same action can ask for different fields on
+different records — and an action a user may not run simply is not in their schema.
+
+## Long-running actions
+
+A response whose `meta.state` is `running` turns the action into a background task: the frontend
+polls the same endpoint every five seconds and notifies on each state change.
+
+```json
+{"meta": {"state": "running", "message": "Generating invoices…"}}
+```
+
+When the final response arrives with `state: "success"`, the record and its schema are refreshed —
+so an action that changes what a record allows updates its own buttons.
+
+:::tip
+Set `isBackground` when you call the action from your own button
+([useCallAction](/node/hooks/use-call-action)): on mount it asks for the current state, which is
+what lets a task survive a page reload.
+:::
+
+## Chaining actions
+
+A response may carry `meta.triggerAction`, another action schema. The frontend runs it as soon as
+the first one finishes — how a "refund" action can lead straight into a "print credit note" form
+without the user going looking for it.
+
+## See also
+
+- [Custom actions](/ruby/schema-and-field-customization/custom-actions) — the Ruby DSL in full
+- [Action view schema generator](/python/view-generators/action-view-schema-generator) — the Python side
+- [SchemaButtons](/node/navigation-components/schema-buttons-component) — where the buttons appear
+- [useCallAction](/node/hooks/use-call-action) — calling an action from your own UI

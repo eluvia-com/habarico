@@ -1,0 +1,151 @@
+---
+title: Forms and layout
+sidebar_position: 3
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+Arranging a form: boxes, tabs and grids, fields that appear only when they are relevant, and where
+validation belongs.
+
+Without any layout declaration a form is a plain stack of every editable field. That is fine for
+five fields and unusable for twenty-five.
+
+## Boxes are the layout
+
+A view's layout is a tree of boxes. Each box type maps to a container component on the frontend:
+
+| Box | Renders as |
+|---|---|
+| `simple` | [A plain stack](/node/box-components/simple-box) — the fallback |
+| `grid` / `grid-item` | [A responsive grid](/node/box-components/grid-box) |
+| `tab` / `tab-item` | [Tabs](/node/box-components/tab-box), with the open tab kept in the URL |
+| `wizard` | [A stepped form](/node/box-components/wizard-box) |
+| `object` | [The properties of a nested object](/node/box-components/object-box) |
+| `array` | [A repeatable list of objects](/node/box-components/array-box) |
+| `list` | [An embedded list of a related resource](/node/box-components/list-box) |
+| `gallery` | [An image carousel](/node/box-components/gallery-box) |
+
+## A tabbed edit form
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+from habarico.schema.boxes import Box, TabBox
+from habarico.schema.generators import EditViewSchemaGenerator
+
+
+class ProductAdmin(ModelAdmin):
+    model = Product
+    fields = ["name", "sku", "description", "status", "category", "price", "stock", "created_at"]
+    view_schema_generators = [
+        EditViewSchemaGenerator(
+            box=TabBox(
+                boxes=[
+                    Box(label="Basics", boxes=["name", "sku", "description"]),
+                    Box(label="Pricing", boxes=["price", "stock"]),
+                    Box(label="Publishing", boxes=["status", "category"]),
+                    Box(label="Audit", read_only=True, boxes=["created_at"]),
+                ]
+            )
+        ),
+    ]
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+views [
+  Habarico::EditView.new(
+    box: Habarico::TabBox.new(
+      boxes: [
+        Habarico::TabItemBox.new(label: 'Basics', boxes: [:name, :sku, :description]),
+        Habarico::TabItemBox.new(label: 'Pricing', boxes: [:price, :stock]),
+        Habarico::TabItemBox.new(label: 'Publishing', boxes: [:status, :category]),
+      ]
+    )
+  ),
+]
+```
+
+</TabItem>
+</Tabs>
+
+## Fields that appear conditionally
+
+`dynamicRender` carries two condition expressions evaluated against the form's current values:
+`showQuery` decides visibility, `requiredQuery` decides whether the field is required. Both are
+re-evaluated as the user types, so a form can react without any frontend code.
+
+The grammar is a deliberately small subset of JavaScript — dot paths, literals, the comparison
+operators, `!`, `&&`, `||` and parentheses. Nothing is compiled, so the admin runs under a CSP
+without `unsafe-eval`; anything outside the subset (a call, arithmetic, an index) is rejected when
+the expression is parsed. The values are addressed under `data` — the form's current values on top
+of the record — with `record`, `formData` and `parent` available beside it.
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+from habarico.schema import Field
+
+fields = [
+    "shipping_method",
+    Field(
+        name="pickup_point",
+        show_query="data.shipping_method === 'pickup'",
+        required_query="data.shipping_method === 'pickup'",
+    ),
+]
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+fields [
+  :shipping_method,
+  Habarico::FieldReference.new(
+    name: :pickup_point,
+    show_query: "data.shipping_method === 'pickup'",
+    required_query: "data.shipping_method === 'pickup'",
+  ),
+]
+```
+
+</TabItem>
+</Tabs>
+
+:::caution
+A hidden field is hidden, not absent. `showQuery` is a UI convenience — the backend still has to
+validate that a pickup point was supplied when the shipping method demands one.
+:::
+
+## Nested and repeatable data
+
+An object field with `properties` becomes a
+[SchemaObjectInput](/node/input-components/object-input); an array of objects becomes a
+[SchemaObjectArrayInput](/node/input-components/object-array-input) with add and remove controls.
+Both submit as one payload with the parent record, so the backend serializer is what creates,
+updates and deletes the rows — see [Nested serializers](/python/basic-usage/nested-serializers).
+
+## Where validation belongs
+
+| Rule | Declare it |
+|---|---|
+| Required, max length, type | On the backend — it reaches the form through the schema |
+| Cross-field consistency | On the backend, and optionally as `validate` on the input for immediate feedback |
+| Anything security-relevant | On the backend, always |
+
+The frontend's `validate` prop exists to save a round trip, never to enforce a rule.
+
+## See also
+
+- [Form schema generators](/python/view-generators/form-schema-generators) — the Python side in full
+- [Create/edit view boxes](/ruby/schema-and-field-customization/create-edit-view-boxes) — the Ruby side
+- [Box components](/node/box-components/) — the containers doing the rendering, one page each
+- [Layout components](/node/layout-components/) — the page shells they render inside
+- [SchemaEdit](/node/view-components/schema-edit-component) — the view around the form

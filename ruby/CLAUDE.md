@@ -147,7 +147,7 @@ The full DSL reference — field types, view layouts, custom actions and a compl
 example — is at [docs.habarico.com/ruby](https://docs.habarico.com/ruby/intro).
 
 Where Ruby and Python differ (an enum the gem does not emit yet, a subsystem only one side has),
-say so on `concepts/backend-parity.md` in the `hab-docs` repository — that page is what a reader
+say so on `concepts/backend-parity.md` at the root of this monorepo — that page is what a reader
 checks before picking a backend, and a stale claim there is worse than none.
 
 **Verifying a page.** The site is built in a checkout of `hab-docs`, which reads the pages from
@@ -161,4 +161,4 @@ HABARICO_PATH=<this monorepo> npm run build   # fails on a broken link
 
 `onBrokenLinks: throw` covers the whole site, free and premium pages together, so a renamed heading
 or a moved page fails here rather than at publish time. The `docs-check` workflow runs the same build on
-every pull request that touches `*/docs/**`.
+every pull request that touches `*/docs/**` or `concepts/**`.

@@ -50,10 +50,13 @@ from `contract/openapi.yaml`, and the shared concepts:
 - [Python — `habarico`](https://docs.habarico.com/python/intro)
 - [Ruby — `habarico`](https://docs.habarico.com/ruby/intro)
 - [API reference](https://docs.habarico.com/api) — the contract between backend and frontend
+- [Concepts](https://docs.habarico.com/concepts/intro) — how it works, backend parity, versioning
+  and guides spanning the libraries
 
-The pages live beside the code they document, in `node/docs/`, `python/docs/` and `ruby/docs/`;
-write documentation there, not in the READMEs. Each library's README is a quick start — install, a
-minimal example, and a link to the site. The site itself is built from a separate, private
+The pages live beside the code they document, in `node/docs/`, `python/docs/` and `ruby/docs/`,
+and the pages spanning the libraries in `concepts/`; write documentation there, not in the
+READMEs. Each library's README is a quick start — install, a minimal example, and a link to the
+site. The site itself is built from a separate, private
 repository, so contributors change the pages here and the published site follows with the next
 release.
 

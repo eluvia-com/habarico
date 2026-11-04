@@ -1,0 +1,43 @@
+---
+title: What is Habarico
+sidebar_position: 1
+---
+
+Habarico is a **schema-driven admin framework** for building CMS/ERP-style back-office
+applications. The backend describes its resources — fields, views, actions and permissions — as a
+JSON schema, and the frontend renders a complete admin interface from that schema at runtime. You
+define models and a thin configuration layer; Habarico generates the rest.
+
+It ships as three independent libraries that share one contract:
+
+| Library | Package | Documentation |
+| --- | --- | --- |
+| Django REST Framework admin library | `habarico` (PyPI) | [Python](/python/intro) |
+| Rails engine | `habarico` (gem) | [Ruby](/ruby/intro) |
+| React/TypeScript UI library (React Admin 5.14 + MUI v7) | `habarico` (npm) | [Node](/node/intro) |
+
+Pick one backend, add the frontend, and the two halves fit together without any glue code written
+per resource — that is what the [shared contract](/api) buys you.
+
+## Why schema-driven
+
+An admin interface for a CMS or an ERP is mostly repetition: every entity needs a list with
+filters, a detail page, a form, and a handful of actions. Writing those screens by hand means the
+same layout code once per entity, and every change to a model has to be mirrored in the UI.
+
+Habarico moves that description into the backend, where the model already lives. The frontend
+receives it as a schema and does the rendering. Adding a field to a resource is a backend change;
+the admin picks it up on the next request.
+
+Nothing is locked down: individual fields, inputs, buttons and layout containers can be replaced
+with your own React components, globally or per resource — see
+[providers](/node/providers/).
+
+## Where to go next
+
+- [Quickstart](./guides/quickstart.mdx) — a working admin for one resource, backend and frontend
+- [Guides](/concepts/guides) — task-oriented walkthroughs across the two halves
+- [How it works](./how-it-works.md) — the request flow between the two halves
+- [Python and Ruby parity](./backend-parity.md) — what each backend supports before you pick one
+- [Versioning](./versioning.md) — how the three packages and the contract are versioned
+- [API reference](/api) — the REST contract, generated from the OpenAPI specification
