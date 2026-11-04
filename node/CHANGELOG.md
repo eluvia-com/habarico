@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Every input draws its border in the theme's `palette.divider`. The date, date-time and time
+  pickers used MUI X's own grey (and a different one when disabled); `InputLayout`
+  (`UploadInput`, `TreeArrayInput`), `SchemaWrappedFields` and `SchemaRangeInput` each used a grey of
+  their own. The pickers take the color and the field tint from new `MuiPickersOutlinedInput` and
+  `MuiPickersInputBase` theme overrides. (HAB-1018)
+- A click on a menu group (an item with sub-items) navigated to its first child and only then
+  expanded it. The group now opens or closes its sub-menu in place, and the page changes only once a
+  child is clicked; it is rendered as a button with `aria-expanded` rather than a link. A group
+  holding the current page still starts open and reopens whenever navigation leads into it. In the
+  collapsed rail a click opens the group's sub-menu at once, as hovering does, so it works on touch
+  screens too. The mobile drawer stays open while a group is expanded. (HAB-996)
+- `SchemaAdmin` no longer remounts the admin when `extraMenuItems` or `search` arrives as a new
+  reference. The component given to React Admin's `layout` was rebuilt whenever either slot changed
+  identity, and a new layout type unmounts the whole tree below it — so an application passing
+  `extraMenuItems` inline (or merely re-rendering for an unrelated reason, such as an auth token
+  refresh) silently lost the open form's unsaved values, with the URL unchanged. Both slots now
+  reach `SchemaLayout` through a context and the layout component is a module-level constant, so a
+  change of their *contents* still rebuilds the menu and the search overlay while the admin, the
+  open form and its values stay mounted. Neither slot has to be memoized by the application any
+  more.
+- `BaseAdmin` memoizes its light and dark themes on the `lightTheme` / `darkTheme` props, as
+  `SchemaAdmin` already did: a fresh theme object on every render re-created the MUI theme and
+  re-rendered the whole admin below it.
 ### Added
 
 - `DashboardGridPanelLayout` gained an optional `stackedH` — the panel's height in grid rows when

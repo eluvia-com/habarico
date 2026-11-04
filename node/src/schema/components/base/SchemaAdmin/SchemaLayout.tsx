@@ -14,12 +14,14 @@ import {useHasGlobalSearch} from './useHasGlobalSearch';
 import {useSchemaMenu} from './useSchemaMenu';
 
 export type SchemaLayoutProps = CoreLayoutProps & {
-  // Custom top-level items merged into the schema-generated menu. Threaded in from `SchemaAdmin`
-  // through the `layout` closure (see `SchemaAdminRuntime`), NOT the shared `AdminConfigContext`: it is a
-  // schema-layer concern that feeds `useSchemaMenu`, which must run here — inside `<Admin>`, where
-  // the resource definitions exist and the admin-shell config has already been assembled.
+  // Custom top-level items merged into the schema-generated menu. Filled in by
+  // `SchemaLayoutWithSlots` from `SchemaLayoutBindingContext` (see `SchemaAdminRuntime`), NOT by the
+  // shared `AdminConfigContext`: it is a schema-layer concern that feeds `useSchemaMenu`, which must
+  // run here — inside `<Admin>`, where the resource definitions exist and the admin-shell config has
+  // already been assembled. A new array on every render is fine: it reaches this layout as a prop
+  // value, never as part of the layout component's identity.
   extraMenuItems?: ExtraMenuItem[];
-  // Renders the global search overlay's contents. Threaded in the same way and for the same reason:
+  // Renders the global search overlay's contents. Filled in the same way and for the same reason:
   // it is a schema-layer concern, and the library ships no such component — the results come from an
   // endpoint the free schema does not describe, so the application supplies one.
   search?: SearchComponentType;
@@ -31,7 +33,7 @@ export type SchemaLayoutProps = CoreLayoutProps & {
  * app-level config from `AdminConfigContext` (logo, languages, marketing / status footers, the
  * update-identity / change-password nodes), while `AdminDashboardLayout` owns the settings / i18n
  * and the account menu / auth dialogs. The schema menu is generated here (not carried in the config)
- * and merged with `extraMenuItems` passed in as a prop.
+ * and merged with the `extraMenuItems` the layout receives as a prop.
  */
 export const SchemaLayout = ({children, extraMenuItems, search}: SchemaLayoutProps) => {
   const translate = useTranslate();

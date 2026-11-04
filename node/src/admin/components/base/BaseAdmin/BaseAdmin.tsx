@@ -1,4 +1,4 @@
-import React, {ComponentType, FC, ReactNode} from 'react';
+import React, {ComponentType, FC, ReactNode, useMemo} from 'react';
 import {
   AdminContext,
   AdminUI,
@@ -148,8 +148,20 @@ export const BaseAdmin = ({
   // Always run the RA defaults, even over a caller-supplied theme — `lightTheme`/`darkTheme` stay
   // `object` (mirroring RA's own loose `<Admin>` theme prop) rather than `Theme`, since a caller may
   // pass raw `ThemeOptions` rather than a built theme.
-  const lightTheme = withRaDefaults((lightThemeProp ?? createLightTheme()) as Theme);
-  const darkTheme = withRaDefaults((darkThemeProp ?? createDarkTheme()) as Theme);
+  //
+  // Memoized on the incoming props, as `SchemaAdminRuntime` does and for the same reason: React
+  // Admin's `ThemeProvider` keys its `createTheme()` cache on the theme object's identity, so a
+  // fresh one on every render re-creates the MUI theme and re-renders (and re-serializes every `sx`
+  // in) the whole admin below it. An application passing its theme inline
+  // (`lightTheme={createLightTheme()}`) still defeats this — memoize it at the call site too.
+  const lightTheme = useMemo(
+    () => withRaDefaults((lightThemeProp ?? createLightTheme()) as Theme),
+    [lightThemeProp]
+  );
+  const darkTheme = useMemo(
+    () => withRaDefaults((darkThemeProp ?? createDarkTheme()) as Theme),
+    [darkThemeProp]
+  );
 
   return (
     <AdminConfigProvider
