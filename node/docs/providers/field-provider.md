@@ -80,6 +80,25 @@ text that the surrounding layout expects; a component that ignores them renders 
 isolation and wrongly inside a datagrid.
 :::
 
+### Not for a project-wide look
+
+A provider is the wrong tool for "every reference in this project is a text link, every boolean a
+word". That is [fieldDefaults](../base-components/field-defaults.md):
+
+```tsx
+<SchemaAdmin fieldDefaults={{reference: 'link', boolean: 'text', choices: 'text'}} ... />
+```
+
+Written as a provider, the same thing has to restate the dispatch `defaultFieldProvider` already
+does — which formats are references, which arrays carry one — just to pass one prop, and the
+application then owns conditions the library is free to change under it. `fieldDefaults` says only
+what it means, and still composes with a provider: the field's `variant` prop wins over the
+defaults, so a provider returning `<SchemaReferenceField variant="chip" />` keeps its chip inside an
+admin that asked for links.
+
+Reach for a provider when the shape depends on something only the application knows — one field, one
+resource, a value of the record.
+
 ## Default mapping
 
 When no provider claims a field, `defaultFieldProvider` decides — its table is on the

@@ -119,7 +119,7 @@ export * from './providers/types';
 
 // Utils
 export {type ApiError, extractErrorMessage, handleErrorResponse} from './utils/api';
-export {type Choice, type Choices, resolveChoice} from './utils/choices';
+export {type Choice, type Choices, choicesCarryColor, resolveChoice} from './utils/choices';
 export {
   type BackendApi,
   type BackendStoreConfig,

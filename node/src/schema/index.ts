@@ -22,6 +22,7 @@ export * from './providers/types';
 
 // Contexts — the schema context ring (resource / view / box / field schema state).
 export * from './contexts/ActionSchemaContext';
+export * from './contexts/FieldDefaultsContext';
 export * from './contexts/FieldSchemaContext';
 export * from './contexts/FieldSchemaMapContext';
 export * from './contexts/MethodSchemaContext';

@@ -12,6 +12,10 @@ const COLORS = ['default', 'primary', 'secondary', 'info', 'success', 'warning',
 // pre-resolved `icon` element (resolution is the caller's job), so the story resolves it in `render`.
 type PlaygroundArgs = React.ComponentProps<typeof EnumChip> & {iconName: string};
 
+// Names the stories below render, all present in `@mui/icons-material` — the options of the
+// Playground's icon control.
+const ICON_NAMES = ['CheckCircle', 'Warning', 'Cancel', 'Circle', 'Schedule', 'Flag'] as const;
+
 const meta: Meta<PlaygroundArgs> = {
   title: 'design/molecules/EnumChip',
   component: EnumChip,
@@ -31,7 +35,14 @@ const meta: Meta<PlaygroundArgs> = {
     controls: {include: ['iconName', 'label', 'color']},
   },
   argTypes: {
-    iconName: {control: 'text', description: 'MUI icon name (from `@mui/icons-material`).'},
+    // A select, not free text: `resolveEnumIcon` warns and returns `null` for a name that is not in
+    // `@mui/icons-material`, so every keystroke of a half-typed name silently renders a chip with no
+    // icon. These six all resolve.
+    iconName: {
+      control: 'select',
+      options: ICON_NAMES,
+      description: 'MUI icon name (from `@mui/icons-material`).',
+    },
     label: {control: 'text'},
     color: {control: 'select', options: COLORS},
   },

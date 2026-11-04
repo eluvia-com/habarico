@@ -7,9 +7,14 @@ import {
   ValueLocationContextProvider,
   useValueLocationContext,
 } from '@design/contexts/ValueLocationContext';
-import {SchemaRecordRepresentationChip} from '@schema/components/fields/SchemaRecordRepresentationChip';
+import {SchemaRecordRepresentation} from '@schema/components/fields/SchemaRecordRepresentation';
+import {
+  REFERENCE_WIDTH_OFFSET,
+  referenceMaxWidth,
+} from '@schema/components/fields/referenceVariant';
+import {useFieldDefaults} from '@schema/contexts/FieldDefaultsContext';
 import {useGlobalResourceSchemaContext} from '@schema/hooks/useGlobalResourceSchemaContext';
-import {FieldOptions} from '@schema/types';
+import {FieldOptions, ReferenceVariant} from '@schema/types';
 import {FIELD_DEFAULT} from '@schema/utils/fieldSelection';
 import {viewModeToPresentation} from '@schema/utils/viewMode';
 import {SchemaReferenceFieldContent} from './SchemaReferenceFieldContent';
@@ -18,6 +23,10 @@ export type SchemaReferenceFieldProps = FieldProps & {
   reference?: string;
   targetSource?: string;
   options?: FieldOptions;
+  // Chip or a plain text link. Defaults to `fieldDefaults.reference` (`'chip'` unless the
+  // application says otherwise) — an explicit value here wins over it. Ignored by the
+  // `targetSource` branch below, which renders a field of the related record, not a representation.
+  variant?: ReferenceVariant;
 };
 
 export const SchemaReferenceField = ({
@@ -28,9 +37,13 @@ export const SchemaReferenceField = ({
   reference: inReference,
   targetSource,
   options,
+  variant: inVariant,
 }: SchemaReferenceFieldProps) => {
   const reference = useResourceContext(inReference);
   const {isInCollection} = useValueLocationContext();
+  // Read above the early returns below — the hook has to run on every render of this component.
+  const {reference: defaultVariant} = useFieldDefaults();
+  const variant = inVariant ?? defaultVariant;
 
   const {schema: relatedSchema} = useGlobalResourceSchemaContext(reference);
 
@@ -72,10 +85,18 @@ export const SchemaReferenceField = ({
     }
   }
 
-  const columnWidthVarName = source.replace(/\./g, '__');
-  const maxChipWidth = isInCollection
-    ? `calc(var(--field-${columnWidthVarName}, 500px) - 32px)`
+  // Both forms are capped at the same width: the offset compensates the cell's own padding, which
+  // a text link pays just as a chip does.
+  const maxWidth = isInCollection
+    ? referenceMaxWidth(source, REFERENCE_WIDTH_OFFSET.cell)
     : undefined;
+
+  const representationProps = {
+    maxWidth,
+    link: options?.relation?.showLink ?? true,
+    linkMode: viewModeToPresentation(options?.relation?.linkMode),
+    dialogWidth: options?.relation?.dialogWidth,
+  };
 
   return (
     <ReferenceField
@@ -85,12 +106,7 @@ export const SchemaReferenceField = ({
       empty={emptyText}
       queryOptions={{meta: {fields: {id: FIELD_DEFAULT, meta: {repr: FIELD_DEFAULT}}}}}
     >
-      <SchemaRecordRepresentationChip
-        maxWidth={maxChipWidth}
-        link={options?.relation?.showLink ?? true}
-        linkMode={viewModeToPresentation(options?.relation?.linkMode)}
-        dialogWidth={options?.relation?.dialogWidth}
-      />
+      <SchemaRecordRepresentation variant={variant} {...representationProps} />
     </ReferenceField>
   );
 };

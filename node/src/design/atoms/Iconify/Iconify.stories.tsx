@@ -29,7 +29,10 @@ const meta: Meta<typeof Iconify> = {
     controls: {include: ['icon', 'width']},
   },
   argTypes: {
-    icon: {control: 'text'},
+    // A select, not free text: an Iconify name that is not in the registry renders nothing at all,
+    // so a half-typed one looks exactly like a broken component. These are the names the `Icons`
+    // showcase below already proves resolve.
+    icon: {control: 'select', options: SAMPLE_ICONS},
     width: {control: {type: 'number', min: 12, max: 96, step: 2}},
   },
   args: {icon: 'logos:google-icon', width: 24},

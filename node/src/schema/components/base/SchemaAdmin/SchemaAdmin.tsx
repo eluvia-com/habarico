@@ -50,6 +50,7 @@ import {
 import {LocaleProvider, createDarkTheme, createLightTheme} from '@design/theme';
 import {findClosestLanguage} from '@foundation/utils/locale';
 import {Theme} from '@mui/material';
+import {FieldDefaultsProvider} from '@schema/contexts/FieldDefaultsContext';
 import {SchemaRootContextProvider} from '@schema/contexts/SchemaRootContext';
 import {useSchemaRootContext} from '@schema/contexts/SchemaRootContext/useSchemaRootContext';
 import {getDataProviderFactory} from '@schema/providers/dataProvider';
@@ -69,7 +70,7 @@ import {
   SchemaProvider,
   ServiceDataProvider,
 } from '@schema/providers/types';
-import {ServicesSchema} from '@schema/types';
+import {FieldDefaults, ServicesSchema} from '@schema/types';
 import {QueryClient, QueryClientProvider, useQueryClient} from '@tanstack/react-query';
 import {AdminLanguage, IconsMap, ServiceConfigMap} from '@typing';
 import {DynamicAdminUI} from './DynamicAdminUI';
@@ -252,6 +253,10 @@ export type SchemaAdminProps = Omit<
   boxProvider?: AdminBoxProvider;
   buttonProvider?: AdminButtonProvider;
   clearStoreOnLogout?: boolean;
+  // The shape each kind of field takes across the whole admin — the application's own look, which
+  // no schema describes. Overridable per resource on `SchemaResource` and per field by the field's
+  // own `variant`. Omitted keys keep the library's defaults.
+  fieldDefaults?: FieldDefaults;
 
   // i18n
   availableLanguages?: AdminLanguage[];
@@ -300,6 +305,7 @@ export const SchemaAdmin = ({
   boxProvider,
   buttonProvider,
   clearStoreOnLogout,
+  fieldDefaults,
   availableLanguages = [],
   LogoComponent,
   marketingFooter,
@@ -406,15 +412,19 @@ export const SchemaAdmin = ({
             }}
           >
             <FormExtensionsProvider>
-              <SchemaAdminRuntime
-                store={store}
-                defaultLocale={locale}
-                dashboard={dashboard}
-                extraMenuItems={extraMenuItems}
-                {...rest}
-              >
-                {otherElements}
-              </SchemaAdminRuntime>
+              {/* Spread, not passed as an object: the provider memoizes on the individual keys, so an
+                  inline `fieldDefaults={{...}}` literal cannot invalidate every field below. */}
+              <FieldDefaultsProvider {...fieldDefaults}>
+                <SchemaAdminRuntime
+                  store={store}
+                  defaultLocale={locale}
+                  dashboard={dashboard}
+                  extraMenuItems={extraMenuItems}
+                  {...rest}
+                >
+                  {otherElements}
+                </SchemaAdminRuntime>
+              </FieldDefaultsProvider>
             </FormExtensionsProvider>
           </SchemaRootContextProvider>
         </AdminConfigProvider>

@@ -9,6 +9,7 @@ import {
   ResourceFieldProvider as ResourceFieldProviderType,
   ResourceInputProvider as ResourceInputProviderType,
 } from '@schema/providers/types';
+import {FieldDefaults} from '@schema/types';
 import {
   getViewWithProvidersWithPageContent,
   isResourceElement,
@@ -46,6 +47,7 @@ export const useGetResourceRouterElement = () => {
         fieldProvider?: ResourceFieldProviderType;
         boxProvider?: ResourceBoxProviderType;
         buttonProvider?: ResourceButtonProviderType;
+        fieldDefaults?: FieldDefaults;
       };
 
       const {
@@ -60,6 +62,7 @@ export const useGetResourceRouterElement = () => {
         fieldProvider,
         boxProvider,
         buttonProvider,
+        fieldDefaults,
         name = resource,
         ...rest
       } = resourceElementProps;
@@ -83,6 +86,7 @@ export const useGetResourceRouterElement = () => {
             fieldProvider,
             boxProvider,
             buttonProvider,
+            fieldDefaults,
           })}
           create={getViewWithProvidersWithPageContent({
             view: React.isValidElement(create) ? create : undefined,
@@ -90,6 +94,7 @@ export const useGetResourceRouterElement = () => {
             fieldProvider,
             boxProvider,
             buttonProvider,
+            fieldDefaults,
           })}
           edit={getViewWithProvidersWithPageContent({
             view: React.isValidElement(edit) ? edit : undefined,
@@ -97,6 +102,7 @@ export const useGetResourceRouterElement = () => {
             fieldProvider,
             boxProvider,
             buttonProvider,
+            fieldDefaults,
           })}
           show={getViewWithProvidersWithPageContent({
             view: React.isValidElement(show) ? show : undefined,
@@ -104,6 +110,7 @@ export const useGetResourceRouterElement = () => {
             fieldProvider,
             boxProvider,
             buttonProvider,
+            fieldDefaults,
           })}
           key={resource}
           options={options}
