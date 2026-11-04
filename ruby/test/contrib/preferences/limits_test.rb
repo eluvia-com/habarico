@@ -21,6 +21,34 @@ class PreferencesValueSizeLimitTest < Minitest::Test
     P.max_keys_per_user = @original_keys
   end
 
+  # A limit a gem registers with the key is a default: the deployment's `max_value_bytes` outranks
+  # it, so a host can raise what `habarico-enterprise` sets for `preferences.dashboard`.
+  def test_a_configured_limit_outranks_a_registered_one
+    P.max_value_bytes = { "default" => 200, "product.columns" => 999 }
+    P.register_preference("product.columns", schema: COLUMNS, max_bytes: 300)
+
+    assert_equal 999, P.registry.max_bytes_for("product.columns")
+  end
+
+  def test_a_registered_limit_is_used_when_nothing_configures_the_key
+    P.register_preference("product.columns", schema: COLUMNS, max_bytes: 300)
+
+    assert_equal 300, P.registry.max_bytes_for("product.columns")
+  end
+
+  def test_the_default_entry_applies_when_neither_names_the_key
+    P.register_preference("product.columns", schema: COLUMNS)
+
+    assert_equal 200, P.registry.max_bytes_for("product.columns")
+  end
+
+  def test_a_configured_nil_means_unlimited_even_against_a_registered_limit
+    P.max_value_bytes = { "default" => 200, "product.columns" => nil }
+    P.register_preference("product.columns", schema: COLUMNS, max_bytes: 300)
+
+    assert_nil P.registry.max_bytes_for("product.columns")
+  end
+
   def test_value_within_limit_is_accepted
     P.register_preference("product.columns", schema: COLUMNS)
     assert_equal %w[a b], P.validate("product.columns", %w[a b])

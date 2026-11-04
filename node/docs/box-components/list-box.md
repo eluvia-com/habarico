@@ -33,37 +33,54 @@ All of these live under `schema.list` (`ListBoxParameters`):
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `reference` (required) | `string` | — | Resource to list, in `"service/resource"` form |
+| `reference` (required) | `ResourceReference` | — | Resource to list; its `params` are sent when fetching that resource's schema |
 | `target` | `string` | — | Foreign key on the referenced resource pointing back at the parent record |
-| `rowActions` | `ActionDescriptor[]` | actions from the schema | Buttons in the row action column; `[]` removes the column |
-| `toolbarActions` | `ActionDescriptor[]` | — | Actions bound to the **referenced** resource, rendered in the box header |
-| `listActions` | `ActionDescriptor[]` | the reference's default list actions | Utility actions next to the filter bar |
+| `rowActions` | `AnyActionDescriptor[]` | — | Buttons in the row action column; absent or `[]` renders no column |
+| `listActions` | `AnyActionDescriptor[]` | — | Actions next to the filter bar; absent or `[]` renders none |
 | `filters` | `FilterDescriptor[]` | filters from the schema | Restricts and orders the offered filters |
 | `defaultSorting` | `SortDescriptor` | — | Initial sort — `{fieldName, direction}` |
 | `extraFilters` | `Filters` | — | Filters applied on top of the user's, not shown in the UI |
 | `sortable` | `SortableParameters` | — | Enables drag-and-drop ordering; `fieldName` holds the index field |
-| `schemaParams` | `Record<string, string>` | — | Extra query params sent when fetching the reference's schema |
 | `singleClickAction` | `ActionDescriptor` | — | Action triggered by a single click on a row |
 | `doubleClickAction` | `ActionDescriptor` | — | Action triggered by a double click on a row |
 
-The box's own `toolbarActions` (outside `list`) are parent-bound and render in the same header, next
-to the reference-bound ones. `bottomActions` render right-aligned under the table.
+The box's own `toolbarActions` (outside `list`) render in its header. An entry without a
+`reference` acts on the parent record; one whose `reference` addresses the listed resource acts on
+that, and when the reference's `params._target` names the parent, a record created through it is
+prefilled with the foreign key. `bottomActions` render right-aligned under the table. An `export`
+action in the header exports all records of the parent, not the table's selection or filters — put it
+in `listActions` for that.
+
+No slot is filled in by the frontend. For the referenced resource's own actions, list a
+`DefaultActionsDescriptor` — the backend does it for `rowActions` (`scope: 'detail'`) and
+`listActions` (`scope: 'list'`) when the box leaves them unset.
 
 ## Where each action slot lands
 
 | Slot | Position | Bound to |
 |---|---|---|
-| `list.toolbarActions` | Box header | The referenced resource |
-| `toolbarActions` | Box header, after the above | The parent record |
+| `toolbarActions` | Box header | The parent record, or an entry's `reference` |
 | `list.listActions` | Next to the filter bar, with the column and filter buttons | The referenced resource |
 | `list.rowActions` | Row action column | The row |
 | `bottomActions` | Under the table, right-aligned | The parent record |
 
-:::caution
-Only actions you configure explicitly reach the header. The referenced resource's **default** list
-actions — a create button, typically — fall back to `list.listActions` next to the filter bar, not
-to the header.
-:::
+## Migrating from `list.toolbarActions`
+
+The header slot under `list` is gone; its entries move to the box's `toolbarActions` with a
+reference to the listed resource. The backend writes that reference as `LIST`, which it sends with
+the link to the parent record:
+
+```python
+# before
+ListBox(reference="eshop/order_item", target="order", toolbar_actions=["create"])
+
+# after
+ListBox(reference="eshop/order_item", target="order")
+# and on the box:
+toolbar_actions=[Action(name="create", reference=LIST)]
+# or every collection action of the listed resource:
+toolbar_actions=[DefaultActions(reference=LIST, scope="list")]
+```
 
 ## Behaviour
 

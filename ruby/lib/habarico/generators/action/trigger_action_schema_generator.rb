@@ -17,13 +17,19 @@ module Habarico
         )
       end
 
-      action_schema_generator.generate(retarget(action, record_pk, reference), context)
+      action_schema_generator.generate(retarget(action, record_pk || detail_record_pk(action, context), reference), context)
     end
 
     protected
 
     def action_schema_generator
       @action_schema_generator ||= definition.action_schema_generator.new(definition, resource_path)
+    end
+
+    # A trigger runs outside the page of the record it was raised for, so a detail action names
+    # that record explicitly - a schema endpoint leaves it to the page.
+    def detail_record_pk(action, context)
+      context.record_pk if action.is_detail && action.endpoint_record_pk.blank?
     end
 
     # Copies the action before setting the target, so a declared action is never mutated.

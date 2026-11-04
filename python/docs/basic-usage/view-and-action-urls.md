@@ -10,8 +10,10 @@ The frontend derives the route from that data using the convention below. This i
 between the backend (which emits the schema) and the frontend (which builds the routes), so both sides
 must agree on it.
 
-> The `endpoint` object on a view/action is the **REST API** endpoint (the data source, e.g.
-> `GET /admin/product/1/`). It is unrelated to the browser route described here.
+> The `endpoint` object on a **view** (in its resource's `views` list) is the **REST API** endpoint
+> (the data source, e.g. `GET /admin/product/1/`). A `view` action's own `reference`, by contrast,
+> is not an endpoint — it has no `path`/`method` — it is only the address of the view it opens. Both
+> are unrelated to the browser route described here.
 
 ## Reserved view names
 

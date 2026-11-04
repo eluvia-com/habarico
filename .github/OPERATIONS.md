@@ -15,11 +15,12 @@ publish job runs in it, which is what keeps the registry write credentials out o
 pull-request workflows. Leave it without protection rules unless you want a manual approval
 gate on publishing.
 
-**2. The GitHub App for `release.yml`, `beta-bump.yml` and `major.yml`.** `GITHUB_TOKEN` cannot be used: pushes
+**2. The GitHub App for `release.yml`, `patch.yml`, `beta-bump.yml` and `major.yml`.** `GITHUB_TOKEN` cannot be used: pushes
 made with it deliberately do not start further workflow runs, so neither the release tags nor a
 bump commit would ever trigger `publish.yml`. Create an App with the `contents: write` repository
-permission, install it on this repository, and give it a **ruleset bypass on both `next` and
-`master`** — the finalize pushes directly to both, and `beta-bump.yml` pushes to `next`. Its App ID
+permission, install it on this repository, and give it a **ruleset bypass on `next`, `master` and
+`release/*`** — the finalize pushes directly to the first two, `beta-bump.yml` to `next` and
+`patch.yml` to a maintenance branch. Its App ID
 goes in the `RELEASE_APP_ID` variable, its private key in the `RELEASE_APP_PRIVATE_KEY` secret,
 shared by both workflows.
 
@@ -40,6 +41,7 @@ counter is derived from commit history, so rewriting the trunk makes it go backw
 also require a pull request and require these status checks to pass: `node-code-quality`,
 `node-unit-tests`, `node-storybook-tests`, `python-code-quality`, `python-unit-tests`,
 `ruby-code-quality`, `ruby-unit-tests`. A renamed or added job has to be changed here too.
+The maintenance branches `release/*` take no force push either and require a pull request.
 
 **6. Verify without publishing.** Run `release.yml` from the Actions tab with `dry_run` checked.
 It performs every read and every check and prints what it would release; it still commits and
@@ -87,6 +89,20 @@ git log -1 --grep '^Bump version to .*node@6.9.0-beta.3' -- node/
 For node, npm also records a provenance attestation on every publish, which names the commit
 directly.
 
+## Trying a branch in another project
+
+Nothing is published from a branch. Each library is installed from it directly instead:
+
+| | Install a branch |
+|---|---|
+| node | Run `node.yml` from the Actions tab on the branch; its `node-pack` job uploads `habarico-X.Y.Z-dev-<sha>.tgz` as an artifact. `gh run download <run-id>`, then `npm install ./habarico-X.Y.Z-dev-<sha>.tgz` |
+| python | `pip install "git+https://github.com/eluvia-com/habarico@<branch>#subdirectory=python"` |
+| ruby | `gem 'habarico', github: 'eluvia-com/habarico', branch: '<branch>', glob: 'ruby/*.gemspec'` |
+
+npm cannot install the node library from git: its `package.json` is not at the repository root,
+and `lib/` is a build output. The tarball and the git references are for trying a change locally,
+not for a committed lockfile — an artifact expires.
+
 ## Cutting a release
 
 Releasing is a single button that releases **every** library whose directory has moved since its
@@ -117,13 +133,28 @@ What it does, in this order — the order is load-bearing, see `RELEASE-DESIGN.m
 The version files stay on the released version; the next merge to `next` opens the next cycle
 at `RELEASE_LEVEL` (`7.2.0` → `7.3.0-beta.1`).
 
-Afterwards, check that `publish.yml` ran for each tag and that the versions appear in the
-registries. A minor or major release also starts `storybook.yml` from the `node@X.Y.0` tag; a
-preview of `next` is published by running `storybook.yml` by hand on `next`, and a release
-again by giving that run its `node@X.Y.0` tag.
+Afterwards, check that `publish.yml` ran for each tag, that the versions appear in the
+registries and that each tag has its GitHub Release. A minor or major release also starts
+`storybook.yml` from the `node@X.Y.0` tag; a preview of `next` is published by running
+`storybook.yml` by hand on `next`, and a release again by giving that run its `node@X.Y.0` tag.
 
-There is no patch-release button yet — a patch off a maintenance branch has to be versioned,
-committed and tagged by hand.
+## Releasing a patch
+
+A patch is released from the maintenance branch of its series, `release/<lib>@vX.Y`, which
+`release.yml` created with the minor release. A fix takes two pull requests, one into that branch
+and one into `next`; nothing carries it from one to the other.
+
+1. Merge the fix into `release/<lib>@vX.Y`, its changelog entry under `## [Unreleased]`.
+2. Run `patch.yml` from the Actions tab on that branch — first with **`dry_run` checked**. It
+   bumps the library to its next patch version, stamps the changelog, commits and pushes the
+   branch and then the tag `<lib>@X.Y.Z`, which starts `publish.yml`. Without entries under
+   `[Unreleased]` it still releases, under a generic "Bug fixes." entry, and warns.
+
+The maintenance branch is never merged into `next` or `master`: it holds an older state of the
+whole tree. A patch of an older series does not take npm's `latest` (see `README.md`).
+
+`patch.yml`, like `publish.yml`, runs in the version the maintenance branch carries. A branch cut
+before a change to either needs that change cherry-picked into it before its next patch.
 
 ## Starting a major
 

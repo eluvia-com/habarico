@@ -1,7 +1,12 @@
 import React from 'react';
 import {LayoutDynamicProvider} from '@design/layouts/contexts/LayoutDynamicContext';
 import {BreadcrumbsPortal, PortalBreadcrumbsOutlet} from '@design/layouts/shared/PortalBreadcrumbs';
-import {CATEGORIES_RESOURCE, PRODUCTS_RESOURCE, redirectView} from '@schema/components/_data';
+import {
+  CATEGORIES_RESOURCE,
+  PRODUCTS_RESOURCE,
+  redirectView,
+  referenceTo,
+} from '@schema/components/_data';
 import {Showcase, ShowcaseStack, withSchemaFieldShell} from '@schema/components/_storyKit';
 import type {MenuSchema, ViewSchema} from '@schema/types';
 import type {Meta, StoryObj} from '@storybook/react-vite';
@@ -22,7 +27,7 @@ const viewCrumb = (name: string, label: string, resource: string, view: string):
   label,
   priority: 0,
   type: 'view',
-  view: {...redirectView(view), endpoint: {reference: resource}},
+  view: {...redirectView(view), reference: referenceTo(resource)},
 });
 
 const TEXT_CRUMB: MenuSchema = {

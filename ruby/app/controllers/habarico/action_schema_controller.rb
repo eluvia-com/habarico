@@ -13,9 +13,7 @@ module Habarico
         current_user: current_user,
         target: (JSON.parse(params['_target']) rescue {}).symbolize_keys
       )
-      render json: Habarico::SchemaService.instance.get_action_schema(resource_name, action_name, context)
-                                          .as_json
-                                          .deep_compact(compactable: [nil, {}].freeze)
+      render_schema(Habarico::SchemaService.instance.get_action_schema(resource_name, action_name, context))
     end
 
     def show
@@ -32,9 +30,7 @@ module Habarico
         record_pk: params[:id],
         target: (JSON.parse(params['_target']) rescue {}).symbolize_keys
       )
-      render json: Habarico::SchemaService.instance.get_action_schema(resource_name, action_name, context)
-                                          .as_json
-                                          .deep_compact(compactable: [nil, {}].freeze)
+      render_schema(Habarico::SchemaService.instance.get_action_schema(resource_name, action_name, context))
     end
 
   end

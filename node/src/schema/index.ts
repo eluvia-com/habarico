@@ -31,6 +31,7 @@ export * from './contexts/ParentResourceDescriptorsContext';
 // `Resource*Provider` context component whose name collides with the customization-provider *type* of
 // the same name in `./providers/types` (the established public API). They stay sub-path-only.
 export * from './contexts/LocalResourceSchemaContext';
+export * from './contexts/ReadOnlyBoxContext';
 export * from './contexts/SchemaRootContext';
 export * from './contexts/SchemaViewRouterContext';
 export * from './contexts/ViewSchemaContext';
@@ -62,6 +63,8 @@ export * from './utils/fieldSelection';
 export * from './utils/generateDescriptorsFromSchema';
 export * from './utils/generateFieldSchemaMap';
 export * from './utils/preferencesStore';
+export type {ActionContext} from './utils/actionDescriptor';
+export * from './utils/resourceReference';
 export * from './utils/schemaValidators';
 export * from './utils/viewMode';
 

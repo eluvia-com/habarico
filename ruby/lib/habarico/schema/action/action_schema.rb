@@ -3,14 +3,14 @@ module Habarico
     include ::ActiveModel::Model
     include Eluvia::ActiveModel::Attributes
     include Eluvia::ActiveModel::EnumAttribute
-    include Habarico::ExtensibleEnum
+    include Habarico::ActiveModel::ExtensibleEnum
 
     # Type of the action.
     # `view` - opens a new view as redirect or dialog
     # `link` - opens an external link
     # `resource` - performs an action on the resource (like delete, update, etc.
     string_attr :type
-    extensible_enum_attr :type, :ACTION_TYPE
+    extensible_enum_attr :type, Types::ACTION_TYPE
 
     # Flag indicating if the action uses primary key or not
     boolean_attr :is_detail

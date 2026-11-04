@@ -1,5 +1,5 @@
 import React from 'react';
-import {CATEGORIES_RESOURCE, productField} from '@schema/components/_data';
+import {CATEGORIES_RESOURCE, productField, referenceTo} from '@schema/components/_data';
 import {Showcase, ShowcaseStack, withSchemaFieldShell} from '@schema/components/_storyKit';
 import type {ItemFieldSchema} from '@schema/types';
 import type {Meta, StoryObj} from '@storybook/react-vite';
@@ -93,7 +93,7 @@ export const UnknownReference: Story = {
     <SchemaReferenceArrayField
       source={'related_category_ids'}
       label={'Related categories'}
-      items={{...RELATION_ITEMS, reference: `${CATEGORIES_RESOURCE}_missing`}}
+      items={{...RELATION_ITEMS, reference: referenceTo(`${CATEGORIES_RESOURCE}_missing`)}}
     />
   ),
 };

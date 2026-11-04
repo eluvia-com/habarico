@@ -31,7 +31,7 @@ export const ResourceButton = ({
     resource,
     path: endpoint.path,
     method: endpoint.method,
-    data: {id: endpoint.recordPk || recordPk, data: data},
+    data: {id: endpoint.reference?.recordPk || recordPk, data: data},
     isBackground,
     onTriggerAction: triggerAction,
   });

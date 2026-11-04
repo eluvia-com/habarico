@@ -1,0 +1,94 @@
+# The whole example, one command per backend:
+#
+#   docker compose --profile python up -d   # Django backend + the admin
+#   docker compose --profile ruby   up -d   # Rails backend  + the admin
+#
+# Either brings up PostgreSQL, the backend migrated and seeded, and the admin on
+# http://localhost:5173 - sign in as admin@habarico.com / admin1234. The backend is on :8000 and
+# the database on :5432, so the native steps in README.md can still be run against them.
+#
+# The images are built from the repository root, so the libraries are the ones in this working
+# tree. Nothing is bind-mounted: this runs the example, it does not develop it - for that follow
+# the native steps, which reload.
+
+x-frontend: &frontend
+  build:
+    context: ../..
+    dockerfile: examples/eshop/frontend/Dockerfile
+  ports:
+    - "5173:5173"
+
+services:
+  # No profile, so it comes up with either of them. Habarico needs PostgreSQL for the advisory
+  # lock it takes on a record before an update or a delete.
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: eshop
+      POSTGRES_USER: eshop
+      POSTGRES_PASSWORD: eshop
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eshop"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  django:
+    profiles: [python]
+    build:
+      context: ../..
+      dockerfile: examples/eshop/django/Dockerfile
+    environment:
+      PGHOST: db
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # 401 is a healthy answer here - the admin API refuses an anonymous request. The check only
+    # asks whether the server answers at all, so curl is called without -f.
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8000/api/admin/schema/"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  rails:
+    profiles: [ruby]
+    build:
+      context: ../..
+      dockerfile: examples/eshop/rails/Dockerfile
+    environment:
+      PGHOST: db
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8000/api/admin/schema"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # One image, two services: the only difference is which backend /api is proxied to, and the
+  # profile decides which of them exists.
+  frontend-django:
+    <<: *frontend
+    profiles: [python]
+    environment:
+      API_URL: http://django:8000
+    depends_on:
+      django:
+        condition: service_healthy
+
+  frontend-rails:
+    <<: *frontend
+    profiles: [ruby]
+    environment:
+      API_URL: http://rails:8000
+    depends_on:
+      rails:
+        condition: service_healthy

@@ -27,6 +27,7 @@ import {
   mergeFieldSelections,
   serializeFieldSelection,
 } from '@schema/utils/fieldSelection';
+import {resolveReferences, resourceOfKey, serviceOfKey} from '@schema/utils/resourceReference';
 import {ActionParams, DataType, RequestMeta} from '@typing';
 
 const DEFAULT_FIELDS: FieldSelection = {id: FIELD_DEFAULT, meta: FIELD_DEFAULT};
@@ -39,7 +40,11 @@ const encodeId = (id: string | number): string => encodeURIComponent(String(id))
 // Returns `any` deliberately: the result feeds React Admin's generic data-provider
 // methods (`GetOneResult<RecordType>` etc.), and a concrete object type is not
 // assignable to those generic record parameters.
-const parseInputData = (data?: DataType, resourceSchema?: GlobalResourceSchema): any => {
+const parseInputData = (
+  data: DataType | undefined,
+  service: string,
+  resourceSchema?: GlobalResourceSchema
+): any => {
   if (!data || typeof data !== 'object') {
     return data;
   }
@@ -59,12 +64,16 @@ const parseInputData = (data?: DataType, resourceSchema?: GlobalResourceSchema):
     ...dataWithId,
     ...(data.meta
       ? {
-          meta: snakeCaseToCamelCase(data.meta, [
-            'defaultFilters',
-            'sortForFilters',
-            'parameters',
-            'data',
-          ]),
+          meta: resolveReferences(
+            snakeCaseToCamelCase(data.meta, [
+              'defaultFilters',
+              'sortForFilters',
+              'parameters',
+              'data',
+              'params',
+            ]),
+            service
+          ),
         }
       : {}),
   };
@@ -106,7 +115,8 @@ export const createHttpClient =
  * use.
  */
 export const getSchemaFromResource = (resource: string, servicesSchema: ServicesSchema) => {
-  const [serviceName, resourceName] = resource.split('/');
+  const serviceName = serviceOfKey(resource);
+  const resourceName = resourceOfKey(resource);
   const serviceSchema = servicesSchema[serviceName];
   if (!serviceSchema) throw new Error(`Service "${serviceName}" not found`);
   const resourceSchema = serviceSchema.filter((s) => s.name == resourceName)[0];
@@ -189,7 +199,9 @@ export const getDataProviderFactory = (
           params.meta
         );
         return {
-          data: json.objects.map((resource: object) => parseInputData(resource, schema)),
+          data: json.objects.map((record: object) =>
+            parseInputData(record, serviceOfKey(resource), schema)
+          ),
           total: json.meta.total_count,
         };
       } catch (e) {
@@ -215,7 +227,7 @@ export const getDataProviderFactory = (
         {},
         params.meta
       );
-      return {data: parseInputData(json, schema)};
+      return {data: parseInputData(json, serviceOfKey(resource), schema)};
     },
 
     getMany: async (resource: string, params: GetManyParams) => {
@@ -240,7 +252,9 @@ export const getDataProviderFactory = (
           params.meta
         );
         return {
-          data: json.objects.map((resource: object) => parseInputData(resource, schema)),
+          data: json.objects.map((record: object) =>
+            parseInputData(record, serviceOfKey(resource), schema)
+          ),
           total: json.meta.total_count,
         };
       } catch (e) {
@@ -273,7 +287,7 @@ export const getDataProviderFactory = (
           params.meta
         );
 
-        return {data: parseInputData(json, schema)};
+        return {data: parseInputData(json, serviceOfKey(resource), schema)};
       } catch (e) {
         if (e instanceof HttpError) {
           handleErrorResponse(e.body, e.status, 'ra.message.invalid_form');
@@ -294,7 +308,7 @@ export const getDataProviderFactory = (
           },
           params.meta
         );
-        return {data: parseInputData(json, schema)};
+        return {data: parseInputData(json, serviceOfKey(resource), schema)};
       } catch (e) {
         if (e instanceof HttpError) {
           handleErrorResponse(e.body, e.status, 'ra.message.invalid_form');
@@ -317,7 +331,7 @@ export const getDataProviderFactory = (
           },
           params.meta
         );
-        return {data: parseInputData(json, schema)};
+        return {data: parseInputData(json, serviceOfKey(resource), schema)};
       } catch (e) {
         if (e instanceof HttpError) {
           handleErrorResponse(e.body, e.status);
@@ -392,7 +406,7 @@ export const getDataProviderFactory = (
           params?.meta
         );
         return {
-          data: path ? parseInputData(json) : json,
+          data: path ? parseInputData(json, serviceOfKey(resource)) : json,
         };
       } catch (e) {
         if (e instanceof HttpError) {

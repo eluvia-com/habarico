@@ -9,6 +9,9 @@ Basic views can be declared using symbols:
 views [:list, :show, :create, :edit]
 ```
 
+A view declared this way lists the resource's fields: `fields` and `read_only_fields`, plus
+`write_only_fields` on the create and edit forms.
+
 For full control, pass view objects directly:
 
 ```ruby
@@ -46,6 +49,10 @@ Habarico::ActionView.new(
 `endpoint_action_name` is what makes an action view routable — it is the URL segment appended
 after the record. `endpoint_reference` is a different thing: the *other* resource the action is
 served by. A view with neither gets no `path` in its schema and never becomes an action route.
+
+It is also what an action *opening* this view puts in its endpoint's address: the segment comes from
+the target view, so an action opening a reserved view (`list`, `create`, `edit`, `show`) carries no
+address at all — a reserved view is addressed by its type.
 :::
 
 ## View attributes

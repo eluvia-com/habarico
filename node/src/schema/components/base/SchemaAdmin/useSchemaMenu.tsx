@@ -6,6 +6,7 @@ import {Icon, IconType} from '@design/atoms/Icon';
 import {LayoutMenuItem} from '@design/layouts/types';
 import {useSchemaRootContext} from '@schema/contexts/SchemaRootContext/useSchemaRootContext';
 import {MenuGroupSchema} from '@schema/types';
+import {resourceKey} from '@schema/utils/resourceReference';
 import {ServiceConfig} from '@typing';
 import {ExtraMenuItem, SchemaLayoutMenuItem} from './types';
 
@@ -98,13 +99,13 @@ export const useSchemaMenu = (extraMenuItems?: ExtraMenuItem[]) => {
           const viewType = resourceSchema.views.find(byName(viewParameters.name))?.type;
           if (!viewType) return; // View was not found
 
-          const menuResource = viewParameters.endpoint?.reference || resource.name;
-          const recordPk = viewParameters.endpoint?.recordPk;
+          const menuResource = resourceKey(viewParameters.reference) ?? resource.name;
+          const recordPk = viewParameters.reference?.recordPk;
 
           const path = createPath({
             type: viewType,
             resource: menuResource,
-            actionName: viewParameters.endpoint?.actionName,
+            actionName: viewParameters.reference?.actionName,
             id: recordPk,
           });
 

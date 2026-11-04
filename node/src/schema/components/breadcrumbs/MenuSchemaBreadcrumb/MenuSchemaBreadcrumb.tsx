@@ -1,11 +1,12 @@
 import React from 'react';
+import {useResourceContext as useRaResourceContext} from 'react-admin';
 import {DynamicText} from '@admin/components/common/DynamicText';
-import {useResourceContextOrUndefined} from '@admin/contexts/ResourceContext';
 import {useGetLinkWithData} from '@admin/hooks/useGetLinkWithData';
 import {EllipsisWithTitle} from '@design/atoms/EllipsisWithTitle';
 import {PortalBreadcrumbItem} from '@design/layouts/shared/PortalBreadcrumbs';
 import {useGetGlobalResourceSchemaContext} from '@schema/hooks/useGetGlobalResourceSchemaContext';
 import {MenuSchema} from '@schema/types';
+import {resourceKey} from '@schema/utils/resourceReference';
 import {MAX_BREADCRUMB_WIDTH} from '../constants';
 
 export type MenuSchemaBreadcrumbProps = {
@@ -15,7 +16,7 @@ export type MenuSchemaBreadcrumbProps = {
 export const MenuSchemaBreadcrumb = ({menuSchema}: MenuSchemaBreadcrumbProps) => {
   const getGlobalResourceSchemaContext = useGetGlobalResourceSchemaContext();
   const getLink = useGetLinkWithData();
-  const reference = useResourceContextOrUndefined(menuSchema.view?.endpoint?.reference);
+  const reference = useRaResourceContext({resource: resourceKey(menuSchema.view?.reference)});
 
   if (menuSchema.type === 'link') {
     return (
@@ -36,8 +37,8 @@ export const MenuSchemaBreadcrumb = ({menuSchema}: MenuSchemaBreadcrumbProps) =>
           path={getLink({
             type: viewSchema.type,
             resource: reference,
-            actionName: menuSchema.view?.endpoint?.actionName,
-            id: menuSchema.view?.endpoint?.recordPk,
+            actionName: menuSchema.view?.reference?.actionName,
+            id: menuSchema.view?.reference?.recordPk,
           })}
         >
           <EllipsisWithTitle maxWidth={MAX_BREADCRUMB_WIDTH}>

@@ -75,7 +75,7 @@ autocomplete there, which pages as the user types.
 
 ```json
 {"name": "category", "type": "integer", "format": "relation",
- "reference": "eshop/category",
+ "reference": {"resource": "category"},
  "options": {"relation": {"showCreateButton": true,
                           "filters": [{"name": "is_active", "value": true}]}}}
 ```

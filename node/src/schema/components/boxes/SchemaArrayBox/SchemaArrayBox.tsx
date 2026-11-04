@@ -6,7 +6,7 @@ import {SchemaBoxProps} from '@schema/components/boxes/types';
 import {SchemaButtons} from '@schema/components/buttons/SchemaButtons';
 import {FieldSchemaMapProvider} from '@schema/contexts/FieldSchemaMapContext';
 import {useFieldSchemaMapContext} from '@schema/contexts/FieldSchemaMapContext/useFieldSchemaMapContext';
-import {useViewSchemaContext} from '@schema/contexts/ViewSchemaContext/useViewSchemaContext';
+import {ReadOnlyBoxProvider, useIsReadOnly} from '@schema/contexts/ReadOnlyBoxContext';
 import {FieldSchemaMap} from '@schema/types';
 import {SchemaReadonlyArrayBox} from './SchemaReadonlyArrayBox';
 import {SchemaWriteableArrayBox} from './SchemaWriteableArrayBox';
@@ -17,7 +17,7 @@ export const SchemaArrayBox = ({schema, label = schema.label, isRoot}: SchemaBox
   const fieldSchemas = useFieldSchemaMapContext();
   const targetFieldSchema = fieldSchemas[arrayProperties.target];
 
-  const {readOnly: readOnlyView} = useViewSchemaContext();
+  const readOnlyScope = useIsReadOnly();
   const card = useBoxCard(schema, Boolean(label), isRoot);
 
   // Memoized: `FieldSchemaMapProvider` does not memoize its own `value`, so a fresh map here would
@@ -33,7 +33,10 @@ export const SchemaArrayBox = ({schema, label = schema.label, isRoot}: SchemaBox
 
   if (!targetFieldSchema || !targetFieldSchema.items?.properties) return;
 
-  const readOnly = readOnlyView || targetFieldSchema.readOnly;
+  // Three independent sources, any of which closes the box: the surrounding scope (a read-only
+  // view, or an enclosing read-only box), the box's own `read_only` — which is how a backend marks
+  // a writeable field as presentation-only in one layout — and the target field's.
+  const readOnly = readOnlyScope || Boolean(schema.readOnly) || Boolean(targetFieldSchema.readOnly);
 
   const hasToolbarActions = !!schema.toolbarActions?.length;
   const hasBottomActions = !!schema.bottomActions?.length;
@@ -68,7 +71,13 @@ export const SchemaArrayBox = ({schema, label = schema.label, isRoot}: SchemaBox
     >
       <FieldSchemaMapProvider schemaMap={targetFieldSchemaMap}>
         {readOnly ? (
-          <SchemaReadonlyArrayBox schema={schema} targetFieldSchema={targetFieldSchema} />
+          // Scoped, not just routed: the non-inline read-only variant renders each row through the
+          // ordinary box children, which would otherwise render inputs when the box carries no
+          // `read_only` of its own for `SchemaBoxBody` to pick up (a read-only *target field*, or a
+          // `listed` box falling back here from `SchemaChoicesArrayBox`).
+          <ReadOnlyBoxProvider readOnly>
+            <SchemaReadonlyArrayBox schema={schema} targetFieldSchema={targetFieldSchema} />
+          </ReadOnlyBoxProvider>
         ) : (
           <SchemaWriteableArrayBox schema={schema} targetFieldSchema={targetFieldSchema} />
         )}

@@ -16,7 +16,6 @@ Both live in `HABARICO_PREFERENCES`, beside `DEFAULTS`:
 HABARICO_PREFERENCES = {
     "MAX_VALUE_BYTES": {
         "default": 16 * 1024,
-        "preferences.dashboard": 32 * 1024,
         r"[a-zA-Z][a-zA-Z0-9_./-]*\.savedQueries": 32 * 1024,
     },
     "MAX_KEYS_PER_USER": 2000,
@@ -26,6 +25,9 @@ HABARICO_PREFERENCES = {
 `MAX_VALUE_BYTES` is resolved by the key — or the pattern string — a preference was registered
 under, falling back to its `"default"` entry. A pattern entry is keyed by the same string passed
 to `register_preference_pattern`.
+
+An entry here outranks a `max_bytes` given at registration: a limit a package ships with its key is
+a default, and the deployment has the last word.
 
 It is read **when a preference is registered**, exactly like `DEFAULTS`. Registration happens in
 `AppConfig.ready()`, after Django settings are loaded, so a value in `settings.py` always applies;
@@ -39,9 +41,11 @@ restates every entry it wants to keep — including `"default"`.
 :::
 
 The defaults sit an order of magnitude above what the frontend actually writes — 100 datagrid
-columns are ~2 KB of `columns` or `columnWidths`, a 30-widget dashboard ~19 KB and 20 saved
-queries ~11 KB at their fullest — so a project that stores unusually large preferences is the one
-that has to raise them.
+columns are ~2 KB of `columns` or `columnWidths` and 20 saved queries ~11 KB at their fullest — so a
+project that stores unusually large preferences is the one that has to raise them. A package
+registering its own key brings its own limit with it: `habarico-enterprise` registers
+`preferences.dashboard` with 32 KB, which a 30-widget dashboard fills to about two thirds — a
+project that needs more raises it by naming the key in `MAX_VALUE_BYTES`.
 
 A key registered by the project takes the `"default"` entry unless it declares its own:
 
@@ -55,7 +59,7 @@ register_preference(
 
 Leaving `max_bytes` out — or passing `None` — means "not given", and the dict decides. There is no
 sentinel for it, unlike the `default` of a preference: a size is never `None`, so `None` is free to
-mean "not given".
+mean "not given". Where the dict names the same key, the dict wins.
 
 `None` means "no limit" where a limit is actually configured — as one entry of the dict, as the
 whole `MAX_VALUE_BYTES`, or as `MAX_KEYS_PER_USER`. A key that should be unlimited says so there:

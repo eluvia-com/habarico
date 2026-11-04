@@ -1,4 +1,4 @@
-import {ActionDescriptor, FieldDescriptor} from '@schema/types';
+import {AnyActionDescriptor, FieldDescriptor} from '@schema/types';
 
 export type FieldSelection = {
   [field: string]: string | FieldSelection;
@@ -123,7 +123,14 @@ export const fieldDescriptorsToActionSelection = (fields: FieldDescriptor[]): Fi
   return result;
 };
 
-export const actionDescriptorsToFieldSelection = (actions: ActionDescriptor[]): FieldSelection => {
-  if (actions.length === 0) return {};
-  return mergeFieldSelections(...actions.map((action) => ({[action.name]: FIELD_DEFAULT})));
+export const actionDescriptorsToFieldSelection = (
+  actions: AnyActionDescriptor[]
+): FieldSelection => {
+  const named = actions.flatMap((action) => (action.type === 'default_actions' ? [] : [action]));
+  if (named.length === 0) return {};
+  return mergeFieldSelections(...named.map((action) => ({[action.name]: FIELD_DEFAULT})));
 };
+
+/** Whether the descriptors expand the record's own defaults, and so reads every action the record has. */
+export const descriptorsNeedAllActions = (actions: AnyActionDescriptor[]): boolean =>
+  actions.some((action) => action.type === 'default_actions' && !action.reference);

@@ -6,6 +6,7 @@ import {useResourceContext} from '@admin/contexts/ResourceContext';
 import {useTreeChoices} from '@admin/hooks/useTreeChoices';
 import {FieldSchema, ItemFieldSchema} from '@schema/types';
 import {convertApiSortToRaSort} from '@schema/utils/api';
+import {resourceKey} from '@schema/utils/resourceReference';
 
 export type SchemaTreeReferenceArrayInputProps = InputProps & {
   defaultValue?: unknown;
@@ -25,7 +26,7 @@ export const SchemaTreeReferenceArrayInput = ({
   items,
   ...rest
 }: SchemaTreeReferenceArrayInputProps) => {
-  const reference = useResourceContext(items.reference);
+  const reference = useResourceContext(resourceKey(items.reference));
   const translate = useTranslate();
 
   const {choices, isLoading} = useTreeChoices(reference, {

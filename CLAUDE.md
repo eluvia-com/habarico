@@ -14,7 +14,20 @@ python/       # habarico — Django REST Framework admin library
 ruby/         # habarico gem — Rails engine
 <pkg>/docs/   # the documentation pages of that package, rendered by docs.habarico.com
 contract/     # OpenAPI 3.0.3 specification (openapi.yaml) — the shared contract
+examples/     # runnable example projects built on the libraries in this tree
 ```
+
+`examples/eshop/` is a working admin — a Django backend, a Rails backend and one React frontend
+that serves either — in the e-shop domain the documentation uses. It has no `.pydev` config, so it
+is **not** a versioned unit and the release workflows ignore it; it links the three libraries from
+the working tree instead, so a change that breaks it fails in the same pull request. The
+documentation takes its examples from there and links readers to
+`github.com/eluvia-com/habarico/tree/<tag>/examples/eshop`, the version they are running.
+
+Authentication lives in the example, not in the libraries: Habarico has three hook points
+(`authenticate_request` in Ruby, a DRF authentication class in Python, plain functions handed to
+`buildServiceAuthProvider` in JS) and the example fills them with the stock framework pieces. No
+documentation page may reach for a private Eluvia auth library to show one.
 
 Each sub-directory is independently buildable, testable, and publishable. See the CLAUDE.md in each sub-directory for language-specific commands, architecture, and conventions:
 

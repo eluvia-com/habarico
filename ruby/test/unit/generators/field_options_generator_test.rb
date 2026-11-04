@@ -87,11 +87,12 @@ module Habarico
     # separately for the same field - the derivation must be memoized so it only runs once.
     def test_derivation_is_memoized_across_max_size_and_accept
       calls = 0
-      stubbed = lambda do |*_args|
+      resolver = Object.new
+      resolver.define_singleton_method(:resolve) do |_attr_name|
         calls += 1
-        FileValidations::Rules.new(allowed_content_types: %w[image/png], max_size: 2_000)
+        FileRules.new(allowed_content_types: %w[image/png], max_size: 2_000)
       end
-      FileValidations.stub(:for_model, stubbed) do
+      FileRulesResolver.stub(:new, resolver) do
         @generator.generate(ValidatedModel, :photo, nil)
       end
       assert_equal 1, calls

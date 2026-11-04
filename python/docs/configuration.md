@@ -31,13 +31,18 @@ API:
 ```python
 ADMIN_REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
-        "your_permissions.IsAdminUser",
+        "rest_framework.permissions.IsAdminUser",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "eluvia.auth.django.authentications.PublicJwtAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ],
 }
 ```
+
+Habarico brings no authentication of its own and cares about none: any DRF authentication class
+works — sessions as above, a token class, or one of your own. The
+[e-shop example](https://github.com/eluvia-com/habarico/tree/master/examples/eshop) is a complete
+project on the two lines above, session login included.
 
 Keys not listed here fall back to `REST_FRAMEWORK`, so a project whose admin uses the same
 authentication as the rest of the API can leave the block out entirely.
@@ -46,12 +51,6 @@ Without any configuration, `DEFAULT_PERMISSION_CLASSES` defaults to
 `rest_framework.permissions.IsAuthenticated` — the admin API rejects anonymous requests out of the
 box. That default is a safety net, not a recommendation: set a permission class matching your
 project's roles, as in the example above.
-
-:::caution
-Versions before 5.11 defaulted to `AllowAny`, leaving an unconfigured admin API open to anonymous
-requests. A project that relied on the open default must now configure
-`DEFAULT_PERMISSION_CLASSES` explicitly.
-:::
 
 ### The `habarico.W001` system check
 

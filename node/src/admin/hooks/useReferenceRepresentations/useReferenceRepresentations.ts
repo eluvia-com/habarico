@@ -1,6 +1,5 @@
 import {useMemo} from 'react';
 import {useGetMany, useGetRecordRepresentation, useLocaleState} from 'react-admin';
-import {useResourceContextOrUndefined} from '@admin/contexts/ResourceContext';
 
 // Resolves foreign-key ids to their record representation by fetching the referenced records
 // and applying the resource's recordRepresentation (set to record.meta.repr by default, but
@@ -12,18 +11,16 @@ export const useReferenceRepresentations = (
   ids: Array<string | number>
 ): Map<string, string> => {
   const uniqueIds = useMemo(() => Array.from(new Set(ids.map(String))), [ids]);
-  const resolved = useResourceContextOrUndefined(reference);
-  const referenceResource = reference ? resolved : undefined;
 
   const [locale] = useLocaleState();
 
   const {data} = useGetMany(
-    referenceResource ?? '',
+    reference ?? '',
     {ids: uniqueIds, meta: {locale}},
-    {enabled: !!referenceResource && uniqueIds.length > 0}
+    {enabled: !!reference && uniqueIds.length > 0}
   );
 
-  const getRepresentation = useGetRecordRepresentation(referenceResource);
+  const getRepresentation = useGetRecordRepresentation(reference);
 
   return useMemo(() => {
     const map = new Map<string, string>();

@@ -12,9 +12,6 @@ export const SchemaDatagridRowActions = (props: SchemaButtonsProps) => (
     surface={'iconButton'}
     size={'small'}
     isList={true}
-    // Row buttons are per-record: when no explicit descriptors are given, generate only record-scoped
-    // (`is_detail`) actions — collection actions like create/export belong in the toolbar, not on rows.
-    scope={'detail'}
     maxVisibleButtons={ROW_ACTION_SLOTS}
     {...props}
   />

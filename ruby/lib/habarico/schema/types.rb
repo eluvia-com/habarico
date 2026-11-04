@@ -29,13 +29,16 @@ module Habarico
                            ai ai-text range]
 
     # BoxType - layout container types
-    BOX_TYPE = %i[tab tab-item wizard simple list object array grid grid-item gallery]  # rubocop:disable Style/MutableConstant
+    BOX_TYPE = %i[tab tab-item wizard simple list object array grid gallery]  # rubocop:disable Style/MutableConstant
 
     # ViewType - kind of the view
     VIEW_TYPE = %i[list show create edit action].freeze
 
     # ViewModeType - how a view is presented when opened by a trigger
     VIEW_MODE_TYPE = %i[redirect dialog sidepanel].freeze
+
+    # ActionScopeType - which of a resource's actions a `default_actions` entry expands
+    ACTION_SCOPE_TYPE = %i[list detail all].freeze
 
     # ActionType - kind of the action
     ACTION_TYPE = %i[view link resource save upload-files]  # rubocop:disable Style/MutableConstant
@@ -71,15 +74,8 @@ module Habarico
     EXTENSIBLE = %i[FIELD_TYPE FIELD_FORMAT_TYPE BOX_TYPE ACTION_TYPE].freeze
 
     class << self
-      # Schema classes whose `enum_attr` was declared from a list, as
-      # `{ list_name => [[klass, attr_name], ...] }`. Filled by `ExtensibleEnum`.
-      def consumers
-        @consumers ||= Hash.new { |hash, key| hash[key] = [] }
-      end
-
-      # Add values to an extensible list and re-declare the enum on every schema class built from
-      # it. The re-declaration is what makes this work at all: `enum_attr` copies the choices into
-      # the class when it is called, so appending to the array alone would change nothing.
+      # Add values to an extensible list; `Habarico::ActiveModel::ExtensibleEnum` re-declares the
+      # enum on every schema class built from it.
       #
       #   Habarico::Types.register(:FIELD_FORMAT_TYPE, :signature)
       #
@@ -95,9 +91,7 @@ module Habarico
         duplicates = values & list
         raise ArgumentError, "#{list_name} already contains #{duplicates.join(', ')}." if duplicates.any?
 
-        list.concat(values)
-        consumers[list_name].each { |klass, attr_name| klass.enum_attr(attr_name, list) }
-        list
+        Habarico::ActiveModel::ExtensibleEnum.add_values(list, values)
       end
     end
 

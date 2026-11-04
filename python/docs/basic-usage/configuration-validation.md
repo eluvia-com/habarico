@@ -51,7 +51,7 @@ attributes its own `ModelAdmin` mixins contribute — `aggregate_max_buckets` an
 | `validate_constraints()` | Numeric and value constraints. Core declares none — this is the method a validator subclass overrides (calling `super()`) to check its own attributes, as habarico-enterprise does for `aggregate_max_buckets > 0` |
 | `validate_field_lists()` | `search_fields`, `filter_fields`, `ordering_fields`, `fields` and `read_only_fields` resolve against the model — `__` relation paths are followed, and `search_fields` / `filter_fields` may end in a lookup (`name__icontains`) |
 | `validate_descriptors()` | Every `Field` / `Filter` / `Sorting` / `FieldWrapper` nested in the boxes of `view_schema_generators` resolves against the model, recursively through `TabBox` / `WizardBox` / `GridBox`, switching to the related model inside an `ObjectBox` / `ArrayBox` |
-| `validate_actions()` | The built-in action names `create` / `show` / `edit` / `delete`, wherever they are referenced (`row_actions`, `toolbar_actions`, `bottom_actions`, `list_actions`, `double_click_action`, `single_click_action`), agree with the matching `can_create` / `can_read` / `can_update` / `can_delete` flag |
+| `validate_actions()` | The built-in action names `create` / `show` / `edit` / `delete`, wherever they are referenced (`row_actions`, `toolbar_actions`, `bottom_actions`, `list_actions`, `double_click_action`, `single_click_action`), agree with the matching `can_create` / `can_read` / `can_update` / `can_delete` flag — on the admin that owns the action, which a descriptor's `reference` names |
 
 Two cases are deliberately left alone:
 
@@ -61,6 +61,9 @@ Two cases are deliberately left alone:
   `ListBox` / `GalleryBox` contents point at another resource and are not checked here either.
 - **Custom action names** (a `@action`-decorated viewset method, `Action(name="reorder")`) have no
   static registry to compare against, so only the four built-in ones are validated.
+- **A `reference` this registry cannot resolve** — another service, or an admin that registers after
+  this one — leaves the flag unknowable at registration time, so the descriptor is passed over and
+  `AdminPermission` settles it per request.
 
 ## Extending or opting out
 

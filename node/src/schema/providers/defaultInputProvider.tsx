@@ -21,6 +21,7 @@ import {SchemaReferenceInput} from '@schema/components/inputs/SchemaReferenceInp
 import {DEFAULT_IMAGE_ACCEPT} from '@schema/components/inputs/constants';
 import {AdminInputProviderProps} from '@schema/providers/types';
 import {FieldFormatType, FieldOptions, FieldSchema} from '@schema/types';
+import {resourceKey} from '@schema/utils/resourceReference';
 
 type InputParams = {
   format?: FieldFormatType;
@@ -101,7 +102,13 @@ const stringInputMap: Partial<Record<string, StringInputRenderer>> = {
 
 const renderIntegerInput = ({format, schema, locale, options, rest}: InputParams) => {
   if (format === 'relation' || format === 'tree-relation') {
-    return <SchemaReferenceInput {...rest} reference={schema?.reference} options={options} />;
+    return (
+      <SchemaReferenceInput
+        {...rest}
+        reference={resourceKey(schema?.reference)}
+        options={options}
+      />
+    );
   }
   if (format === 'choices' && schema?.enum) {
     return <ChoicesInput {...rest} iconsKey={options?.choices?.iconsKey} choices={schema.enum} />;
@@ -119,7 +126,13 @@ const renderIntegerInput = ({format, schema, locale, options, rest}: InputParams
 
 const renderStringInput = ({format, schema, locale, options, rest}: InputParams) => {
   if (format === 'relation' || format === 'tree-relation') {
-    return <SchemaReferenceInput {...rest} reference={schema?.reference} options={options} />;
+    return (
+      <SchemaReferenceInput
+        {...rest}
+        reference={resourceKey(schema?.reference)}
+        options={options}
+      />
+    );
   }
   if (format === 'choices' && schema?.enum) {
     return <ChoicesInput {...rest} iconsKey={options?.choices?.iconsKey} choices={schema.enum} />;

@@ -18,6 +18,11 @@ marked premium.
 
 The `contract/openapi.yaml` file contains the OpenAPI 3.0.3 specification that serves as the contract between backend and frontend.
 
+[`examples/eshop/`](examples/eshop/README.md) is a runnable admin built on the three libraries as
+they are in this working tree — a Django backend, a Rails backend and one React frontend that
+works against either. It installs from public registries alone, and the documentation takes its
+examples from it.
+
 ## License
 
 **The repository is not licensed as a whole** — `node/`, `python/` and `ruby/` each carry their own

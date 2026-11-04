@@ -3,18 +3,18 @@ module Habarico
     include ::ActiveModel::Model
     include Eluvia::ActiveModel::Attributes
     include Eluvia::ActiveModel::EnumAttribute
-    include Habarico::ExtensibleEnum
+    include Habarico::ActiveModel::ExtensibleEnum
 
     # Name of the field in the data model, used for coupling with field descriptor
     string_attr :name
 
     # Data type of the field
     string_attr :type
-    extensible_enum_attr :type, :FIELD_TYPE
+    extensible_enum_attr :type, Types::FIELD_TYPE
 
     # Format of the field, applied to specific data types such as string
     string_attr :format
-    extensible_enum_attr :format, :FIELD_FORMAT_TYPE
+    extensible_enum_attr :format, Types::FIELD_FORMAT_TYPE
 
     # Human-readable label for the field
     string_attr :label
@@ -47,7 +47,7 @@ module Habarico
     string_attr :sort_by
 
     # Reference to another resource
-    string_attr :reference
+    has_one_attr :reference, 'Habarico::ResourceReference'
 
     # Enumeration items for field with predefined choices, usually used with 'choices' format
     has_many_attr :enum, 'Habarico::EnumType'

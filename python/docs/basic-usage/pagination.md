@@ -113,12 +113,6 @@ attached to the `limit` field:
 Refused: a `limit` above `max_page_limit`, a non-numeric one, and a negative one. Accepted: a
 missing or empty `limit`, which falls back to the default page size.
 
-:::caution
-Before habarico 5.11 an oversized `limit` was silently truncated to `1000` and an unreadable one
-silently replaced by the default. Both now answer `422`, so a client that sends `?limit=5000` and
-was served 1000 objects is now served an error instead.
-:::
-
 ## Meta-only requests
 
 `limit=0` is a deliberate value, not an invalid one: the response carries the `meta` block and no

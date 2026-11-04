@@ -74,22 +74,29 @@ module Habarico
       filter.is_a?(Habarico::FilterReference) ? filter.name.to_s : filter.to_s
     end
 
+    # Row buttons act on one record, whose id the row supplies - hence the `detail` scope on an
+    # entry that names no resource: a view's own slot is read in the schema it belongs to.
+    #
+    # Only a slot the author never mentioned carries the default. `nil` and `[]` are both decisions
+    # to render nothing, which is why `assigned?` and not a nil check decides.
     def generate_row_actions(view, context)
-      unless view.row_actions.nil?
-        return view.row_actions.map do |action|
-          action_descriptor_generator.generate(action, context)
-        end.compact
-      end
-      nil
+      return default_actions(view, context, :detail) unless view.assigned?(:row_actions)
+      generate_action_descriptors(view.row_actions, context)
     end
 
+    # Everything the resource supports, until the view says otherwise.
     def generate_toolbar_actions(view, context)
-      unless view.toolbar_actions.nil?
-        return view.toolbar_actions.map do |action|
-          action_descriptor_generator.generate(action, context)
-        end.compact
-      end
-      nil
+      return default_actions(view, context, nil) unless view.assigned?(:toolbar_actions)
+      generate_action_descriptors(view.toolbar_actions, context)
+    end
+
+    def default_actions(_view, context, scope)
+      [action_descriptor_generator.generate(Habarico::DefaultActionsReference.new(scope: scope), context)].compact
+    end
+
+    def generate_action_descriptors(actions, context)
+      return nil if actions.nil?
+      actions.map { |action| action_descriptor_generator.generate(action, context) }.compact
     end
 
     # Utility actions of the table (export, print, ...) rendered next to the filter bar.

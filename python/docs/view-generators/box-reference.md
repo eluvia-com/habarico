@@ -1,6 +1,6 @@
 ---
 title: Box reference
-sidebar_position: 6
+sidebar_position: 7
 ---
 
 Every box class, and the parameters each one adds on top of the common ones.
@@ -12,14 +12,14 @@ list to check a parameter against.
 ## Declaration
 
 ```python
-from habarico.schema import Box, GridBox, GridItemBox, ListBox, TabBox, TabItemBox
+from habarico.schema import Box, GridBox, ListBox, TabBox, TabItemBox
 from habarico.schema.generators import EditViewSchemaGenerator
 
 EditViewSchemaGenerator(box=TabBox(boxes=[
     TabItemBox(label="Product", boxes=[
         GridBox(boxes=[
-            GridItemBox(md=8, boxes=[Box(label="Basics", boxes=["name", "sku"])]),
-            GridItemBox(md=4, boxes=[Box(label="Pricing", boxes=["price", "vat_rate"])]),
+            Box(label="Basics", grid_item={"md": 8}, boxes=["name", "sku"]),
+            Box(label="Pricing", grid_item={"md": 4}, boxes=["price", "vat_rate"]),
         ]),
     ]),
     TabItemBox(label="Orders", boxes=[ListBox(reference="eshop/order", target="product")]),
@@ -34,7 +34,6 @@ All classes import from `habarico.schema` (or `habarico.schema.boxes`).
 |---|---|---|
 | `Box` | `simple` | A labelled stack of fields — the fallback |
 | `GridBox` | `grid` | A responsive 12-column grid |
-| `GridItemBox` | `grid-item` | One column of a grid |
 | `GridFieldsBox` | `grid` | A grid with one field per column — a shorthand |
 | `TabBox` | `tab` | Tabs |
 | `WizardBox` | `wizard` | A stepped form |
@@ -55,13 +54,22 @@ Accepted by every class (they come from `BaseBox`):
 | `card` | `bool` | `None` | Card frame: `True` always, `False` never (even with a label), `None` leaves it to the frontend — see below |
 | `collapsible` | `'open' \| 'closed'` | `None` | Makes the box collapsible; the value is the initial state |
 | `boxes` | `list[BaseBox \| str \| Field]` | `None` | Children: nested boxes, field names, or `Field` descriptors |
-| `read_only` | `bool` | `False` | Renders every field inside as a display field |
+| `read_only` | `bool` | `False` | Renders the box, and everything under it, as display fields — see below |
 | `show_query` | `str` | `None` | Condition expression; the box disappears when it is falsy |
 | `required_query` | `str` | `None` | Condition expression; the box's fields become required when it is truthy |
 | `toolbar_actions` | `Actions` | `None` | Buttons in the box header |
 | `bottom_actions` | `Actions` | `None` | Buttons below the box's fields |
+| `grid_item` | `GridItem \| dict` | `None` | Column span inside the parent `GridBox` — see [`grid_item`](#grid_item) |
 
 `show_query` and `required_query` are stored under `options.dynamic_render`.
+
+`read_only=True` applies in an edit or create view as much as in a show one, and it covers the
+box's whole subtree: nested boxes, an array box's rows, an object box's properties. It only ever
+closes, never re-opens — a nested box passing `read_only=False` inside a read-only one stays
+read-only, the same way `BaseBox.get_read_only()` reads `context.read_only or self._read_only`. To
+keep part of a form editable, put the flag on the inner boxes rather than on the container. Use it
+to present a field the endpoint itself accepts: the field schema stays writeable, only this layout
+closes it.
 
 Left at `None`, `card` is decided by the frontend: a box takes the card when it has a label,
 toolbar actions or is collapsible, and the view's first box takes it on a page surface — inside a
@@ -84,15 +92,32 @@ step caption. In the schema these land under a `tab` / `wizard` object:
 {"type": "wizard", "wizard": {"show_toolbar_navigation": true, "validate_steps": true}}
 ```
 
-## `GridItemBox`
+## `grid_item`
+
+How wide a box is inside its parent `GridBox`. It is a placement rather than a box type, so every
+class accepts it — pass a `GridItem` descriptor or a plain dict of breakpoint spans:
+
+```python
+from habarico.schema import Box, GridBox, GridItem, ListBox
+
+GridBox(boxes=[
+    Box(label="Unit management", grid_item={"md": 3}, boxes=["owner", "manager"]),
+    ListBox(label="Documents", grid_item=GridItem(md=9), reference="document", target="unit"),
+])
+```
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `xs`, `sm`, `md`, `lg`, `xl` | `int` | `None` | Column span (1–12) at that breakpoint |
 
-Omitting them all lets the frontend compute the spans from the number of children. Mixing explicit
-and computed items in one grid does not work — one `GridItemBox` switches the whole grid to
-explicit mode.
+A breakpoint that is not set inherits the span of the one below it (`xs` → `sm` → `md` → `lg` →
+`xl`), so `{"md": 9}` on its own is a complete placement. Omitting `grid_item` entirely lets the
+frontend compute the spans from the number of cells. Mixing explicit and computed cells in one grid
+does not work — one cell carrying `grid_item` switches the whole grid to explicit mode, and every
+cell without one then takes a full row.
+
+Because the box that carries the span is the box that draws the card, its card stretches to the
+height of its row like every other cell in it.
 
 ## `GridFieldsBox`
 
@@ -103,11 +128,9 @@ own `Box`.
 GridFieldsBox("price", "vat_rate", "stock")
 ```
 
-:::caution
-It also accepts `xs`, `sm`, `md`, `lg` and `xl`, but ignores them — they are neither forwarded to
-the generated boxes nor to `GridBox`. Use `GridBox` with explicit `GridItemBox` children when the
-widths matter.
-:::
+It also accepts `xs`, `sm`, `md`, `lg` and `xl` and passes them to every generated box as its
+`grid_item`, so `GridFieldsBox("price", "vat_rate", "stock", md=4)` lays the three fields out three
+to a row on medium screens.
 
 ## `ListBox`
 
@@ -116,25 +139,31 @@ widths matter.
 | `reference` (required) | `str` | — | Resource to list |
 | `target` | `str` | `None` | Foreign key pointing back at the parent record |
 | `boxes` | `Fieldset` | `None` | Which columns the embedded table shows, and in what order |
-| `row_actions` | `Actions` | `None` | Buttons in the row action column |
-| `list_toolbar_actions` | `Actions` | `None` | Actions in the **table's** own toolbar, e.g. create |
-| `list_actions` | `Actions` | `None` | Utility actions next to the filter bar (export, print, …) |
+| `row_actions` | `Actions` | the referenced resource's record actions | Buttons in the row action column; `None` for none |
+| `list_actions` | `Actions` | the referenced resource's collection actions | Actions above the embedded table (create, export, …); `None` for none |
 | `filters` | `Filters` | `None` | Filters offered on the embedded list |
 | `default_sorting` | `SortingOrStr` | `None` | Initial sort — a `Sorting` object, or a Django-style string (`"placed_at"` ascending, `"-placed_at"` descending) |
 | `extra_filters` | `dict` | `None` | Static filters applied on top, invisible to the user |
 | `sortable_field_name` | `str` | `None` | Field storing the order; enables drag-and-drop sorting |
 | `sortable_sort_for_filters` | `dict` | `None` | Filters under which reordering is allowed |
-| `schema_params` | `dict[str, str]` | `None` | Extra params sent when fetching the reference's schema |
+| `schema_params` | `dict[str, str]` | `None` | Extra params sent when fetching the reference's schema; emitted as `reference.params` |
 | `single_click_action` | `ActionDescriptor \| str` | `None` | Action on a single row click; a plain name is normalized into a descriptor |
 | `double_click_action` | `ActionDescriptor \| str` | auto: show → edit → nothing | Action on a double click |
 
 :::caution
-`toolbar_actions` and `list_toolbar_actions` are two different slots. `toolbar_actions` is the
-common `BaseBox` parameter: bound to the **parent** record and rendered in the box header.
-`list_toolbar_actions` is bound to the **referenced** resource and is emitted inside the `list`
-parameters, where the frontend renders it in the table's own toolbar. Passing the actions to the
-wrong one puts them on the wrong record.
+A list box has one toolbar: the common `toolbar_actions` of `BaseBox`, rendered in the box header. A
+descriptor there is bound to the **parent** record unless it names another resource through its own
+`reference`, which is how the embedded resource's buttons reach the header:
+`toolbar_actions=[DefaultActions(reference=LIST, scope="list")]`, or
+`[Action(name="create", reference=LIST)]` — `LIST` being the resource the box lists, so the name is
+written once. See [Action descriptor reference](./action-descriptor-reference.md).
 :::
+
+`row_actions` and `list_actions` are bound to the **referenced** resource and emitted inside the
+`list` parameters, which are read in that resource's schema — so an entry there needs no address of
+its own. Left alone, each publishes a bare `default_actions` entry, the row's with `detail` scope and
+the table's with `list`, which the frontend expands. Pass `None` to turn one off, or `[]` for the
+same with an empty array on the wire.
 
 ## `GalleryBox`
 
@@ -146,7 +175,7 @@ wrong one puts them on the wrong record.
 | `filters` | `Filters` | `None` | Filters offered on the underlying list |
 | `default_sorting` | `SortingOrStr` | `None` | Initial sort |
 | `extra_filters` | `dict` | `None` | Static filters applied on top |
-| `schema_params` | `dict[str, str]` | `None` | Extra params sent when fetching the reference's schema |
+| `schema_params` | `dict[str, str]` | `None` | Extra params sent when fetching the reference's schema; emitted as `reference.params` |
 
 A gallery box is always read-only — it passes `read_only=True` up to `BaseBox` regardless of
 what you set. So does `ListBox`.

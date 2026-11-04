@@ -13,6 +13,7 @@ import {DEFAULT_IMAGE_ACCEPT} from '@schema/components/inputs/constants';
 import {useGetLocalResourceSchema} from '@schema/hooks/useGetLocalResourceSchema';
 import {useGetTargetValues} from '@schema/hooks/useGetTargetValues';
 import {UploadFilesActionParameters} from '@schema/types';
+import {resourceKey} from '@schema/utils/resourceReference';
 
 export type SchemaUploadFilesButtonProps = Omit<ActionButtonProps, 'type'> & {
   uploadFiles?: UploadFilesActionParameters;
@@ -35,7 +36,7 @@ export const SchemaUploadFilesButton = ({uploadFiles, ...props}: SchemaUploadFil
   // The action params rarely carry the upload/accept config; it lives on the target field's
   // schema (fileField.options). Fall back to it so the button matches the create form behaviour
   // (e.g. S3 multipart uploads instead of always base64).
-  const {getMethodSchema} = useGetLocalResourceSchema({resource: reference});
+  const {getMethodSchema} = useGetLocalResourceSchema({resource: resourceKey(reference)});
   const fileFieldOptions = fileField
     ? (getMethodSchema('post')?.fields ?? getMethodSchema('get')?.fields)?.find(
         (f) => f.name === fileField
@@ -46,7 +47,7 @@ export const SchemaUploadFilesButton = ({uploadFiles, ...props}: SchemaUploadFil
 
   const translate = useTranslate();
   const {Dialog, openDialog, closeDialog} = useDialog();
-  const uploadResource = useResourceContext(reference);
+  const uploadResource = useResourceContext(resourceKey(reference));
   const contextTargetValues = useGetTargetValues();
   const record = useRecordContext();
   const dataProvider = useDataProvider();

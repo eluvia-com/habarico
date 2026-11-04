@@ -200,9 +200,20 @@ jobs:
           set -eu
           # npm refuses to publish a pre-release without an explicit --tag: it would otherwise move
           # the "latest" dist-tag onto a beta.
+          # A stable release takes "latest" only from a lower version: a patch of an older series
+          # gets the tag of its series (`release-7.1`; `v7.1` would be rejected as a semver range).
           case "$VERSION" in
             *-alpha.*|*-beta.*|*-rc.*) DIST_TAG=beta ;;
-            *) DIST_TAG=latest ;;
+            *)
+              CURRENT=$(npm view habarico dist-tags.latest --registry=https://registry.npmjs.org/ 2>/dev/null || true)
+              HIGHEST=$(printf '%s\n%s\n' "$CURRENT" "$VERSION" | sort -V | tail -1)
+              if [ -z "$CURRENT" ] || [ "$HIGHEST" = "$VERSION" ]; then
+                DIST_TAG=latest
+              else
+                DIST_TAG="release-$(echo "$VERSION" | cut -d. -f1,2)"
+              fi
+              echo "latest on npmjs.com: ${CURRENT:-none}, publishing $VERSION under \"$DIST_TAG\""
+              ;;
           esac
 
           if OUTPUT=$(npm publish --registry=https://registry.npmjs.org/ --provenance --access public --tag "$DIST_TAG" 2>&1); then
@@ -317,4 +328,111 @@ jobs:
               *)
                 exit 1 ;;
             esac
+          fi
+
+  # A stable tag gets a GitHub Release once its library is in the registry. Release-scoped
+  # credentials are not needed, so it runs outside the `release` environment.
+  github-release:
+    name: github-release
+    needs: [detect, node, python, ruby]
+    # Only the library the tag names ran; the other two were skipped.
+    if: >-
+      !cancelled() &&
+      github.ref_type == 'tag' &&
+      !contains(github.ref_name, '-') &&
+      !contains(needs.*.result, 'failure') &&
+      contains(needs.*.result, 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Create or update the release
+        run: |
+          set -eu
+          LIB="${TAG%@*}"
+          VER="${TAG##*@}"
+
+          case "$LIB" in
+            node) PACKAGE_URL="https://www.npmjs.com/package/habarico/v/$VER" ;;
+            python) PACKAGE_URL="https://pypi.org/project/habarico/$VER/" ;;
+            ruby) PACKAGE_URL="https://rubygems.org/gems/habarico/versions/$VER" ;;
+            *) echo "ERROR: no registry known for $LIB"; exit 1 ;;
+          esac
+
+          # The notes are the section release.yml stamped, below "## [X.Y.Z]" up to the next heading
+          # of that level. GitHub refuses a body over 125,000 characters, and a section of a major
+          # outgrows it: over MAX_CHARS it is cut before an entry outside a code fence and ends
+          # with a link to the full changelog in the tag.
+          LIB="$LIB" VER="$VER" PACKAGE_URL="$PACKAGE_URL" python3 - <<'PY' > /tmp/notes.md
+          import os, sys
+
+          MAX_CHARS = 30000
+
+          lib, version = os.environ["LIB"], os.environ["VER"]
+          section, found = [], False
+          with open(f"{lib}/CHANGELOG.md", encoding="utf-8") as changelog:
+              for line in changelog.read().splitlines():
+                  if line.startswith(f"## [{version}]"):
+                      found = True
+                  elif found and line.startswith("## "):
+                      break
+                  elif found:
+                      section.append(line)
+          while section and not section[0].strip():
+              section.pop(0)
+          if not "".join(section).strip():
+              sys.exit(f"ERROR: {lib}/CHANGELOG.md has no section for {version}")
+
+          footer = "\n\nPackage: " + os.environ["PACKAGE_URL"]
+          notes = "\n".join(section).rstrip()
+          if len(notes) + len(footer) > MAX_CHARS:
+              url = "{}/{}/blob/{}/{}/CHANGELOG.md".format(
+                  os.environ["GITHUB_SERVER_URL"], os.environ["GITHUB_REPOSITORY"], os.environ["TAG"], lib
+              )
+              suffix = f"\n\n…\n\n*Truncated - the full changelog is in [{lib}/CHANGELOG.md]({url}).*"
+              budget = MAX_CHARS - len(suffix) - len(footer)
+
+              # The last line within the budget that starts an entry, and any line outside a fence
+              # as a fallback when no entry boundary fits.
+              cut, fallback, used, in_fence = 0, 0, 0, False
+              for index, line in enumerate(section):
+                  if used > budget:
+                      break
+                  if not in_fence:
+                      fallback = index
+                      if line.startswith(("- ", "### ")):
+                          cut = index
+                  if line.lstrip().startswith(("```", "~~~")):
+                      in_fence = not in_fence
+                  used += len(line) + 1
+              kept = section[: cut or fallback]
+              # A heading left without its entries says nothing.
+              while kept and (not kept[-1].strip() or kept[-1].startswith("#")):
+                  kept.pop()
+              notes = "\n".join(kept) + suffix
+              print(f"{lib} {version}: section truncated to {len(notes)} characters", file=sys.stderr)
+
+          print(notes + footer)
+          PY
+
+          # "Latest" belongs to node, and only to its newest stable release: a patch on an older
+          # series must not take it from the current one.
+          NEWEST=$(git ls-remote --tags --refs origin 'refs/tags/node@*' \
+            | sed 's|.*refs/tags/node@||' | { grep -v -e '-' || true; } | sort -V | tail -1)
+          if [ "$LIB" = node ] && [ "$VER" = "$NEWEST" ]; then
+            LATEST=true
+          else
+            LATEST=false
+          fi
+
+          # A manual retry of publish.yml on the tag lands here a second time.
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TAG" --notes-file /tmp/notes.md --latest="$LATEST"
+          else
+            gh release create "$TAG" --verify-tag --title "$TAG" --notes-file /tmp/notes.md --latest="$LATEST"
           fi

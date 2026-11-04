@@ -29,7 +29,7 @@ type FieldSchema = {
   nullable?: boolean;
   required?: boolean;
   defaultValue?: string | boolean | number;
-  reference?: string;        // Target resource for relation fields, e.g. "eshop/category"
+  reference?: ResourceReference;  // Target resource for relation fields
   sortable?: boolean;
   sortBy?: string;
   aggregations?: AggregateFunctionType[];     // Functions offered on the /aggregate endpoint
@@ -54,7 +54,7 @@ type ItemFieldSchema = {
   nullable?: boolean;
   required?: boolean;
   defaultValue?: string | boolean | number;
-  reference?: string;
+  reference?: ResourceReference;
   enum?: EnumType;
   options?: FieldOptions;
   properties?: FieldSchema[];
@@ -233,7 +233,7 @@ type FieldDescriptor = {
   groupBy?: FieldGroupByOption[];
   // carried through for aggregate widgets so the chart can render readable labels
   format?: FieldFormatType;
-  reference?: string;
+  reference?: ResourceReference;
   enum?: EnumType;
 };
 
@@ -253,7 +253,7 @@ type FilterSchema = {
   label: string;
   helpText?: string;
   defaultValue?: string | boolean | number;
-  reference?: string;
+  reference?: ResourceReference;
   enum?: EnumType;
   options?: FieldOptions;
   properties?: FieldSchema[];
@@ -279,7 +279,7 @@ documents alike, and creates one record per file.
 
 ```typescript
 type UploadFilesActionParameters = {
-  reference?: string;              // Resource where a record is created for each file
+  reference?: ResourceReference;   // Resource where a record is created for each file
   target?: string;                 // FK field on the file model linking to the parent record
   fileField: string;               // Field on the created record that holds the file
   accept?: string[];               // Allowed file types e.g. [".pdf", ".docx"]; defaults to common image types

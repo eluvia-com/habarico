@@ -49,7 +49,7 @@ Two wildcards are available, usable at any level — top level or inside `meta(.
 ## Errors
 
 Requesting an unknown field, at any level, fails the whole request with `422 Unprocessable
-Entity` (the standard Eluvia error envelope, `source` pointing at the offending field name):
+Entity` (the standard error envelope (see the [API reference](/api)), `source` pointing at the offending field name):
 
 ```http
 GET /products/1?fields=bogus

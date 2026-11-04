@@ -16,6 +16,7 @@ import {useGlobalResourceSchemaContext} from '@schema/hooks/useGlobalResourceSch
 import {FieldSchema, ItemFieldSchema} from '@schema/types';
 import {convertApiSortToRaSort} from '@schema/utils/api';
 import {FIELD_DEFAULT} from '@schema/utils/fieldSelection';
+import {resourceKey} from '@schema/utils/resourceReference';
 import {viewModeToPresentation} from '@schema/utils/viewMode';
 import {SchemaTreeReferenceArrayField} from './SchemaTreeReferenceArrayField';
 
@@ -35,7 +36,7 @@ export const SchemaReferenceArrayField = ({
   variant = 'chip',
 }: SchemaReferenceArrayFieldProps) => {
   const {isInCollection} = useValueLocationContext();
-  const reference = useResourceContext(items.reference);
+  const reference = useResourceContext(resourceKey(items.reference));
 
   const {schema: relatedSchema} = useGlobalResourceSchemaContext(reference);
 

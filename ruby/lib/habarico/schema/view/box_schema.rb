@@ -3,13 +3,13 @@ module Habarico
     include ::ActiveModel::Model
     include Eluvia::ActiveModel::Attributes
     include Eluvia::ActiveModel::EnumAttribute
-    include Habarico::ExtensibleEnum
+    include Habarico::ActiveModel::ExtensibleEnum
 
-    intended_for_types *Types::BOX_TYPE
+    extensible_intended_for_types Types::BOX_TYPE
 
     # Type of the box
     string_attr :type
-    extensible_enum_attr :type, :BOX_TYPE
+    extensible_enum_attr :type, Types::BOX_TYPE
 
     # Name of the box
     string_attr :name
@@ -27,17 +27,17 @@ module Habarico
     boolean_attr :card
 
     # Makes the box collapsible; value sets the default state ('open' = expanded, 'closed' = collapsed).
-    # Null means the box is not collapsible.
+    # Absent means the box is not collapsible.
     string_attr :collapsible
     enum_attr :collapsible, %i[open closed]
 
     # Actions rendered in this box's local toolbar (box header / card header area), relative to the box root.
     # On a step container (tab/wizard) the actions appear on the last step. For a 'list' box this is the box-level
     # toolbar; the table's own toolbar is carried by 'list.toolbar_actions' instead.
-    has_many_attr :toolbar_actions, 'Habarico::ActionDescriptor'
+    has_many_attr :toolbar_actions, ['Habarico::ActionDescriptor', 'Habarico::DefaultActionsDescriptor'], default: 'Habarico::ActionDescriptor'
 
     # Actions rendered at the bottom of the box, below the fields (similar to form submit buttons at the view level).
-    has_many_attr :bottom_actions, 'Habarico::ActionDescriptor'
+    has_many_attr :bottom_actions, ['Habarico::ActionDescriptor', 'Habarico::DefaultActionsDescriptor'], default: 'Habarico::ActionDescriptor'
 
     # Additional parameters for box type 'tab'
     has_one_attr :tab, 'Habarico::TabBoxParameters'
@@ -45,7 +45,10 @@ module Habarico
     # Additional parameters for box type 'wizard'
     has_one_attr :wizard, 'Habarico::WizardBoxParameters'
 
-    # Additional parameters for box type 'grid-item'
+    # Placement of the box inside its parent 'grid' box - the column span at each breakpoint. Unlike
+    # the parameter blocks around it this one is not tied to a box type: any box carries it, so a grid
+    # cell can be a 'list'/'gallery'/'array' box itself (HAB-963). Absent when the box has no placement
+    # and the frontend computes the span from the number of cells.
     has_one_attr :grid_item, 'Habarico::GridItemBoxParameters'
 
     # Additional parameters for box type 'list'

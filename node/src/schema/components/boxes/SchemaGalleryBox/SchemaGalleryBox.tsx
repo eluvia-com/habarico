@@ -21,6 +21,7 @@ import {useGetLocalResourceSchema} from '@schema/hooks/useGetLocalResourceSchema
 import {HabRecord} from '@schema/types';
 import {convertApiSortToRaSort} from '@schema/utils/api';
 import {FIELD_DEFAULT, FieldSelection} from '@schema/utils/fieldSelection';
+import {resourceKey} from '@schema/utils/resourceReference';
 import {SchemaGalleryContent} from './SchemaGalleryContent';
 
 export const SchemaGalleryBox = ({schema, label = schema.label, isRoot}: SchemaBoxProps) => {
@@ -33,13 +34,13 @@ export const SchemaGalleryBox = ({schema, label = schema.label, isRoot}: SchemaB
   }
 
   const gallerySchema = schema.gallery;
-  const reference = useResourceContext(gallerySchema.reference);
+  const reference = useResourceContext(resourceKey(gallerySchema.reference));
   const [locale] = useLocaleState();
   const isLast = useIsLastPanel();
   const card = useBoxCard(schema, Boolean(label), isRoot);
 
   const schemaParams = {
-    ...(gallerySchema.schemaParams || {}),
+    ...gallerySchema.reference.params,
     ...(record && gallerySchema.target
       ? {_target: JSON.stringify({[gallerySchema.target]: record.id})}
       : {}),

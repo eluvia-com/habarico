@@ -12,7 +12,7 @@ class BasePreferencesTest < Minitest::Test
   def test_all_base_exact_keys_registered
     P.register_base_preferences
     %w[
-      theme locale preferences.dashboard
+      theme locale
       preferences.layout.app.pageWidth preferences.layout.app.contrastMode
       preferences.layout.app.stripedRows preferences.layout.app.density
     ].each { |key| assert P.registered?(key), "#{key} not registered" }
@@ -51,26 +51,10 @@ class BasePreferencesTest < Minitest::Test
     assert_raises(P::PreferenceValidationError) { P.validate(key, "normal") }
   end
 
-  def test_dashboard_schema_accepts_widget_and_rejects_bad_widget
+  # The dashboard key is registered by `habarico-enterprise`: a widget is defined and drawn there,
+  # so its shape is validated there too. The gem that cannot produce one does not declare it.
+  def test_the_dashboard_key_is_not_this_gems
     P.register_base_preferences
-    ok = { "widgets" => [{ "id" => "w1", "type" => "chart", "layout" => { "x" => 0, "y" => 0, "w" => 2, "h" => 2 } }] }
-    assert P.validate("preferences.dashboard", ok)
-    bad = { "widgets" => [{ "type" => "chart" }] } # missing id + layout
-    assert_raises(P::PreferenceValidationError) { P.validate("preferences.dashboard", bad) }
-  end
-
-  def test_dashboard_widget_layout_validates_optional_size_hints
-    P.register_base_preferences
-    dashboard = ->(layout) { { "widgets" => [{ "id" => "w1", "type" => "table", "layout" => layout }] } }
-    base = { "x" => 0, "y" => 0, "w" => 6, "h" => 3 }
-
-    assert P.validate("preferences.dashboard", dashboard.call(base.merge("stackedH" => 5, "minW" => 3, "minH" => 2)))
-    %w[stackedH minW minH].each do |field|
-      [0, 1.5, "2"].each do |value|
-        assert_raises(P::PreferenceValidationError, "#{field}=#{value.inspect} should be rejected") do
-          P.validate("preferences.dashboard", dashboard.call(base.merge(field => value)))
-        end
-      end
-    end
+    refute P.registered?("preferences.dashboard")
   end
 end

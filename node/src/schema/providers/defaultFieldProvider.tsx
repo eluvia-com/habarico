@@ -19,6 +19,7 @@ import {SchemaReferenceArrayField} from '@schema/components/fields/SchemaReferen
 import {SchemaReferenceField} from '@schema/components/fields/SchemaReferenceField';
 import {AdminFieldProviderProps} from '@schema/providers/types';
 import {FieldOptions} from '@schema/types';
+import {resourceKey} from '@schema/utils/resourceReference';
 
 type FieldParams = Omit<AdminFieldProviderProps, 'type' | 'props'> & {
   options?: FieldOptions;
@@ -38,7 +39,7 @@ const renderIntegerField = ({format, schema, locale, isInList, options, rest}: F
   if (format === 'relation' || format === 'tree-relation') {
     return (
       <SchemaReferenceField
-        reference={schema?.reference}
+        reference={resourceKey(schema?.reference)}
         targetSource={schema?.targetSource}
         options={options}
         {...rest}
@@ -67,7 +68,7 @@ const renderStringField = ({format, schema, locale, isInList, options, rest}: Fi
   if (format === 'relation' || format === 'tree-relation') {
     return (
       <SchemaReferenceField
-        reference={schema?.reference}
+        reference={resourceKey(schema?.reference)}
         targetSource={schema?.targetSource}
         options={options}
         {...rest}

@@ -26,13 +26,12 @@ from habarico.contrib.preferences.registry import (
 from habarico.contrib.preferences.schemas import (
     AppDensityPreference,
     ColumnsPreference,
-    DashboardPreference,
     LocalePreference,
     SavedQueriesPreference,
+    SortPreference,
     ThemePreference,
-    WidgetConfig,
-    WidgetLayout,
 )
+from pydantic import BaseModel
 
 User = get_user_model()
 
@@ -175,24 +174,12 @@ class TestRegistryDefaultValidation:
     def test_lazy_translation_in_default_is_resolved(self):
         from django.utils.translation import gettext_lazy as _
 
-        default = {
-            "widgets": [
-                {
-                    "id": "orders",
-                    "type": "aggregate",
-                    "resource": "order",
-                    "label": _("Number of orders by customers"),
-                    "layout": {"x": 0, "y": 0, "w": 6, "h": 4},
-                    "aggregateFunction": "count",
-                    "groupBy": [{"field": "customer__company_name"}],
-                }
-            ]
-        }
-        register_preference("preferences.dashboard", schema=DashboardPreference, default=default)
+        default = [{"label": _("Orders of the month"), "value": {}}]
+        register_preference("product.savedQueries", schema=SavedQueriesPreference, default=default)
 
-        resolved = get_default("preferences.dashboard")
-        assert resolved["widgets"][0]["label"] == "Number of orders by customers"
-        assert type(resolved["widgets"][0]["label"]) is str
+        resolved = get_default("product.savedQueries")
+        assert resolved[0]["label"] == "Orders of the month"
+        assert type(resolved[0]["label"]) is str
 
 
 class TestRegistryValidate:
@@ -260,6 +247,85 @@ class TestRegistryGetSet:
 
         assert get_value(user, "view_mode").value == "cards"
         assert get_value(other_user, "view_mode").value == "table"
+
+
+class TestRegistryMigratableStoredValue:
+    """
+    A stored value the owner's schema can bring up to date is migrated instead of dropped.
+
+    Deleting is the fallback, not the first answer: a schema that knows how its own older shape
+    looked can say so, and the value survives a change of shape without a data migration.
+    """
+
+    class Migratable(BaseModel):
+        """Schema whose older shape named the field ``mode`` rather than ``view_mode``."""
+
+        view_mode: str
+
+        @classmethod
+        def migrate_value(cls, value):
+            if isinstance(value, dict) and "mode" in value and "view_mode" not in value:
+                return {**{k: v for k, v in value.items() if k != "mode"}, "view_mode": value["mode"]}
+            return None
+
+    class Unmigratable(BaseModel):
+        view_mode: str
+
+        @classmethod
+        def migrate_value(cls, value):
+            return {"nothing": "valid"}
+
+    class Exploding(BaseModel):
+        view_mode: str
+
+        @classmethod
+        def migrate_value(cls, value):
+            raise RuntimeError("the migration is broken")
+
+    def test_a_migratable_value_is_returned_in_its_new_shape(self, user):
+        UserPreference.objects.create(user=user, key="widgets", value={"mode": "cards"})
+        register_preference("widgets", schema=self.Migratable)
+
+        assert get_value(user, "widgets").value == {"view_mode": "cards"}
+
+    def test_the_migration_is_persisted(self, user):
+        """Once, on the first read — a second read has nothing left to fix."""
+        UserPreference.objects.create(user=user, key="widgets", value={"mode": "cards"})
+        register_preference("widgets", schema=self.Migratable)
+
+        get_value(user, "widgets")
+
+        assert UserPreference.objects.get(user=user, key="widgets").value == {"view_mode": "cards"}
+
+    def test_a_valid_value_is_not_touched(self, user):
+        UserPreference.objects.create(user=user, key="widgets", value={"view_mode": "table"})
+        register_preference("widgets", schema=self.Migratable)
+
+        assert get_value(user, "widgets").value == {"view_mode": "table"}
+
+    def test_a_migration_that_does_not_validate_falls_back_to_deleting(self, user):
+        UserPreference.objects.create(user=user, key="widgets", value={"mode": "cards"})
+        register_preference("widgets", schema=self.Unmigratable)
+
+        get_value(user, "widgets")
+
+        assert not UserPreference.objects.filter(user=user, key="widgets").exists()
+
+    def test_a_broken_migration_does_not_break_the_read(self, user):
+        """A schema's own bug must not make the preference endpoint fail."""
+        UserPreference.objects.create(user=user, key="widgets", value={"mode": "cards"})
+        register_preference("widgets", schema=self.Exploding)
+
+        assert get_value(user, "widgets") is None
+        assert not UserPreference.objects.filter(user=user, key="widgets").exists()
+
+    def test_a_schema_without_a_migration_still_deletes(self, user):
+        UserPreference.objects.create(user=user, key="view_mode", value="grid")
+        register_preference("view_mode", schema={"enum": ["table", "cards"]}, default="table")
+
+        get_value(user, "view_mode")
+
+        assert not UserPreference.objects.filter(user=user, key="view_mode").exists()
 
 
 class TestRegistryInvalidStoredValue:
@@ -370,216 +436,11 @@ class TestSavedQueriesPreferenceSchema:
             validate("product.savedQueries", [{"value": {}}])
 
 
-class TestDashboardPreferenceSchema:
-    def test_accepts_table_widget(self):
-        register_preference("dashboard", schema=DashboardPreference)
-
-        value = {
-            "widgets": [
-                {
-                    "id": "w1",
-                    "resource": "product",
-                    "type": "table",
-                    "label": "Products",
-                    "layout": {"x": 0, "y": 0, "w": 6, "h": 4},
-                    "filters": {"in_stock": "true"},
-                    "columns": ["name"],
-                }
-            ]
-        }
-        assert validate("dashboard", value) == value
-
-    def test_accepts_aggregate_widget(self):
-        register_preference("dashboard", schema=DashboardPreference)
-
-        value = {
-            "widgets": [
-                {
-                    "id": "w2",
-                    "resource": "order",
-                    "type": "aggregate",
-                    "layout": {"x": 6, "y": 0, "w": 3, "h": 2},
-                    "field": "total",
-                    "aggregateFunction": "max",
-                }
-            ]
-        }
-        assert validate("dashboard", value) == value
-
-    @pytest.mark.parametrize("function", ["count", "sum", "avg", "min", "max"])
-    def test_accepts_all_aggregate_functions(self, function):
-        register_preference("dashboard", schema=DashboardPreference)
-
-        value = {
-            "widgets": [
-                {
-                    "id": "w2",
-                    "resource": "order",
-                    "type": "aggregate",
-                    "layout": {"x": 6, "y": 0, "w": 3, "h": 2},
-                    "field": "total",
-                    "aggregateFunction": function,
-                }
-            ]
-        }
-        assert validate("dashboard", value) == value
-
-    def test_rejects_unknown_aggregate_function(self):
-        register_preference("dashboard", schema=DashboardPreference)
-
-        with pytest.raises(PreferenceValidationError):
-            validate(
-                "dashboard",
-                {
-                    "widgets": [
-                        {
-                            "id": "w2",
-                            "resource": "order",
-                            "type": "aggregate",
-                            "layout": {"x": 6, "y": 0, "w": 3, "h": 2},
-                            "field": "total",
-                            "aggregateFunction": "median",
-                        }
-                    ]
-                },
-            )
-
-    def test_accepts_chart_widget_with_group_by_and_options(self):
-        register_preference("dashboard", schema=DashboardPreference)
-
-        value = {
-            "widgets": [
-                {
-                    "id": "w3",
-                    "resource": "order",
-                    "type": "bar",
-                    "layout": {"x": 0, "y": 0, "w": 6, "h": 4},
-                    "field": "total",
-                    "aggregateFunction": "count",
-                    "groupBy": [
-                        {"field": "created_at", "bucket": {"type": "trunc", "granularity": "month"}},
-                        {"field": "status"},
-                    ],
-                    "chartOptions": {"orientation": "horizontal"},
-                }
-            ]
-        }
-        assert validate("dashboard", value) == value
-
-    def test_accepts_pie_widget_with_width_bucket(self):
-        register_preference("dashboard", schema=DashboardPreference)
-
-        value = {
-            "widgets": [
-                {
-                    "id": "w4",
-                    "resource": "product",
-                    "type": "pie",
-                    "layout": {"x": 0, "y": 0, "w": 4, "h": 4},
-                    "groupBy": [{"field": "price", "bucket": {"type": "width", "size": 100}}],
-                    "chartOptions": {"variant": "doughnut"},
-                }
-            ]
-        }
-        assert validate("dashboard", value) == value
-
-    def test_rejects_invalid_group_by_bucket(self):
-        register_preference("dashboard", schema=DashboardPreference)
-
-        with pytest.raises(PreferenceValidationError):
-            validate(
-                "dashboard",
-                {
-                    "widgets": [
-                        {
-                            "id": "w5",
-                            "resource": "p",
-                            "type": "line",
-                            "layout": {"x": 0, "y": 0, "w": 4, "h": 4},
-                            "groupBy": [{"field": "created_at", "bucket": {"type": "nope"}}],
-                        }
-                    ]
-                },
-            )
-
-    def test_rejects_widget_missing_required_fields(self):
-        register_preference("dashboard", schema=DashboardPreference)
-
-        with pytest.raises(PreferenceValidationError):
-            validate("dashboard", {"widgets": [{"id": "x", "type": "table"}]})
-
-    def test_accepts_custom_widget_type(self):
-        register_preference("dashboard", schema=DashboardPreference)
-
-        value = {
-            "widgets": [
-                {
-                    "id": "w1",
-                    "type": "my-custom-widget",
-                    "layout": {"x": 0, "y": 0, "w": 1, "h": 1},
-                }
-            ]
-        }
-        assert validate("dashboard", value) == value
-
-    def test_rejects_invalid_layout(self):
-        register_preference("dashboard", schema=DashboardPreference)
-
-        with pytest.raises(PreferenceValidationError):
-            validate(
-                "dashboard",
-                {
-                    "widgets": [
-                        {
-                            "id": "w1",
-                            "resource": "p",
-                            "type": "table",
-                            "layout": {"x": 0, "y": 0, "w": 0, "h": 1},
-                        }
-                    ]
-                },
-            )
-
-    def test_accepts_layout_with_stacked_height_and_resize_bounds(self):
-        register_preference("dashboard", schema=DashboardPreference)
-
-        value = {
-            "widgets": [
-                {
-                    "id": "w1",
-                    "resource": "product",
-                    "type": "table",
-                    "layout": {"x": 0, "y": 0, "w": 6, "h": 4, "stackedH": 8, "minW": 3, "minH": 2},
-                }
-            ]
-        }
-        assert validate("dashboard", value) == value
-
-    @pytest.mark.parametrize("key", ["stackedH", "minW", "minH"])
-    def test_rejects_non_positive_optional_layout_size(self, key):
-        register_preference("dashboard", schema=DashboardPreference)
-
-        with pytest.raises(PreferenceValidationError):
-            validate(
-                "dashboard",
-                {
-                    "widgets": [
-                        {
-                            "id": "w1",
-                            "resource": "product",
-                            "type": "table",
-                            "layout": {"x": 0, "y": 0, "w": 6, "h": 4, key: 0},
-                        }
-                    ]
-                },
-            )
-
-
 class TestPydanticModelRegistration:
     def test_no_default_returns_none(self):
-        register_preference("dashboard", schema=DashboardPreference)
+        register_preference("sorting", schema=SortPreference)
 
-        assert get_default("dashboard") is None
+        assert get_default("sorting") is None
 
     def test_explicit_default_is_used(self):
         register_preference("product.columns", schema=ColumnsPreference, default=["name"])
@@ -612,51 +473,6 @@ class TestPydanticModelRegistration:
 
         assert get_default("widgets") is None
         assert validate("widgets", []) == []
-
-
-class TestModelInstanceDefault:
-    def test_register_accepts_pydantic_instance_as_default(self):
-        register_preference(
-            "dashboard",
-            schema=DashboardPreference,
-            default=DashboardPreference(
-                widgets=[
-                    WidgetConfig(
-                        id="w1",
-                        resource="product",
-                        type="aggregate",
-                        layout=WidgetLayout(x=0, y=0, w=3, h=2),
-                        aggregateFunction="count",
-                    )
-                ]
-            ),
-        )
-
-        default = get_default("dashboard")
-        assert default == {
-            "widgets": [
-                {
-                    "id": "w1",
-                    "resource": "product",
-                    "type": "aggregate",
-                    "label": None,
-                    "layout": {"x": 0, "y": 0, "w": 3, "h": 2, "stackedH": None, "minW": None, "minH": None},
-                    "filters": None,
-                    "sort": None,
-                    "perPage": None,
-                    "columns": None,
-                    "field": None,
-                    "aggregateFunction": "count",
-                    "color": None,
-                    "groupBy": None,
-                    "chartOptions": None,
-                }
-            ]
-        }
-
-    def test_invalid_pydantic_default_raises_at_construction(self):
-        with pytest.raises(Exception):
-            DashboardPreference(widgets=[{"id": "x"}])  # missing required fields
 
 
 class TestCallableDefault:
@@ -695,24 +511,13 @@ class TestCallableDefault:
 
     def test_callable_default_accepts_pydantic_instance(self):
         register_preference(
-            "dashboard",
-            schema=DashboardPreference,
-            default=lambda: DashboardPreference(
-                widgets=[
-                    WidgetConfig(
-                        id="overview",
-                        resource="product",
-                        type="aggregate",
-                        layout=WidgetLayout(x=0, y=0, w=3, h=2),
-                        aggregateFunction="count",
-                    )
-                ]
-            ),
+            "sorting",
+            schema=SortPreference,
+            default=lambda: SortPreference(field="title", order="ASC"),
         )
 
-        default = get_default("dashboard")
-        assert default["widgets"][0]["id"] == "overview"
-        assert default["widgets"][0]["aggregateFunction"] == "count"
+        default = get_default("sorting")
+        assert default == {"field": "title", "order": "ASC"}
 
 
 class TestStandardPreferencesAutoRegistration:
@@ -741,29 +546,13 @@ class TestStandardPreferencesAutoRegistration:
         assert get_default("theme") == "dark"
         assert get_default("locale") is None
 
-    def test_registers_dashboard_with_pydantic_default(self, settings):
+    def test_does_not_register_the_dashboard(self):
+        """The dashboard's shape belongs to the package that defines widgets, so core leaves it alone."""
         from habarico.contrib.preferences.base import register_base_preferences
-
-        settings.HABARICO_PREFERENCES = {
-            "DEFAULTS": {
-                "preferences.dashboard": DashboardPreference(
-                    widgets=[
-                        WidgetConfig(
-                            id="overview",
-                            resource="product",
-                            type="aggregate",
-                            layout=WidgetLayout(x=0, y=0, w=3, h=2),
-                            aggregateFunction="count",
-                        )
-                    ]
-                ),
-            }
-        }
 
         register_base_preferences()
 
-        default = get_default("preferences.dashboard")
-        assert default["widgets"][0]["id"] == "overview"
+        assert is_registered("preferences.dashboard") is False
 
     def test_invalid_settings_default_raises_at_registration(self, settings):
         from habarico.contrib.preferences.base import register_base_preferences
@@ -861,10 +650,24 @@ class TestRegistryValueSizeLimit:
             validate("product.columns", ["x" * 300])
 
     @override_settings(HABARICO_PREFERENCES={"MAX_VALUE_BYTES": {"default": 200}})
-    def test_explicit_max_bytes_overrides_the_settings_default(self):
+    def test_a_registered_limit_is_used_when_nothing_configures_the_key(self):
         register_preference("product.columns", schema=ColumnsPreference, max_bytes=10_000)
 
         assert validate("product.columns", ["x" * 300]) == ["x" * 300]
+
+    @override_settings(HABARICO_PREFERENCES={"MAX_VALUE_BYTES": {"default": 200, "product.columns": 300}})
+    def test_a_configured_limit_outranks_a_registered_one(self):
+        # A limit a package registers with its key is a default: `habarico-enterprise` registers
+        # `preferences.dashboard` with 32 KB, and a deployment that needs more raises it here.
+        register_preference("product.columns", schema=ColumnsPreference, max_bytes=10_000)
+
+        assert max_bytes_for("product.columns") == 300
+
+    @override_settings(HABARICO_PREFERENCES={"MAX_VALUE_BYTES": {"default": 200, "product.columns": None}})
+    def test_a_configured_none_means_unlimited_even_against_a_registered_limit(self):
+        register_preference("product.columns", schema=ColumnsPreference, max_bytes=10_000)
+
+        assert max_bytes_for("product.columns") is None
 
     @override_settings(HABARICO_PREFERENCES={"MAX_VALUE_BYTES": {"default": 200}})
     def test_max_bytes_none_falls_back_to_the_settings_default(self):

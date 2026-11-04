@@ -22,21 +22,24 @@ import {SchemaFieldContent} from '@schema/components/fields/SchemaFieldContent';
 import {useMethodSchemaContext} from '@schema/contexts/MethodSchemaContext/useMethodSchemaContext';
 import {useGetField} from '@schema/contexts/ResourceFieldContext/useGetField';
 import {useSchemaRootContext} from '@schema/contexts/SchemaRootContext/useSchemaRootContext';
+import {useGetLocalResourceSchemas} from '@schema/hooks/useGetLocalResourceSchemas';
 import {useGlobalResourceSchemaContext} from '@schema/hooks/useGlobalResourceSchemaContext';
 import {useTriggerAction} from '@schema/hooks/useTriggerAction';
 import {
   ActionDescriptor,
+  AnyActionDescriptor,
   FieldDescriptor,
   Filters,
   HabRecord,
   IndexedHabRecord,
   SidePanelView,
 } from '@schema/types';
+import {collectDescriptorReferences, descriptorsMayRender} from '@schema/utils/actionDescriptor';
 import {generateFieldSchemaMap} from '@schema/utils/generateFieldSchemaMap';
 import {resolveViewMode} from '@schema/utils/viewMode';
 import {SchemaDatagridRowActions} from './SchemaDatagridRowActions';
 import {createRowTooltip} from './createRowTooltip';
-import {resolveRowActionSchema} from './resolveRowActionSchema';
+import {resolveRowAction} from './resolveRowAction';
 
 export type SchemaDatagridProps = {
   fields?: FieldDescriptor[];
@@ -45,6 +48,8 @@ export type SchemaDatagridProps = {
   indexField?: string;
   sortForFilters?: Filters;
   onRowClick?: (record: HabRecord) => void;
+  // the per-row action slot; `rowActionButtons` replaces its rendering, `false` drops the column
+  rowActions?: AnyActionDescriptor[];
   rowActionButtons?: ReactNode | false;
   rowSx?: (record: HabRecord) => SxProps;
   singleClickAction?: ActionDescriptor;
@@ -59,7 +64,8 @@ export const SchemaDatagrid = ({
   indexField,
   sortForFilters = {},
   onRowClick,
-  rowActionButtons = <SchemaDatagridRowActions target={target} />,
+  rowActions,
+  rowActionButtons,
   rowSx,
   singleClickAction,
   doubleClickAction,
@@ -92,6 +98,15 @@ export const SchemaDatagrid = ({
   const {resource, data, filterValues, sort, isLoading, refetch, setSort} = listContext;
   const {schema: resourceSchema, getGlobalViewSchema} = useGlobalResourceSchemaContext(resource);
   const {triggerActionElement, triggerAction} = useTriggerAction();
+  // the row-click descriptors are static, so their referenced schemas are fetched once for every row
+  const rowClickReferences = useMemo(
+    () =>
+      collectDescriptorReferences(
+        [singleClickAction, doubleClickAction].filter((d): d is ActionDescriptor => !!d)
+      ),
+    [singleClickAction, doubleClickAction]
+  );
+  const schemas = useGetLocalResourceSchemas({references: rowClickReferences});
   const sidePanel = useSidePanelController<SidePanelView>();
   // A datagrid rendered inside an overlay (its own view is shown in a sidepanel or modal) must not
   // dock row activations into a sidepanel - only the top-level list owns one.
@@ -110,13 +125,16 @@ export const SchemaDatagrid = ({
     undefined
   );
 
-  // Show the row actions column if the reference has any record-scoped list action.
-  // Mirrors the row-action default (generateDescriptorsFromSchema, isList + scope 'detail'):
-  // only `showInList && isDetail` actions become per-row buttons.
+  // A custom rendering is the caller's to show; the slot's own buttons get a column only when the
+  // slot can render one — the same expansion `SchemaButtons` runs, over the resource's actions.
+  const rowButtons = useMemo(
+    () => rowActionButtons ?? <SchemaDatagridRowActions descriptors={rowActions} target={target} />,
+    [rowActionButtons, rowActions, target]
+  );
   const showRowActions =
-    rowActionButtons &&
-    resourceSchema?.actions &&
-    resourceSchema?.actions.filter((action) => action.showInList && action.isDetail).length > 0;
+    rowActionButtons !== false &&
+    (rowActionButtons !== undefined ||
+      descriptorsMayRender(rowActions ?? [], resourceSchema?.actions ?? [], true));
 
   // --------------------------------------------------------------------------
   // Drag & drop, record position
@@ -178,8 +196,13 @@ export const SchemaDatagrid = ({
   const activate = useCallback(
     (record: RaRecord, navMode: NavMode, descriptor?: ActionDescriptor) => {
       const habRecord = record as HabRecord;
-      const schema = resolveRowActionSchema(habRecord.meta?.schema?.actions, descriptor);
-      if (!schema) return;
+      const rowAction = resolveRowAction(habRecord.meta?.schema?.actions, descriptor, {
+        resource,
+        recordId: habRecord.id,
+        schemas,
+      });
+      if (!rowAction) return;
+      const {schema, actionContext} = rowAction;
 
       // Resolve the effective presentation mode for a view (action mode > target view's mode) to
       // decide about the side panel here. `keepLinkedParent` keeps its default (true) in
@@ -212,9 +235,18 @@ export const SchemaDatagrid = ({
       }
 
       setActivation((prev) => ({record: habRecord, nonce: (prev?.nonce ?? 0) + 1}));
-      triggerAction({schema: actionSchema, navMode, target});
+      triggerAction({schema: actionSchema, navMode, target, actionContext});
     },
-    [getGlobalViewSchema, triggerAction, target, sidePanel, activeSidePanelRecordId, isInOverlay]
+    [
+      getGlobalViewSchema,
+      triggerAction,
+      target,
+      sidePanel,
+      activeSidePanelRecordId,
+      isInOverlay,
+      resource,
+      schemas,
+    ]
   );
 
   // Two independent slots. A slot is active when the backend configured an action for it, or -
@@ -270,9 +302,22 @@ export const SchemaDatagrid = ({
   const rowTooltip = useMemo(
     () =>
       rowTooltipEnabled
-        ? createRowTooltip(singleSlotActive, doubleSlotActive, singleClickAction, doubleClickAction)
+        ? createRowTooltip(
+            singleSlotActive,
+            doubleSlotActive,
+            singleClickAction,
+            doubleClickAction,
+            schemas
+          )
         : undefined,
-    [rowTooltipEnabled, singleSlotActive, doubleSlotActive, singleClickAction, doubleClickAction]
+    [
+      rowTooltipEnabled,
+      singleSlotActive,
+      doubleSlotActive,
+      singleClickAction,
+      doubleClickAction,
+      schemas,
+    ]
   );
 
   // --------------------------------------------------------------------------
@@ -297,7 +342,7 @@ export const SchemaDatagrid = ({
             target={target}
             expand={expand}
             bulkActionButtons={false}
-            rowActionButtons={showRowActions && rowActionButtons}
+            rowActionButtons={showRowActions && rowButtons}
             onDropRow={handleDropRow}
             enableDnd={enableDnd}
             loadingDnd={isUpdating}

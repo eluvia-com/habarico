@@ -3,6 +3,7 @@ import {ActionTriggerResult} from '@admin/components/buttons/types';
 import {NavMode} from '@foundation/utils/navigation';
 import {SchemaActionTrigger} from '@schema/components/buttons/SchemaActionTrigger';
 import {ActionSchema} from '@schema/types';
+import {ActionContext} from '@schema/utils/actionDescriptor';
 
 export type TriggerActionProps = {
   schema: ActionSchema;
@@ -13,6 +14,7 @@ export type TriggerActionProps = {
   navMode?: NavMode;
   target?: string;
   replace?: boolean;
+  actionContext?: ActionContext;
 };
 
 export const useTriggerAction = () => {
@@ -25,7 +27,7 @@ export const useTriggerAction = () => {
   }, []);
 
   const triggerAction = useCallback(
-    ({schema, pathname, onDone, navMode, target, replace}: TriggerActionProps) => {
+    ({schema, pathname, onDone, navMode, target, replace, actionContext}: TriggerActionProps) => {
       setTriggerActionElement(
         <SchemaActionTrigger
           schema={schema}
@@ -37,6 +39,7 @@ export const useTriggerAction = () => {
           navMode={navMode}
           target={target}
           replace={replace}
+          actionContext={actionContext}
         />
       );
     },

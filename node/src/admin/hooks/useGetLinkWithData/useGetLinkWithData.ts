@@ -1,7 +1,6 @@
 import {useCallback} from 'react';
 import {Identifier, useBasename, useResourceContext as useRaResourceContext} from 'react-admin';
 import {useLocation} from 'react-router-dom';
-import {useResourceContextOrUndefined} from '@admin/contexts/ResourceContext';
 import {useCreateHabPath} from '@admin/hooks/useCreateHabPath';
 import {ReservedViewType} from '@admin/types';
 
@@ -18,7 +17,7 @@ type GetLinkWithDataProps = {
 
 export const useGetLinkWithData = (resource?: string) => {
   const currentResource = useRaResourceContext();
-  const linkTargetResource = useResourceContextOrUndefined(resource);
+  const linkTargetResource = resource || currentResource;
 
   const createPath = useCreateHabPath();
   const basename = useBasename();

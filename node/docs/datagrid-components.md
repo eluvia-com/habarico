@@ -15,7 +15,7 @@ directly inside a hand-built [ListShell](./layout-components/list-shell.md).
 <SchemaDatagrid
   fields={viewSchema.list.boxes}
   indexField="position"
-  rowActionButtons={<SchemaButtons isList />}
+  rowActions={viewSchema.list.rowActions}
   rowSx={(record) => (record.stock === 0 ? {opacity: 0.6} : {})}
 />
 ```
@@ -30,7 +30,8 @@ directly inside a hand-built [ListShell](./layout-components/list-shell.md).
 | `indexField` | `string` | — | Field holding the order; enables drag-and-drop sorting |
 | `sortForFilters` | `Filters` | — | Filters under which drag-and-drop ordering is allowed |
 | `onRowClick` | `(record: HabRecord) => void` | — | Replaces the default row activation |
-| `rowActionButtons` | `ReactNode \| false` | schema actions | Buttons in the row action column; `false` removes the column |
+| `rowActions` | `AnyActionDescriptor[]` | — | The row action slot; absent or empty renders no column, a `DefaultActions` entry gets one only when the resource has a record action it expands into |
+| `rowActionButtons` | `ReactNode \| false` | buttons of `rowActions` | Replaces how the row actions render; `false` removes the column |
 | `rowSx` | `(record: HabRecord) => SxProps` | — | Per-row styling, e.g. to mark a state |
 | `singleClickAction` | `ActionDescriptor` | from the view schema | What a single click does |
 | `doubleClickAction` | `ActionDescriptor` | from the view schema | What a double click does |

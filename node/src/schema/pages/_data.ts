@@ -4,6 +4,7 @@ import type {ServiceAuthProvider} from '@admin/providers/types';
 import type {SchemaProvider, ServiceDataProvider} from '@schema/providers/types';
 import type {
   ActionDescriptor,
+  AnyActionDescriptor,
   BoxSchema,
   EndpointsSchema,
   EnumType,
@@ -18,6 +19,7 @@ import type {
   MenuSchema,
   RecordMeta,
   ResourceActionSchema,
+  ResourceReference,
   ServiceSchema,
   ServicesSchema,
   ViewActionParameters,
@@ -51,6 +53,15 @@ export const DOCUMENTS_RESOURCE = `${SERVICE_NAME}/documents`;
 export const PAYMENTS_RESOURCE = `${SERVICE_NAME}/payments`;
 // Photos back the property gallery box; not a menu resource (no `menu`), only referenced by url.
 export const PHOTOS_RESOURCE = `${SERVICE_NAME}/photos`;
+
+// The address a schema of this service gives one of its resources.
+const referenceTo = (
+  resource: string,
+  parts: Partial<ResourceReference> = {}
+): ResourceReference => {
+  const [service, name] = resource.split('/');
+  return {service, resource: name, ...parts};
+};
 
 const PROPERTIES_URL = `${SERVICE_URL}/properties/`;
 const OWNERS_URL = `${SERVICE_URL}/owners/`;
@@ -724,7 +735,7 @@ const fd = (name: string, extra: Partial<FieldDescriptor> = {}): FieldDescriptor
 //
 // All three render as row-action buttons (showInList). `show` (eye) is *also* what a row click
 // resolves to — the datagrid's default row activation navigates to `show ?? edit` (see
-// `resolveRowActionSchema`) — so the detail has two entry points: the eye button and the row click.
+// `resolveRowAction`) — so the detail has two entry points: the eye button and the row click.
 // `edit` (view) and `delete` (resource) are the pencil / trash buttons. These land on each record's
 // `meta.schema.actions` (via `decorate`) — that's what the list reads.
 // ----------------------------------------------------------------------------
@@ -737,14 +748,18 @@ const redirectView = (viewName: string): ViewActionParameters =>
   ({name: viewName, mode: 'redirect', parameters: {}}) as ViewActionParameters;
 
 // A redirect to a routed *action* view (`/:id/a/<action>`). Unlike a reserved view (which routes by
-// type alone), an action view routes by its `actionName`, so the button needs it in `endpoint` to
+// type alone), an action view routes by its `actionName`, so the button needs it in `reference` to
 // build the `/a/<action>` path — otherwise it navigates to `/a/undefined` and matches nothing.
-const redirectActionView = (viewName: string, actionName: string): ViewActionParameters =>
+const redirectActionView = (
+  viewName: string,
+  resource: string,
+  actionName: string
+): ViewActionParameters =>
   ({
     name: viewName,
     mode: 'redirect',
     parameters: {},
-    endpoint: {actionName},
+    reference: referenceTo(resource, {actionName}),
   }) as ViewActionParameters;
 
 // Same, but opens the target view in a dialog instead of navigating to its own page. `dialogWidth`
@@ -937,7 +952,7 @@ const PROPERTY_FIELDS: FieldSchema[] = [
     name: 'owner_id',
     type: 'integer',
     format: 'relation',
-    reference: OWNERS_RESOURCE,
+    reference: referenceTo(OWNERS_RESOURCE),
     label: 'Vlastník',
   },
   {
@@ -1069,7 +1084,7 @@ const PROPERTY_LIST_COLUMNS: FieldDescriptor[] = [
   fd('type', {sortable: true, format: 'choices', enum: asEnum(PROPERTY_TYPES)}),
   fd('layout'),
   fd('area', {sortable: true}),
-  fd('owner_id', {format: 'relation', reference: OWNERS_RESOURCE}),
+  fd('owner_id', {format: 'relation', reference: referenceTo(OWNERS_RESOURCE)}),
   fd('involvement'),
   fd('active'),
 ];
@@ -1086,17 +1101,17 @@ const HALF: GridItemBoxParameters = {xs: 12, sm: 12, md: 6, lg: 6, xl: 6};
 const FULL: GridItemBoxParameters = {xs: 12, sm: 12, md: 12, lg: 12, xl: 12};
 
 // Shared detail layout, wrapped in a tab box (show renders read-only, edit renders inputs — the view
-// type decides). Tab 1 "Adresa a parcely" is a grid box whose cells are `grid-item` boxes carrying
-// the column width (`gridItem`) — the production convention: a grid never sizes its children by their
-// own type, the layout width lives on an explicit `grid-item` wrapper (6/12 → two-per-row, 12/12 →
-// full row). A `grid-item` is a transparent width carrier (it renders as a card-less group) unless it
-// is given a label/card of its own, in which case it doubles as the card holding the fields directly
-// (the two production patterns: wrap-a-box vs. be-the-card). Here Fotografie / Další čísla budovy /
-// Parcely wrap a content box (gallery / array), while Lokace / Poznámka are card `grid-item`s holding
-// fields. Tab 2 "Vlastníci" is a single list box.
+// type decides). Tab 1 "Adresa a parcely" is a grid box whose cells carry their own column width in
+// `gridItem` (6/12 → two-per-row, 12/12 → full row). The width is a placement rather than a box type
+// (HAB-963), so a cell is simply the box that draws the card: Fotografie is the gallery box itself,
+// Další čísla budovy / Parcely / Vybavení are array boxes, Lokace / Poznámka are card boxes holding
+// fields. Each card is then the direct child of its grid item and stretches to the height of the
+// row — a wrapper around it would be the thing that stretches instead, leaving the card inside at
+// the height of its content.
+// Tab 2 "Vlastníci" is a single list box.
 //
 // Tabs 3-5 are HAB-687 box-layout coverage (see the comment inside `boxes`): "Kontakt" (object box),
-// "Rozšířené" (a grid of `grid-item`s — a collapsible card holding fields + a wrapper field and a
+// "Rozšířené" (a grid of placed cards — a collapsible card holding fields + a wrapper field and a
 // nested collapsible box) and "Dokumenty" (a nested-fill-height list) — so these box types and the
 // tricky compositions the redesign touches are visually verifiable in both show and edit views. The
 // `wizard` box lives on the create view (see PROPERTY_CREATE_BOX), where a stepper actually makes
@@ -1114,42 +1129,38 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
       card: false,
       readOnly: false,
       boxes: [
-        // Half-width `grid-item` wrapping the gallery card (transparent width carrier).
+        // Half-width gallery card sitting straight in the grid — the cell and the card are one box.
         {
-          name: 'photos_item',
-          type: 'grid-item',
-          card: false,
+          name: 'photos',
+          type: 'gallery',
+          label: 'Fotografie',
+          card: true,
           readOnly: true,
           gridItem: HALF,
-          boxes: [
+          gallery: {
+            reference: referenceTo(PHOTOS_RESOURCE),
+            target: 'property_id',
+            imageField: 'image',
+          },
+          // Header toolbar action → navigates to the "Správa fotografií" subpage
+          // (`/…/properties/:id/a/manage_photos`), a detail-scoped routed action view.
+          toolbarActions: [
             {
-              name: 'photos',
-              type: 'gallery',
-              label: 'Fotografie',
-              card: true,
-              readOnly: true,
-              gallery: {reference: PHOTOS_RESOURCE, target: 'property_id', imageField: 'image'},
-              // Header toolbar action → navigates to the "Správa fotografií" subpage
-              // (`/…/properties/:id/a/manage_photos`), a detail-scoped routed action view.
-              toolbarActions: [
-                {
-                  name: 'manage_photos',
-                  label: 'Spravovat fotografie',
-                  icon: 'PhotoLibrary',
-                  action: {
-                    type: 'view',
-                    isDetail: true,
-                    view: redirectActionView('manage_photos', 'manage_photos'),
-                  },
-                },
-              ],
+              name: 'manage_photos',
+              label: 'Spravovat fotografie',
+              icon: 'PhotoLibrary',
+              action: {
+                type: 'view',
+                isDetail: true,
+                view: redirectActionView('manage_photos', PROPERTIES_RESOURCE, 'manage_photos'),
+              },
             },
           ],
         },
-        // Half-width `grid-item` that *is* the card and holds fields directly.
+        // Half-width card holding fields directly — a plain box with a placement.
         {
           name: 'location',
-          type: 'grid-item',
+          type: 'simple',
           label: 'Lokace',
           card: true,
           readOnly: false,
@@ -1158,81 +1169,57 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
         },
         {
           name: 'note',
-          type: 'grid-item',
+          type: 'simple',
           label: 'Poznámka',
           card: true,
           readOnly: false,
           gridItem: HALF,
           boxes: [fd('note')],
         },
-        // Half-width `grid-item` wrapping an array card.
+        // Half-width array card.
         {
-          name: 'building_numbers_item',
-          type: 'grid-item',
-          card: false,
+          name: 'building_numbers',
+          type: 'array',
+          label: 'Další čísla budovy',
+          card: true,
           readOnly: false,
           gridItem: HALF,
-          boxes: [
-            {
-              name: 'building_numbers',
-              type: 'array',
-              label: 'Další čísla budovy',
-              card: true,
-              readOnly: false,
-              // Non-inline array (contrast with the inline `parcels` datagrid below): each row renders
-              // as a headerless nested panel holding a PropertyList of the row's attributes.
-              array: {target: 'building_numbers'},
-              boxes: [fd('number'), fd('kind')],
-            },
-          ],
+          // Non-inline array (contrast with the inline `parcels` datagrid below): each row renders
+          // as a headerless nested panel holding a PropertyList of the row's attributes.
+          array: {target: 'building_numbers'},
+          boxes: [fd('number'), fd('kind')],
         },
-        // Full-width `grid-item` wrapping the parcels array card.
+        // Full-width parcels array card.
         {
-          name: 'parcels_item',
-          type: 'grid-item',
-          card: false,
+          name: 'parcels',
+          type: 'array',
+          label: 'Parcely',
+          card: true,
           readOnly: false,
           gridItem: FULL,
-          boxes: [
-            {
-              name: 'parcels',
-              type: 'array',
-              label: 'Parcely',
-              card: true,
-              readOnly: false,
-              array: {target: 'parcels', inline: true},
-              boxes: [fd('parcel_number'), fd('parcel_area'), fd('parcel_type')],
-            },
-          ],
+          array: {target: 'parcels', inline: true},
+          boxes: [fd('parcel_number'), fd('parcel_area'), fd('parcel_type')],
         },
-        // Full-width `grid-item` wrapping the equipment checklist — HAB-837 coverage:
+        // Full-width equipment checklist — HAB-837 coverage:
         // `SchemaChoicesArrayBox` (checkbox-per-enum-value rows, plus a free "Jiné" row via
         // `otherValues`), the box type HAB-837 fixed row/checkbox alignment for.
         {
-          name: 'equipment_item',
-          type: 'grid-item',
-          card: false,
+          name: 'equipment',
+          type: 'array',
+          label: 'Vybavení',
+          card: true,
           readOnly: false,
           gridItem: FULL,
-          boxes: [
-            {
-              name: 'equipment',
-              type: 'array',
-              label: 'Vybavení',
-              card: true,
-              readOnly: false,
-              array: {
-                target: 'equipment',
-                inline: true,
-                listed: {fieldName: 'equipment_type', otherValues: ['Jiné']},
-              },
-              // `note`'s `helpText` is deliberate regression coverage: a React Admin input with
-              // visible helper text renders taller than its row siblings, which is what first
-              // exposed the checkbox column floating above center instead of centering against the
-              // row's real control height (fixed via `FormTableColumn.align: 'center'`).
-              boxes: [fd('equipment_type'), fd('note', {helpText: 'Volitelný doplňující popis'})],
-            },
-          ],
+          array: {
+            target: 'equipment',
+            inline: true,
+            listed: {fieldName: 'equipment_type', otherValues: ['Jiné']},
+          },
+          // `note`'s `helpText` is deliberate regression coverage: a React Admin input with
+          // visible helper text renders taller than its row siblings, which is what first
+          // exposed the checkbox column floating above center instead of centering against the
+          // row's real control height (fixed via `FormTableColumn.align: 'center'`).
+          boxes: [fd('equipment_type'), fd('note', {helpText: 'Volitelný doplňující popis'})],
         },
       ],
     },
@@ -1274,9 +1261,9 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
           label: 'Vlastníci',
           card: true,
           readOnly: true,
-          // `listActions` set explicitly (Create + "link existing owner") — otherwise
-          // SchemaListBoxActions falls back to auto-generating the owner detail / edit / delete actions.
-          list: {reference: OWNERS_RESOURCE, listActions: OWNER_LIST_BOX_ACTIONS},
+          // `listActions` set explicitly (Create + "link existing owner") instead of the owner
+          // collection defaults a backend would send.
+          list: {reference: referenceTo(OWNERS_RESOURCE), listActions: OWNER_LIST_BOX_ACTIONS},
           boxes: [fd('full_name'), fd('email'), fd('phone')],
         },
       ],
@@ -1295,10 +1282,10 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
       object: {target: 'contact'},
       boxes: [fd('email'), fd('phone')],
     },
-    // A grid of two half-width `grid-item`s exercising the tricky field compositions:
-    //  - `flags`     — a card `grid-item` (collapsible open) holding plain boolean fields directly.
-    //  - `technical` — a `grid-item` wrapping a MIXED simple box: plain fields + a `wrapper` field
-    //                  (two inputs under one label) + a nested collapsible (closed) box, as siblings.
+    // A grid of two half-width cells exercising the tricky field compositions:
+    //  - `flags`     — a card (collapsible open) holding plain boolean fields directly.
+    //  - `technical` — a MIXED simple box: plain fields + a `wrapper` field (two inputs under one
+    //                  label) + a nested collapsible (closed) box, as siblings.
     {
       name: 'advanced',
       type: 'grid',
@@ -1308,7 +1295,7 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
       boxes: [
         {
           name: 'flags',
-          type: 'grid-item',
+          type: 'simple',
           label: 'Příznaky',
           card: true,
           readOnly: false,
@@ -1317,36 +1304,28 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
           boxes: [fd('residential'), fd('barrier_free'), fd('active'), fd('complete')],
         },
         {
-          name: 'technical_item',
-          type: 'grid-item',
-          card: false,
+          name: 'technical',
+          type: 'simple',
+          label: 'Technické parametry',
+          card: true,
           readOnly: false,
           gridItem: HALF,
           boxes: [
+            fd('heating'),
+            // wrapper field — groups two inputs under a single label / outlined group.
+            fd('gps', {
+              label: 'GPS (šířka / délka)',
+              wrapper: {fields: [fd('gps_lat'), fd('gps_lng')]},
+            }),
+            // nested box among fields → makes `technical` a mixed field+box container.
             {
-              name: 'technical',
+              name: 'floors',
               type: 'simple',
-              label: 'Technické parametry',
+              label: 'Podlaží',
               card: true,
               readOnly: false,
-              boxes: [
-                fd('heating'),
-                // wrapper field — groups two inputs under a single label / outlined group.
-                fd('gps', {
-                  label: 'GPS (šířka / délka)',
-                  wrapper: {fields: [fd('gps_lat'), fd('gps_lng')]},
-                }),
-                // nested box among fields → makes `technical` a mixed field+box container.
-                {
-                  name: 'floors',
-                  type: 'simple',
-                  label: 'Podlaží',
-                  card: true,
-                  readOnly: false,
-                  collapsible: 'closed',
-                  boxes: [fd('floor_number'), fd('floor_count')],
-                },
-              ],
+              collapsible: 'closed',
+              boxes: [fd('floor_number'), fd('floor_count')],
             },
           ],
         },
@@ -1369,7 +1348,7 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
           card: true,
           readOnly: true,
           list: {
-            reference: DOCUMENTS_RESOURCE,
+            reference: referenceTo(DOCUMENTS_RESOURCE),
             target: 'property_id',
             // Search (`q`) stays shown inline in the toolbar (`isAlwaysOn`); the rest go to the
             // filter drawer. Listing them all keeps `category` / `signed` available (a `filters` list
@@ -1462,7 +1441,7 @@ const PROPERTY_MANAGE_PHOTOS_BOX: BoxSchema = {
   label: 'Správa fotografií',
   card: true,
   readOnly: true,
-  list: {reference: PHOTOS_RESOURCE, target: 'property_id'},
+  list: {reference: referenceTo(PHOTOS_RESOURCE), target: 'property_id'},
   boxes: [fd('image'), fd('caption')],
 };
 
@@ -1562,7 +1541,10 @@ const PROPERTY_RESOURCE_SCHEMA: LocalResourceSchema = {
       type: 'action',
       isDetail: true,
       label: 'Nahlásit závadu',
-      endpoint: {method: 'post', actionName: 'report'},
+      endpoint: {
+        method: 'post',
+        reference: referenceTo(PROPERTIES_RESOURCE, {actionName: 'report'}),
+      },
       detail: {
         box: PROPERTY_REPORT_BOX,
         // Empty toolbar actions: this action form has nothing to edit / delete, so suppress the
@@ -1587,7 +1569,10 @@ const PROPERTY_RESOURCE_SCHEMA: LocalResourceSchema = {
       type: 'action',
       isDetail: true,
       label: 'Správa fotografií',
-      endpoint: {method: 'get', actionName: 'manage_photos'},
+      endpoint: {
+        method: 'get',
+        reference: referenceTo(PROPERTIES_RESOURCE, {actionName: 'manage_photos'}),
+      },
       detail: {box: PROPERTY_MANAGE_PHOTOS_BOX, toolbarActions: []},
     },
   ],
@@ -1616,7 +1601,7 @@ const OWNER_LIST_FILTERS: FilterDescriptor[] = [{name: 'q', isAlwaysOn: true}];
 // card whose fields differ per view.
 const OWNER_CONTACT_CARD: BoxSchema = {
   name: 'contact',
-  type: 'grid-item',
+  type: 'simple',
   label: 'Kontakt',
   card: true,
   readOnly: false,
@@ -1635,7 +1620,7 @@ const OWNER_DETAIL_BOX: BoxSchema = {
   boxes: [
     {
       name: 'name',
-      type: 'grid-item',
+      type: 'simple',
       label: 'Jméno',
       card: true,
       readOnly: false,
@@ -1691,7 +1676,7 @@ const OWNER_LINK_FIELDS: FieldSchema[] = [
     name: 'owner_id',
     type: 'integer',
     format: 'relation',
-    reference: OWNERS_RESOURCE,
+    reference: referenceTo(OWNERS_RESOURCE),
     label: 'Vlastník',
     required: true,
   },
@@ -1772,7 +1757,10 @@ const OWNER_RESOURCE_SCHEMA: LocalResourceSchema = {
       type: 'action',
       isDetail: false,
       label: 'Spárovat existujícího vlastníka',
-      endpoint: {method: 'patch', actionName: 'link_owner'},
+      endpoint: {
+        method: 'patch',
+        reference: referenceTo(OWNERS_RESOURCE, {actionName: 'link_owner'}),
+      },
       detail: {
         box: OWNER_LINK_BOX,
         // Suppress the auto-generated owner edit / delete toolbar actions (they would otherwise leak
@@ -1801,7 +1789,7 @@ const PHOTO_FIELDS: FieldSchema[] = [
     name: 'property_id',
     type: 'integer',
     format: 'relation',
-    reference: PROPERTIES_RESOURCE,
+    reference: referenceTo(PROPERTIES_RESOURCE),
     label: 'Nemovitost',
   },
   {name: 'caption', type: 'string', format: 'text', label: 'Popisek'},
@@ -1852,7 +1840,7 @@ const DOCUMENT_FIELDS: FieldSchema[] = [
     name: 'property_id',
     type: 'integer',
     format: 'relation',
-    reference: PROPERTIES_RESOURCE,
+    reference: referenceTo(PROPERTIES_RESOURCE),
     label: 'Nemovitost',
   },
   {name: 'issued_on', type: 'string', format: 'date', label: 'Vystaveno', sortable: true},
@@ -1884,7 +1872,7 @@ const DOCUMENT_FILTERS: FilterSchema[] = [
 const DOCUMENT_LIST_COLUMNS: FieldDescriptor[] = [
   fd('title', {sortable: true}),
   fd('category', {sortable: true, format: 'choices', enum: asEnum(DOCUMENT_CATEGORIES)}),
-  fd('property_id', {format: 'relation', reference: PROPERTIES_RESOURCE}),
+  fd('property_id', {format: 'relation', reference: referenceTo(PROPERTIES_RESOURCE)}),
   fd('issued_on', {sortable: true}),
   fd('amount', {sortable: true}),
   fd('signed'),
@@ -1954,7 +1942,10 @@ const DOCUMENT_RESOURCE_SCHEMA: LocalResourceSchema = {
       type: 'action',
       isDetail: false,
       label: 'Hromadný upload dokumentů',
-      endpoint: {method: 'post', actionName: 'bulk_upload'},
+      endpoint: {
+        method: 'post',
+        reference: referenceTo(DOCUMENTS_RESOURCE, {actionName: 'bulk_upload'}),
+      },
       detail: {
         box: DOCUMENT_BULK_UPLOAD_BOX,
         bottomActions: [
@@ -1982,14 +1973,14 @@ const PAYMENT_FIELDS: FieldSchema[] = [
     name: 'property_id',
     type: 'integer',
     format: 'relation',
-    reference: PROPERTIES_RESOURCE,
+    reference: referenceTo(PROPERTIES_RESOURCE),
     label: 'Nemovitost',
   },
   {
     name: 'owner_id',
     type: 'integer',
     format: 'relation',
-    reference: OWNERS_RESOURCE,
+    reference: referenceTo(OWNERS_RESOURCE),
     label: 'Vlastník',
   },
   {
@@ -2113,8 +2104,7 @@ const PAYMENT_RECORD_ACTIONS: ResourceActionSchema[] = [
   PAYMENT_MARK_PAID_ACTION,
 ];
 
-// Payment detail (show) layout — two half-width cards, mirroring the owner detail's grid /
-// `grid-item` shape. "Úhrada" carries the same `mark_paid` field action as the list column, and
+// Payment detail (show) layout — two half-width cards, mirroring the owner detail's grid shape. "Úhrada" carries the same `mark_paid` field action as the list column, and
 // that is the point of the pairing: one descriptor, two renderings. Outside a collection nothing
 // sets `isInCollection`, so `SchemaActionField` leaves `showLabel` undefined and the button keeps
 // its label instead of collapsing to the bare icon it becomes in a datagrid cell.
@@ -2126,7 +2116,7 @@ const PAYMENT_DETAIL_BOX: BoxSchema = {
   boxes: [
     {
       name: 'summary',
-      type: 'grid-item',
+      type: 'simple',
       label: 'Platba',
       card: true,
       readOnly: false,
@@ -2141,7 +2131,7 @@ const PAYMENT_DETAIL_BOX: BoxSchema = {
     },
     {
       name: 'settlement',
-      type: 'grid-item',
+      type: 'simple',
       label: 'Úhrada',
       card: true,
       readOnly: false,
@@ -2159,7 +2149,7 @@ const PAYMENT_DETAIL_BOX: BoxSchema = {
     },
     {
       name: 'note_item',
-      type: 'grid-item',
+      type: 'simple',
       label: 'Poznámka',
       card: true,
       readOnly: false,
@@ -2171,7 +2161,7 @@ const PAYMENT_DETAIL_BOX: BoxSchema = {
 
 const PAYMENT_LIST_COLUMNS: FieldDescriptor[] = [
   fd('variable_symbol', {sortable: true}),
-  fd('property_id', {format: 'relation', reference: PROPERTIES_RESOURCE}),
+  fd('property_id', {format: 'relation', reference: referenceTo(PROPERTIES_RESOURCE)}),
   fd('amount', {sortable: true}),
   fd('direction', {format: 'choices', enum: PAYMENT_DIRECTION_ENUM}),
   fd('status', {sortable: true, format: 'choices', enum: PAYMENT_STATUS_ENUM}),
@@ -2243,7 +2233,7 @@ const PROPERTY_BASE_VIEWS: GlobalViewSchema[] = [
     type: 'action',
     isDetail: true,
     mode: 'dialog',
-    endpoint: {method: 'post', actionName: 'report'},
+    endpoint: {method: 'post', reference: referenceTo(PROPERTIES_RESOURCE, {actionName: 'report'})},
   },
   // "Správa fotografií" subpage — a routed (`redirect`) detail action view, so its toolbar button
   // navigates to `/…/properties/:id/a/manage_photos` instead of opening an overlay.
@@ -2252,7 +2242,10 @@ const PROPERTY_BASE_VIEWS: GlobalViewSchema[] = [
     type: 'action',
     isDetail: true,
     mode: 'redirect',
-    endpoint: {method: 'get', actionName: 'manage_photos'},
+    endpoint: {
+      method: 'get',
+      reference: referenceTo(PROPERTIES_RESOURCE, {actionName: 'manage_photos'}),
+    },
   },
 ];
 
@@ -2267,7 +2260,10 @@ const OWNER_BASE_VIEWS: GlobalViewSchema[] = [
     type: 'action',
     isDetail: false,
     mode: 'dialog',
-    endpoint: {method: 'patch', actionName: 'link_owner'},
+    endpoint: {
+      method: 'patch',
+      reference: referenceTo(OWNERS_RESOURCE, {actionName: 'link_owner'}),
+    },
   },
 ];
 
@@ -2280,7 +2276,10 @@ const DOCUMENT_BASE_VIEWS: GlobalViewSchema[] = [
     type: 'action',
     isDetail: false,
     mode: 'dialog',
-    endpoint: {method: 'post', actionName: 'bulk_upload'},
+    endpoint: {
+      method: 'post',
+      reference: referenceTo(DOCUMENTS_RESOURCE, {actionName: 'bulk_upload'}),
+    },
   },
 ];
 
@@ -2534,12 +2533,59 @@ const localizeSchema = <T>(schema: T, locale?: string): T =>
 // `meta.locale` (Czech by default, English for `en`).
 // ----------------------------------------------------------------------------
 
+// A backend fills every action slot its author left unset with a `DefaultActions` entry; the mock
+// schemas above set only what differs, and this adds the rest the same way.
+const DEFAULT_ACTIONS: AnyActionDescriptor[] = [{type: 'default_actions'}];
+const ROW_DEFAULT_ACTIONS: AnyActionDescriptor[] = [{type: 'default_actions', scope: 'detail'}];
+const LIST_DEFAULT_ACTIONS: AnyActionDescriptor[] = [{type: 'default_actions', scope: 'list'}];
+
+const withBoxDefaults = (box: BoxSchema): BoxSchema => ({
+  ...box,
+  boxes: box.boxes?.map((item) => (item.type === 'field' ? item : withBoxDefaults(item))),
+  ...(box.list
+    ? {
+        list: {
+          ...box.list,
+          rowActions: box.list.rowActions ?? ROW_DEFAULT_ACTIONS,
+          listActions: box.list.listActions ?? LIST_DEFAULT_ACTIONS,
+        },
+      }
+    : {}),
+});
+
+const withBackendDefaults = (schema: LocalResourceSchema): LocalResourceSchema => ({
+  ...schema,
+  views: schema.views.map((view) =>
+    view.type === 'list'
+      ? {
+          ...view,
+          list: {
+            ...view.list,
+            rowActions: view.list?.rowActions ?? ROW_DEFAULT_ACTIONS,
+            toolbarActions: view.list?.toolbarActions ?? DEFAULT_ACTIONS,
+          },
+        }
+      : {
+          ...view,
+          ...(view.detail
+            ? {
+                detail: {
+                  ...view.detail,
+                  box: withBoxDefaults(view.detail.box),
+                  toolbarActions: view.detail.toolbarActions ?? DEFAULT_ACTIONS,
+                },
+              }
+            : {}),
+        }
+  ),
+});
+
 const RESOURCE_SCHEMA_BY_URL: Record<string, LocalResourceSchema> = {
-  [PROPERTIES_URL]: PROPERTY_RESOURCE_SCHEMA,
-  [OWNERS_URL]: OWNER_RESOURCE_SCHEMA,
-  [DOCUMENTS_URL]: DOCUMENT_RESOURCE_SCHEMA,
-  [PAYMENTS_URL]: PAYMENT_RESOURCE_SCHEMA,
-  [PHOTOS_URL]: PHOTO_RESOURCE_SCHEMA,
+  [PROPERTIES_URL]: withBackendDefaults(PROPERTY_RESOURCE_SCHEMA),
+  [OWNERS_URL]: withBackendDefaults(OWNER_RESOURCE_SCHEMA),
+  [DOCUMENTS_URL]: withBackendDefaults(DOCUMENT_RESOURCE_SCHEMA),
+  [PAYMENTS_URL]: withBackendDefaults(PAYMENT_RESOURCE_SCHEMA),
+  [PHOTOS_URL]: withBackendDefaults(PHOTO_RESOURCE_SCHEMA),
 };
 
 export const mockSchemaProvider: SchemaProvider = {

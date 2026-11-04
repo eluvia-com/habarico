@@ -2,10 +2,8 @@ import React, {useState} from 'react';
 import {ActionButton, ActionButtonProps} from '@admin/components/buttons/ActionButton';
 import {Icon, IconType} from '@design/atoms/Icon';
 import {Menu} from '@mui/material';
-import {useLocalResourceSchemaContext} from '@schema/contexts/LocalResourceSchemaContext/useLocalResourceSchemaContext';
-import {useHabRecordContext} from '@schema/hooks/useHabRecordContext';
+import {ResolvedDescriptor, useResolvedDescriptors} from '@schema/hooks/useResolvedDescriptors';
 import {ActionDescriptor, HabRecord} from '@schema/types';
-import {generateActionSchema, generateActionSchemaMap} from '@schema/utils/api';
 import {SchemaButton} from '../SchemaButton';
 
 type ButtonVariant = ActionButtonProps['variant'];
@@ -18,17 +16,6 @@ export type SchemaMenuButtonProps = Omit<ActionButtonProps, 'variant' | 'showLab
   target?: string;
   // Whether this menu-button trigger is itself rendered inside a parent menu (then it is a menu item).
   isMenu?: boolean;
-};
-
-// Whether a descriptor resolves to a real action (directly, or via any of its nested menu items).
-const isValidDescriptor = (
-  descriptor: ActionDescriptor,
-  schemaMap: ReturnType<typeof generateActionSchemaMap>
-): boolean => {
-  if (descriptor.menuItems) {
-    return descriptor.menuItems.some((item) => isValidDescriptor(item, schemaMap));
-  }
-  return !!(descriptor.action || schemaMap[descriptor.name]);
 };
 
 // Normalize a value-or-resolver prop (`variant` / `showLabel`) into a per-action resolver function.
@@ -47,29 +34,17 @@ export const SchemaMenuButton = (props: SchemaMenuButtonProps) => {
     surface,
     ...rest
   } = props;
-  const contextRecord = useHabRecordContext();
-  const {schema} = useLocalResourceSchemaContext();
-  const record = propRecord || contextRecord;
+  const {record, actions, resolvedDescriptors} = useResolvedDescriptors({
+    descriptors: descriptor.menuItems,
+    record: propRecord,
+  });
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const variantFn = asResolver(variant);
   const showLabelFn = asResolver(showLabel);
-  const actions = record ? record.meta.schema.actions : schema.actions;
-
-  if (!actions || !descriptor.menuItems) return;
-
-  // --------------------------------------------------------------------------
-  // Get valid action descriptors
-  // --------------------------------------------------------------------------
-  const schemaMap = generateActionSchemaMap(actions);
-  const actionDescriptors = descriptor.menuItems;
-
-  if (!actionDescriptors.length) return;
-
-  const validDescriptors = actionDescriptors.filter((descriptor) =>
-    isValidDescriptor(descriptor, schemaMap)
-  );
+  // a menu item still loading its referenced schema is left out until it resolves
+  if (!actions || !resolvedDescriptors.length) return;
 
   // -------------------------------------------------------------------------
   // Menu actions
@@ -88,7 +63,7 @@ export const SchemaMenuButton = (props: SchemaMenuButtonProps) => {
   // Render buttons
   // --------------------------------------------------------------------------
 
-  const renderButton = (descriptor: ActionDescriptor, index: number) => {
+  const renderButton = ({descriptor, schema, actionContext}: ResolvedDescriptor, index: number) => {
     if (descriptor.menuItems) {
       return (
         <SchemaMenuButton
@@ -105,15 +80,13 @@ export const SchemaMenuButton = (props: SchemaMenuButtonProps) => {
       );
     }
 
-    const schema = descriptor.action || schemaMap[descriptor.name];
-    if (!schema) return;
-
     return (
       <SchemaButton
         {...rest}
         variant={variantFn(descriptor.name)}
         showLabel={showLabelFn(descriptor.name)}
-        schema={generateActionSchema(schema, descriptor)}
+        schema={schema}
+        actionContext={actionContext}
         key={index}
         target={target}
         isMenu={true}
@@ -148,7 +121,9 @@ export const SchemaMenuButton = (props: SchemaMenuButtonProps) => {
         anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
         transformOrigin={{vertical: 'top', horizontal: 'left'}}
       >
-        {validDescriptors.map((descriptor, index) => renderButton(descriptor, index))}
+        {resolvedDescriptors.map((resolvedDescriptor, index) =>
+          renderButton(resolvedDescriptor, index)
+        )}
       </Menu>
     </>
   );

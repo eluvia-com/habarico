@@ -54,8 +54,7 @@ The lambda receives the ActiveRecord relation and the current `Habarico::Context
 in `show`, `update` and `destroy` too, in addition to `index` — a record outside the scope (a
 different tenant, a soft-deleted row, ...) is never found by ID.
 
-Without `can_read`, both `index` and `show` are forbidden — denying read really denies read, the
-same as the Python backend.
+Without `can_read`, both `index` and `show` are forbidden (`403`).
 
 **Read by ID** — `allow_read_by_id` explicitly re-opens ID-based access for a resource whose
 `can_read` is denied:

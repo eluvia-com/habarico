@@ -8,8 +8,7 @@ import {OverflowToolbar} from '@design/molecules/OverflowToolbar';
 import {SchemaShowButton} from '@schema/components/buttons/SchemaShowButton';
 import {useViewSchemaContext} from '@schema/contexts/ViewSchemaContext/useViewSchemaContext';
 import {useGlobalResourceSchemaContext} from '@schema/hooks/useGlobalResourceSchemaContext';
-import {useHabRecordContext} from '@schema/hooks/useHabRecordContext';
-import {generateDescriptorsFromSchema} from '@schema/utils/generateDescriptorsFromSchema';
+import {useResolvedDescriptors} from '@schema/hooks/useResolvedDescriptors';
 
 /**
  * Default header form actions for an edit view that defines no toolbar actions of its own. When the
@@ -30,17 +29,16 @@ export const EditToolbarActions = () => {
   const {viewSchema} = useViewSchemaContext();
   const resource = useResourceContext();
   const {hasShowView} = useGlobalResourceSchemaContext(resource);
-  const record = useHabRecordContext();
   const translate = useTranslate();
 
-  // Mirror how `SchemaViewToolbarActions` / `SchemaButtons` resolve the toolbar: explicit
-  // `toolbarActions`, otherwise the record's detail actions. A non-empty result means the header
-  // already shows real actions, so the fallback stays out of the way.
-  const toolbarActions =
-    viewSchema.detail?.toolbarActions ??
-    generateDescriptorsFromSchema(record?.meta.schema.actions ?? [], false, 'all', viewSchema.name);
+  // Resolve the toolbar exactly as `SchemaViewToolbarActions` renders it: when it shows any button,
+  // the header already carries real actions and these stay out of the way.
+  const {resolvedDescriptors} = useResolvedDescriptors({
+    descriptors: viewSchema.detail?.toolbarActions,
+    viewName: viewSchema.name,
+  });
 
-  if (toolbarActions.length > 0) return null;
+  if (resolvedDescriptors.length > 0) return null;
 
   const isPage = presentation === 'page';
   const isPanel = presentation === 'panel';

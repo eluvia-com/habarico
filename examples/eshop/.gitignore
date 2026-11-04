@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+rails/log/
+rails/tmp/
+# Resolved fresh on every install, so the example is always built against the library as it is in
+# this working tree - a committed lock would pin the path gem to a version it outgrows at the next
+# release.
+rails/Gemfile.lock

@@ -28,6 +28,7 @@ import type {
   LocalResourceSchema,
   MethodSchema,
   ResourceActionSchema,
+  ResourceReference,
   ServiceSchema,
   ServicesSchema,
   ViewActionParameters,
@@ -47,6 +48,15 @@ export const CATEGORIES_RESOURCE = `${SERVICE_NAME}/categories`;
 
 export const PRODUCTS_URL = `${SERVICE_URL}/products/`;
 export const CATEGORIES_URL = `${SERVICE_URL}/categories/`;
+
+/** The reference a schema of this service gives one of its resources. */
+export const referenceTo = (
+  resource: string,
+  parts: Partial<ResourceReference> = {}
+): ResourceReference => {
+  const [service, name] = resource.split('/');
+  return {service, resource: name, ...parts};
+};
 
 export const SERVICE_CONFIG_MAP: ServiceConfigMap = {[SERVICE_NAME]: {url: SERVICE_URL}};
 
@@ -243,7 +253,7 @@ export const PRODUCT_FIELDS: FieldSchema[] = [
     type: 'integer',
     format: 'relation',
     label: 'Category',
-    reference: CATEGORIES_RESOURCE,
+    reference: referenceTo(CATEGORIES_RESOURCE),
   },
   {
     name: 'tags',
@@ -285,7 +295,7 @@ export const PRODUCT_FIELDS: FieldSchema[] = [
       name: 'related_category_ids',
       type: 'integer',
       format: 'relation',
-      reference: CATEGORIES_RESOURCE,
+      reference: referenceTo(CATEGORIES_RESOURCE),
     },
   },
   {
@@ -312,7 +322,7 @@ export const CATEGORY_FIELDS: FieldSchema[] = [
     type: 'integer',
     format: 'tree-relation',
     label: 'Parent category',
-    reference: CATEGORIES_RESOURCE,
+    reference: referenceTo(CATEGORIES_RESOURCE),
   },
 ];
 
@@ -370,7 +380,13 @@ export const PRODUCT_ACTIONS: ResourceActionSchema[] = [
     label: 'Archive',
     icon: 'Archive',
     confirmDialog: {title: 'Archive this product?', message: 'It disappears from the shop.'},
-    resource: {endpoint: {method: 'post', actionName: 'archive'}, data: {}},
+    resource: {
+      endpoint: {
+        method: 'post',
+        reference: referenceTo(PRODUCTS_RESOURCE, {actionName: 'archive'}),
+      },
+      data: {},
+    },
   },
 ];
 

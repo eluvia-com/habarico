@@ -37,8 +37,9 @@ class ListBoxParametersGeneratorTest < Minitest::Test
     box.schema_params = attrs[:schema_params]
     box.single_click_action = attrs[:single_click_action]
     box.double_click_action = attrs[:double_click_action]
-    box.list_toolbar_actions = attrs[:list_toolbar_actions]
-    box.list_actions = attrs[:list_actions]
+    # Only assigned when the test says so: an unmentioned slot carries the resource's defaults
+    box.row_actions = attrs[:row_actions] if attrs.key?(:row_actions)
+    box.list_actions = attrs[:list_actions] if attrs.key?(:list_actions)
     box
   end
 
@@ -73,16 +74,16 @@ class ListBoxParametersGeneratorTest < Minitest::Test
     assert_equal({ category_id: 1 }, result.sort_for_filters)
   end
 
-  def test_generate_schema_params_returns_nil_by_default
-    generator = build_generator
-    box = build_box
-    assert_nil generator.send(:generate_schema_params, box, stub_context)
+  def test_the_reference_addresses_the_listed_resource
+    reference = build_generator.send(:generate_reference, build_box, stub_context)
+    assert_nil reference.service
+    assert_equal 'items', reference.resource
+    assert_nil reference.params
   end
 
-  def test_generate_schema_params_returns_value
-    generator = build_generator
+  def test_schema_params_travel_inside_the_reference
     box = build_box(schema_params: { view: 'compact' })
-    assert_equal({ view: 'compact' }, generator.send(:generate_schema_params, box, stub_context))
+    assert_equal({ view: 'compact' }, build_generator.send(:generate_reference, box, stub_context).params)
   end
 
   def test_generate_single_click_action_returns_nil_by_default
@@ -117,25 +118,32 @@ class ListBoxParametersGeneratorTest < Minitest::Test
   # Toolbar / list actions (two independent table slots)
   # -------------------------------------------------------------------------
 
-  def test_generate_toolbar_actions_returns_nil_by_default
-    generator = build_generator
-    box = build_box
-    assert_nil generator.send(:generate_toolbar_actions, box, stub_context)
+  def test_the_second_toolbar_is_gone
+    refute Habarico::ListBox.new.respond_to?(:list_toolbar_actions=), 'a list box has one toolbar, the box\'s own'
+    refute Habarico::ListBoxParameters.new.respond_to?(:toolbar_actions)
   end
 
-  def test_generate_toolbar_actions_is_fed_by_list_toolbar_actions
-    generator = build_generator
-    box = build_box(list_toolbar_actions: [Habarico::ActionReference.new(name: 'create')])
-    result = generator.send(:generate_toolbar_actions, box, stub_context)
-    assert_equal 1, result.size
-    assert_instance_of Habarico::ActionDescriptor, result.first
-    assert_equal 'create', result.first.name
+  # A slot the author never mentioned carries the listed resource's own actions, which the client
+  # expands; the entry names no resource, since these slots are read in that resource's schema.
+  def test_row_actions_default_to_the_listed_records_own
+    result = build_generator.send(:generate_row_actions, build_box, stub_context)
+    assert_equal 'default_actions', result.first.type
+    assert_equal 'detail', result.first.scope
+    assert_nil result.first.reference
   end
 
-  def test_generate_list_actions_returns_nil_by_default
-    generator = build_generator
-    box = build_box
-    assert_nil generator.send(:generate_list_actions, box, stub_context)
+  def test_list_actions_default_to_the_collections_own
+    result = build_generator.send(:generate_list_actions, build_box, stub_context)
+    assert_equal 'default_actions', result.first.type
+    assert_equal 'list', result.first.scope
+  end
+
+  def test_nil_turns_a_boxes_default_off
+    assert_nil build_generator.send(:generate_row_actions, build_box(row_actions: nil), stub_context)
+  end
+
+  def test_an_explicitly_empty_slot_stays_empty
+    assert_equal [], build_generator.send(:generate_list_actions, build_box(list_actions: []), stub_context)
   end
 
   def test_generate_list_actions_returns_descriptors_when_configured
@@ -147,15 +155,12 @@ class ListBoxParametersGeneratorTest < Minitest::Test
     assert_equal 'export', result.first.name
   end
 
-  def test_generate_schema_has_independent_toolbar_and_list_actions
+  def test_a_declared_slot_is_left_as_declared
     generator = build_generator
-    box = build_box(
-      list_toolbar_actions: [Habarico::ActionReference.new(name: 'create')],
-      list_actions: [Habarico::ActionReference.new(name: 'export')],
-    )
+    box = build_box(list_actions: [Habarico::ActionReference.new(name: 'export')])
     result = generator.generate(box, stub_context)
-    assert_equal ['create'], result.toolbar_actions.map(&:name)
     assert_equal ['export'], result.list_actions.map(&:name)
+    assert_equal ['action'], result.list_actions.map(&:type)
   end
 
   # -------------------------------------------------------------------------
@@ -185,11 +190,12 @@ class ListBoxParametersGeneratorTest < Minitest::Test
     assert_nil result.sortable
   end
 
-  def test_generate_schema_has_schema_params
+  def test_generate_schema_carries_the_query_inside_the_reference
     generator = build_generator
     box = build_box(schema_params: { mode: 'embedded' })
     result = generator.generate(box, stub_context)
-    assert_equal({ mode: 'embedded' }, result.schema_params)
+    assert_equal({ mode: 'embedded' }, result.reference.params)
+    assert_equal 'items', result.reference.resource
   end
 
   def test_generate_schema_has_single_click_action

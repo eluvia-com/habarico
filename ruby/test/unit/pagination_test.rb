@@ -114,15 +114,27 @@ module Habarico
     # Overriding from a host controller
     # ***********************************************************************
 
-    def test_host_controller_can_override_the_habarico_resolver
+    def test_limits_may_be_callables_resolved_per_request
       body = proc do
-        def list_pagination_max_limit
-          7
-        end
+        def current_user = Struct.new(:internal).new(true)
+      end
+      limits = {
+        default_page_limit: ->(context) { context.current_user.internal ? 15 : 5 },
+        max_page_limit: ->(context) { context.current_user.internal ? 7 : 3 }
+      }
+
+      assert_equal 15, paginate({}, **limits, &body).instance_variable_get(:@limit)
+      assert_equal 7, paginate({ limit: '7' }, **limits, &body).instance_variable_get(:@limit)
+      assert_raises(Eluvia::Errors::UnprocessableEntity) { paginate({ limit: '8' }, **limits, &body) }
+    end
+
+    def test_a_callable_answering_nil_falls_back_to_the_config
+      Habarico::Config.default_page_limit = 6
+      body = proc do
+        def current_user = nil
       end
 
-      assert_equal 7, paginate({ limit: '7' }, &body).instance_variable_get(:@limit)
-      assert_raises(Eluvia::Errors::UnprocessableEntity) { paginate({ limit: '8' }, &body) }
+      assert_equal 6, paginate({}, default_page_limit: ->(_context) {}, &body).instance_variable_get(:@limit)
     end
 
     def test_host_controller_can_override_the_base_hook
@@ -232,7 +244,7 @@ module Habarico
 
         attr_reader :rendered_meta
 
-        def render_list
+        def render_list(_search_query = nil)
           @rendered_meta = { limit: @limit, offset: @offset, total_count: @records.total_count }
         end
       end

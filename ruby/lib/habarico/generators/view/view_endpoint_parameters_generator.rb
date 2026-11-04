@@ -9,8 +9,7 @@ module Habarico
       Habarico::ViewEndpointParameters.new(
         path: generate_path(view, context),
         method: generate_method(view, context),
-        reference: generate_reference(view, context),
-        action_name: generate_action_name(view, context)
+        reference: generate_endpoint_reference(view, context),
       )
     end
 
@@ -55,6 +54,18 @@ module Habarico
 
     def generate_reference(view, _context)
       view.endpoint_reference
+    end
+
+    # Where the view's data comes from, left unaddressed when that is the resource being generated.
+    # An `action_name` cannot be addressed on its own - it lives inside the address - so a view that
+    # has one names the resource it belongs to.
+    def generate_endpoint_reference(view, context)
+      action_name = generate_action_name(view, context)
+      reference = generate_reference(view, context)
+      reference = resource_name if reference.blank? && action_name.present?
+      return nil if reference.blank?
+
+      Habarico::ResourceReference.build(reference, action_name: action_name)
     end
 
     def generate_action_name(view, _context)

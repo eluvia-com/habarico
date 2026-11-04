@@ -41,6 +41,10 @@ const schemaProvider = getSchemaProvider(() => ({
 
 The locale travels as an `Accept-Language` header, so labels and help texts arrive translated.
 
+The provider returns every `ResourceReference` as the backend sent it, so a reference to the
+schema's own service has no `service`. The hooks that call the provider fill it in, which is why a
+custom provider does not have to.
+
 ## Wiring it
 
 `getSchemaProvider` **is** the factory `schemaProviderFactory` expects — `SchemaAdmin` calls it as

@@ -115,7 +115,7 @@ export const useGetResourceRouterElement = () => {
               resource,
               type: view.type,
               name: view.name,
-              actionName: view.endpoint.actionName,
+              actionName: view.endpoint.reference?.actionName,
               router: true,
             });
             if (!routerEl) return null;
@@ -129,7 +129,7 @@ export const useGetResourceRouterElement = () => {
               resource,
               type: view.type,
               name: view.name,
-              actionName: view.endpoint.actionName,
+              actionName: view.endpoint.reference?.actionName,
               router: true,
             });
             if (!routerEl) return null;
