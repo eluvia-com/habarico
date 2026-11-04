@@ -43,12 +43,6 @@ Only the top layer knows about schemas. The two admin-layer shells take plain Re
 which is what makes them usable in an app that has no Habarico backend at all — the same path the
 library's own Storybook pages take.
 
-:::caution
-`BaseLayout`, `FormLayout`, `ShowLayout`, `ListView` and `AdminPageContent` no longer exist. They
-were replaced by the shells above: `FormShell` / `PropertyFormLayout`, `ShowShell` /
-`PropertyShowLayout`, `ListShell`, and `DashboardContent`.
-:::
-
 ## See also
 
 - [Box components](../box-components/index.md) — the containers rendered inside these shells

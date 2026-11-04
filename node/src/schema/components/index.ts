@@ -36,15 +36,24 @@ export {ExportButton, type ExportButtonProps} from './buttons/ExportButton';
 
 // Fields
 export {SchemaField, type SchemaFieldProps} from './fields/SchemaField';
+export {SchemaBooleanField, type SchemaBooleanFieldProps} from './fields/SchemaBooleanField';
+export {SchemaChipArrayField, type SchemaChipArrayFieldProps} from './fields/SchemaChipArrayField';
+export {SchemaChoicesField, type SchemaChoicesFieldProps} from './fields/SchemaChoicesField';
 export {SchemaFieldContent, type SchemaFieldContentProps} from './fields/SchemaFieldContent';
 export {SchemaObjectArrayField} from './fields/SchemaObjectArrayField';
 export {SchemaObjectField} from './fields/SchemaObjectField';
 export {SchemaReferenceField, type SchemaReferenceFieldProps} from './fields/SchemaReferenceField';
+export {
+  SchemaReferenceArrayField,
+  type SchemaReferenceArrayFieldProps,
+} from './fields/SchemaReferenceArrayField';
 export {SchemaRangeField, type SchemaRangeFieldProps} from './fields/SchemaRangeField';
 export {
-  SchemaRecordRepresentationChip,
+  SchemaRecordRepresentation,
+  type SchemaRecordRepresentationProps,
   type SchemaRecordRepresentationChipProps,
-} from './fields/SchemaRecordRepresentationChip';
+  type SchemaRecordRepresentationLinkProps,
+} from './fields/SchemaRecordRepresentation';
 export {SchemaRecordLink} from './fields/SchemaRecordLink';
 
 // Inputs

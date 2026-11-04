@@ -21,6 +21,11 @@ module Habarico
       model_class.respond_to?(:has_reference?) && model_class.has_reference?(field_name, type: :has_many)
     end
 
+    def self.is_append_only_file_array_attr?(model_class, field_name)
+      model_class.respond_to?(:has_file_array_attr?) && model_class.has_file_array_attr?(field_name) &&
+        model_class.find_file_array_attr(field_name).fetch(:append_only)
+    end
+
     # *************************************************************************
     # Active model reflection methods
     # *************************************************************************

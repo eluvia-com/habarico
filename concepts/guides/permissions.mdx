@@ -1,0 +1,150 @@
+---
+title: Permissions and visibility
+sidebar_position: 6
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+Who may see a resource, open a record, edit a field or run an action — and why none of it is
+decided in the browser.
+
+## The rule
+
+**The frontend hides nothing. It renders what it is given.**
+
+Permissions are applied while the schema is produced. A user who may not update a product gets a
+schema without an edit view: no route, no button, no form. A field they may not change arrives as
+`readOnly` and is rendered by the display components. There is no client-side check to bypass,
+because there is no client-side check.
+
+That is also why the schema cache is keyed by identity — a schema fetched for one user is never
+reused for another.
+
+## Four layers
+
+| Layer | Decides | Declared with |
+|---|---|---|
+| Resource | Whether the resource exists for this user at all | `can_create` / `can_read` / `can_update` / `can_delete` |
+| Record | Whether *this* record may be opened or changed | Object-level permissions / policy blocks |
+| Field | Whether a field is editable | `get_read_only_fields`, `read_only_fields` |
+| Action | Whether a non-CRUD operation is offered | The action's own permission |
+
+## Resource level
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+class ProductAdmin(ModelAdmin):
+    model = Product
+    fields = ["name", "price", "status"]
+    can_read = True
+    can_create = True
+    can_update = True
+    can_delete = False
+```
+
+Everything except `can_read` defaults to `False`, so a resource is read-only until you say
+otherwise.
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+can_read   true    # default: true
+can_create do |c| c.policy.create? end
+can_update do |c| c.policy.update? end
+can_delete false   # default: false
+```
+
+The block form is evaluated per request with the [context](/ruby/basic-usage/context-object), which
+is where a Pundit policy fits.
+
+</TabItem>
+</Tabs>
+
+## Record level
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+A DRF permission class with `has_object_permission`, wired through a custom viewset:
+
+```python
+from rest_framework.permissions import BasePermission
+from habarico.views import AdminModelViewSet
+
+
+class IsOwnCategory(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method in ("PUT", "PATCH", "DELETE"):
+            return obj.category.manager_id == request.user.id
+        return True
+
+
+class ProductViewSet(AdminModelViewSet):
+    permission_classes = [IsOwnCategory]
+
+
+class ProductAdmin(ModelAdmin):
+    model = Product
+    base_viewset = ProductViewSet
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+The same policy blocks receive the record through the context; a `policy_scope` additionally
+narrows the list query before any filter runs:
+
+```ruby
+policy_scope ->(records, c) { Pundit.policy_scope(c.current_user, records) }
+```
+
+</TabItem>
+</Tabs>
+
+:::caution
+Narrowing the list query and denying record access are different things. A `policy_scope` keeps
+records out of the list; without an object-level check, a user who knows an id can still open the
+detail.
+:::
+
+## Field level
+
+`get_read_only_fields` is evaluated per action *and* per request, so the same form can be editable
+for one user and read-only for another:
+
+```python
+def get_read_only_fields(self, action=None, request=None):
+    if not request.user.is_superuser:
+        return ["price", "created_at"]
+    return ["created_at"]
+```
+
+## Action level
+
+An action carries its own permission. Failing it means the action is absent from the record's
+schema, so no button is rendered — see
+[Actions and dialogs](./actions-and-dialogs.mdx).
+
+## Visibility is not permission
+
+`dynamicRender.showQuery` hides a field when it is irrelevant for the current form values. It is a
+UI convenience: the field is still in the schema and still accepted by the endpoint. Anything that
+must not be written needs a read-only or permission rule behind it.
+
+| Mechanism | Protects | Purpose |
+|---|---|---|
+| `can_*`, policies, object permissions | Yes | Access control |
+| `read_only_fields`, `get_read_only_fields` | Yes | Field-level write control |
+| `showQuery` / `requiredQuery` | No | Keeping a form legible |
+| Not passing a component to the frontend | No | Nothing at all |
+
+## See also
+
+- [Permissions](/python/basic-usage/permissions) — the Python side in full
+- [Permissions](/ruby/basic-usage/permissions) — the Ruby side in full
+- [SchemaEdit](/node/view-components/schema-edit-component#read-only-fields) — how a read-only field renders
+- [useGetLocalResourceSchema](/node/hooks/use-get-local-resource-schema) — the identity-keyed schema cache

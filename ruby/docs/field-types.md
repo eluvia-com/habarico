@@ -42,6 +42,7 @@ write_only_fields [:internal_note]
 | `integer` | *(none)* | `t.integer :stock` |
 | `boolean` | *(none)* | `t.boolean :is_available` |
 | `array` | *(none)* | `has_many` / array attribute |
+| `array` | *(none)*, items `base64-image` / `base64-file` | Append-only `file_array_attr` |
 | `object` | *(none)* | `has_one` object attribute |
 
 ## Options
@@ -79,7 +80,7 @@ fields [
 | `icons_key` | String | Icon lookup key for a choices field |
 | `resize_width` / `crop_aspect_ratio` | Integer / String | Client-side image handling; the ratio is a string such as `'16:9'` |
 | `ai_source_fields` | Array | Context fields for an AI-generated field |
-| `max_size` / `accept` | Integer / Array | Overrides the `file_attr`'s derived upload limits (see [File size and type limits](#file-size-and-type-limits)) — set by hand, it wins over whatever the attachment's own validations imply |
+| `max_size` / `accept` | Integer / Array | Overrides the file field's derived upload limits (see [File size and type limits](#file-size-and-type-limits)) — set by hand, it wins over whatever the attachment's own validations imply |
 | `show_query` / `required_query` | String | Condition expressions driving conditional rendering (identifiers, literals, comparisons, `&&`/`||`/`!`, parentheses); they become `options.dynamic_render` |
 | `target` | String | Where a link opens — `'self'` or `'blank'`, stored without the leading underscore |
 | `parent` | Symbol | Field forming the hierarchy of a tree relation |
@@ -92,17 +93,58 @@ gets `options.number` with the currency from `Habarico::Config.currency`, two fr
 `text_align: 'right'`.
 :::
 
+## File fields
+
+A single file is a `file_attr` over a `has_one_attached` attachment, several files are an
+append-only `file_array_attr` over a `has_many_attached` one. Both come from `eluvia-base`, are
+included into the model explicitly, and need `declare: true` to appear in the schema:
+
+```ruby
+class Product < ApplicationRecord
+  include Eluvia::ActiveRecord::FileAttribute
+  include Eluvia::ActiveRecord::FileArrayAttribute
+
+  has_one_attached :photo_attachment
+  file_attr :photo, underlying_attachment: :photo_attachment, nature: :image, declare: true
+
+  has_many_attached :gallery_attachments
+  file_array_attr :gallery, underlying_attachments: :gallery_attachments, nature: :image,
+                  append_only: true, declare: true
+end
+```
+
+```ruby
+fields            [:id, :name, :photo]
+write_only_fields [:gallery]
+```
+
+`nature: :image` gives `base64-image`, `nature: :file` (the default) `base64-file`. `photo` is an
+`object` with that format; `gallery` is an `array` whose `items` carry it, which the form renders
+as a multi-file upload.
+
+Each `{filename, content}` item saved to `gallery` is attached beside the files already there;
+nothing is replaced or removed, and `null` changes nothing. Declare it in `write_only_fields`, and
+list and delete the stored files through a resource of their own, uploading new ones with
+[`Habarico::UploadFilesAction`](./schema-and-field-customization/custom-actions.md).
+
+The upload options of `gallery` — `max_size`, `accept` and `image.*`, derived or set through a
+`FieldReference` — are emitted on `items.options`. An image array advertises only the image types
+of its attachment's `content_type:` validation. Chunked uploads apply to `file_attr` only: the
+files of a `file_array_attr` travel inline as base64, all in the request that saves the record.
+
 ## File size and type limits
 
-A `file_attr`'s `max_size` / `accept` schema options are derived automatically from the
+The `max_size` / `accept` schema options of a file field are derived automatically from the
 `content_type:` / `size:` validations declared on its underlying attachment with the optional
 [`active_storage_validations`](https://github.com/igorkasyanchuk/active_storage_validations) gem
 (not a dependency of this gem - a host that does not use it simply gets neither option):
 
 ```ruby
 class Product < ApplicationRecord
+  include Eluvia::ActiveRecord::FileAttribute
+
   has_one_attached :photo_attachment
-  file_attr :photo, underlying_attachment: :photo_attachment, nature: :image
+  file_attr :photo, underlying_attachment: :photo_attachment, nature: :image, declare: true
 
   validates :photo_attachment,
     content_type: %w[image/png image/jpeg],

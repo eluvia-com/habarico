@@ -68,11 +68,14 @@ class ProductSerializer(AdminModelSerializer):
 </TabItem>
 <TabItem value="ruby" label="Ruby">
 
-An image attachment on the model is detected automatically:
+A `file_attr` with `nature: :image` over the model's attachment:
 
 ```ruby
 class Product < ApplicationRecord
-  has_one_attached :photo
+  include Eluvia::ActiveRecord::FileAttribute
+
+  has_one_attached :photo_attachment
+  file_attr :photo, underlying_attachment: :photo_attachment, nature: :image, declare: true
 end
 ```
 

@@ -13,6 +13,7 @@ node/         # habarico — React/TypeScript UI library (React Admin + MUI v7)
 python/       # habarico — Django REST Framework admin library
 ruby/         # habarico gem — Rails engine
 <pkg>/docs/   # the documentation pages of that package, rendered by docs.habarico.com
+concepts/     # the documentation pages spanning the libraries (docs.habarico.com/concepts/)
 contract/     # OpenAPI 3.0.3 specification (openapi.yaml) — the shared contract
 examples/     # runnable example projects built on the libraries in this tree
 ```
@@ -78,6 +79,8 @@ Every top-level directory with its own pydev config (`.pydev/base.yml` with a `v
 
 `<pkg>/docs/` is part of its package for that purpose too: a change to a page alone bumps the package's beta and ships with its next release. That is the point — the page is published from the release tag it belongs to.
 
+`concepts/` belongs to no package, like `contract/`: a change to it bumps nothing and ships with the next release, and the site reads it at the newest stable tag of the repository.
+
 The units are built, released and published from GitHub Actions — see `.github/WORKFLOWS.md`
 for what runs and `.github/OPERATIONS.md` for how to release and how to consume a beta.
 
@@ -135,12 +138,12 @@ A test-only change gets no changelog entry (see below).
 |---------|----------|
 | Something one library does | `node/docs/…`, `python/docs/…`, `ruby/docs/…` |
 | Something a paid package does | `<pkg>-enterprise/docs/…` in `habarico-enterprise`, along the same path |
-| A concept spanning the libraries, or backend parity | `concepts/` in `hab-docs` — it documents no package |
+| A concept spanning the libraries, or backend parity | `concepts/…` — it documents no package |
 | REST endpoints and schema shapes | `contract/openapi.yaml` — the API reference is generated from it |
 
-**An image belongs beside its page** (`<pkg>/docs/<section>/img/`), referenced relatively. It is then content-hashed into the build and travels with the page into the release tag.
+**An image belongs beside its page** (`<pkg>/docs/<section>/img/`, `concepts/img/`), referenced relatively. It is then content-hashed into the build and travels with the page into the release tag.
 
-**Verify with `npm run build` in a checkout of `hab-docs`** (`HABARICO_PATH=/path/to/this npm run build`) — `onBrokenLinks: throw` is what catches a renamed heading or a moved page. The `docs-check` workflow does the same on every pull request that touches `*/docs/**`, building against the branch of the same name in `hab-docs` and `habarico-enterprise` where there is one.
+**Verify with `npm run build` in a checkout of `hab-docs`** (`HABARICO_PATH=/path/to/this npm run build`) — `onBrokenLinks: throw` is what catches a renamed heading or a moved page. The `docs-check` workflow does the same on every pull request that touches `*/docs/**` or `concepts/**`, building against the branch of the same name in `hab-docs` and `habarico-enterprise` where there is one.
 
 **Exception — internal developer documentation stays in the repository:** `node/src/*/README.md` (the four architectural layers) and the `CLAUDE.md` files. These describe how the library is built, not how it is used, and have no place on the public site.
 

@@ -22,6 +22,7 @@ export * from './providers/types';
 
 // Contexts — the schema context ring (resource / view / box / field schema state).
 export * from './contexts/ActionSchemaContext';
+export * from './contexts/FieldDefaultsContext';
 export * from './contexts/FieldSchemaContext';
 export * from './contexts/FieldSchemaMapContext';
 export * from './contexts/MethodSchemaContext';
@@ -31,6 +32,7 @@ export * from './contexts/ParentResourceDescriptorsContext';
 // `Resource*Provider` context component whose name collides with the customization-provider *type* of
 // the same name in `./providers/types` (the established public API). They stay sub-path-only.
 export * from './contexts/LocalResourceSchemaContext';
+export * from './contexts/ReadOnlyBoxContext';
 export * from './contexts/SchemaRootContext';
 export * from './contexts/SchemaViewRouterContext';
 export * from './contexts/ViewSchemaContext';

@@ -52,12 +52,6 @@ Without any configuration, `DEFAULT_PERMISSION_CLASSES` defaults to
 box. That default is a safety net, not a recommendation: set a permission class matching your
 project's roles, as in the example above.
 
-:::caution
-Versions before 5.11 defaulted to `AllowAny`, leaving an unconfigured admin API open to anonymous
-requests. A project that relied on the open default must now configure
-`DEFAULT_PERMISSION_CLASSES` explicitly.
-:::
-
 ### The `habarico.W001` system check
 
 `manage.py check` (and every server start) warns with `habarico.W001` when the effective

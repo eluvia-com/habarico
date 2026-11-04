@@ -205,4 +205,4 @@ trusted-publisher push does not.
 - **Ruby publishes to rubygems.org** publicly, not to geminabox.
 - **Private dependencies are out of scope.** `eluvia-base` and friends are being made public
   separately; the source configuration is switched over later and is not this design's problem.
-- **The documentation site** lives in its own repository (`hab-docs`) and is out of scope here; the pages it renders travel with the library they document, in `<lib>/docs/`.
+- **The documentation site** lives in its own repository (`hab-docs`) and is out of scope here; the pages it renders travel with the library they document, in `<lib>/docs/`, and the pages spanning the libraries are in `concepts/`, which the site reads at the newest stable tag of the repository.

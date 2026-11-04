@@ -18,8 +18,8 @@ Peer dependencies (React, React Admin, MUI) are not bundled — install them in 
 same versions the library declares.
 
 > **Router requirement:** the unsaved-changes guard uses React Router's `useBlocker`, which needs a
-> data router. Let `SchemaAdmin` create one itself, or wrap it in `createBrowserRouter` — a legacy
-> `<BrowserRouter>` silently disables the guard.
+> data router. Let `SchemaAdmin` create one itself, or wrap it in `createBrowserRouter` — a
+> declarative-mode `<BrowserRouter>` silently disables the guard.
 
 ## Quick start
 

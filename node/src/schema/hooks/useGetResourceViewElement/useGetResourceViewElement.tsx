@@ -1,5 +1,5 @@
 import {useSchemaRootContext} from '@schema/contexts/SchemaRootContext/useSchemaRootContext';
-import {ViewType} from '@schema/types';
+import {FieldDefaults, ViewType} from '@schema/types';
 import {
   getViewWithProviders,
   hasViewProp,
@@ -26,6 +26,12 @@ export const useGetResourceViewElement = () => {
       : defaultViewProvider({resource, name, actionName, type: viewType});
 
     if (!ViewElement) return;
-    return getViewWithProviders({view: ViewElement});
+
+    // A view opened on an overlay (dialog / side panel) is built here rather than by the router, so
+    // the resource's field shapes have to be handed over explicitly — otherwise the same resource
+    // would look one way inline and another in a dialog.
+    const {fieldDefaults} = (resourceElement?.props || {}) as {fieldDefaults?: FieldDefaults};
+
+    return getViewWithProviders({view: ViewElement, fieldDefaults});
   };
 };

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`habarico` is a React UI library for building schema-driven admin dashboards. It auto-generates admin interfaces based on backend-provided schemas, built on top of React Admin (~5.14), MUI v7 and MUI X Data Grid v9 (React 18/19). Published to npmjs.com as the unscoped `habarico`; never move it under `@eluvia`, which maps to the private registry `habarico-enterprise` is installed from.
+`habarico` is a React UI library for building schema-driven admin dashboards. It auto-generates admin interfaces based on backend-provided schemas, built on top of React Admin 5, MUI v7 and MUI X Data Grid v9 (React 18/19). Published to npmjs.com as the unscoped `habarico`; never move it under `@eluvia`, which maps to the private registry `habarico-enterprise` is installed from.
 
 ## Commands
 
@@ -408,7 +408,7 @@ HABARICO_PATH=<this monorepo> npm run build   # fails on a broken link
 
 `onBrokenLinks: throw` covers the whole site, free and premium pages together, so a renamed heading
 or a moved page fails here rather than at publish time. The `docs-check` workflow runs the same build on
-every pull request that touches `*/docs/**`.
+every pull request that touches `*/docs/**` or `concepts/**`.
 
 ## Local Development
 

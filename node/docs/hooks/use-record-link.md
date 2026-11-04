@@ -90,12 +90,12 @@ to `useRecordLink` directly, which is why they do not appear here.
 
 :::tip
 It stops at the options rather than calling `useRecordLink` for you, because
-[RecordRepresentationChip](../field-components/record-representation-chip.mdx) calls the hook
+[RecordRepresentation](../field-components/record-representation.mdx) calls the hook
 itself — spread these into its props and let it do the resolving.
 :::
 
 ## See also
 
-- [RecordRepresentationChip](../field-components/record-representation-chip.mdx) — the chip both hooks are built for
+- [RecordRepresentation](../field-components/record-representation.mdx) — the representation both hooks are built for
 - [SchemaReferenceField](../field-components/reference-field.mdx) — a foreign key rendered as a linked chip
 - [useRowClick](./use-row-click.md) — the same idea for datagrid rows

@@ -1,0 +1,164 @@
+---
+title: Custom field type end to end
+sidebar_position: 2
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+How a value on the backend becomes a component of your own on the screen — the chain
+`format` → schema → provider → component.
+
+This is the one thing Habarico does differently from a hand-written admin, and the one thing worth
+understanding before you customise anything else. The example: a colour picker for a product's
+swatch colour.
+
+## The chain
+
+```
+backend field         schema                      frontend
+────────────────      ────────────────────────    ─────────────────────────
+format: "color"  ──▶  {"name": "swatch",     ──▶  inputProvider sees
+                       "type": "string",           format === 'color'
+                       "format": "color"}          ──▶ <ColorInput />
+```
+
+Three things have to line up: the backend has to emit a `format` nobody else claims, the provider
+has to recognise it, and the component has to accept the props the provider hands it. Nothing
+else — no registry, no build step, no shared enum.
+
+## 1. Emit the format from the backend
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+`AdminCharField` takes an explicit format:
+
+```python
+from habarico.serializers import AdminCharField, AdminModelSerializer
+
+from .models import Product
+
+
+class ProductSerializer(AdminModelSerializer):
+    swatch = AdminCharField(format="color", required=False)
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "swatch"]
+
+
+class ProductAdmin(ModelAdmin):
+    model = Product
+    base_serializer_class = ProductSerializer
+    fields = ["name", "swatch"]
+```
+
+For a field type you use often, put the format on a model field instead and let the serializer
+pick it up — see [Custom model fields](/python/basic-usage/custom-model-fields).
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+`FieldReference` overrides the detected format:
+
+```ruby
+fields [
+  :name,
+  Habarico::FieldReference.new(name: :swatch, format: 'color'),
+]
+```
+
+</TabItem>
+</Tabs>
+
+Check what actually arrives before touching the frontend. A field's `format` lives under
+`endpoints`, one entry per lower-case HTTP method — not under `views`, which carry the layout:
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8000/api/v1/eshop/admin/product/schema/ \
+  | jq '.endpoints.get.fields[] | select(.name == "swatch")'
+```
+
+## 2. Write the component
+
+It receives [`InputProps`](/node/input-components/#common-props) and is responsible for reading
+and writing the form value — React Admin's `useInput` does that part:
+
+```tsx
+// ColorInput.tsx
+import {useInput} from 'react-admin';
+import {InputProps} from 'habarico';
+
+export const ColorInput = ({source, label, helperText, validate}: InputProps) => {
+  const {field, fieldState} = useInput({source, validate});
+
+  return (
+    <label>
+      {label}
+      <input type="color" value={field.value ?? '#ffffff'} onChange={field.onChange} />
+      {fieldState.error?.message ?? helperText}
+    </label>
+  );
+};
+```
+
+## 3. Register it
+
+The provider is consulted before the built-in mapping, and returning nothing hands the decision
+back — so match narrowly and stay out of the way otherwise:
+
+```tsx
+<SchemaAdmin
+  inputProvider={({format, props}) => {
+    if (format === 'color') {
+      return <ColorInput {...props} />;
+    }
+  }}
+  {...rest}
+>
+  <SchemaResource name="eshop/product" />
+</SchemaAdmin>
+```
+
+For display, do the same with `fieldProvider`:
+
+```tsx
+fieldProvider={({format, props}) => {
+  if (format === 'color') {
+    return <ColorField {...props} />;
+  }
+}}
+```
+
+## Where to match
+
+| Match on | When |
+|---|---|
+| `format` | The field type is a concept — every colour field everywhere behaves this way |
+| `source` + `resource` | One specific field on one specific resource needs special treatment |
+| `type` | Almost never — it replaces the component for every field of that JSON type |
+
+A resource-level provider on `<SchemaResource>` wins over the admin-wide one, so a general rule
+and a local exception can coexist.
+
+## When it does not render
+
+| Symptom | Usual cause |
+|---|---|
+| The built-in input still appears | The provider returned `undefined` — check the `format` actually present in the schema, not the one you meant to emit |
+| Nothing renders at all | The provider returned an element that throws, or the field is `readOnly` and the *field* provider decides instead |
+| It renders but never saves | The component does not use `useInput`, so the value never reaches the form |
+
+:::tip
+A read-only field is rendered by the field components, not the inputs. A custom type that appears
+in both editable and read-only views needs both providers.
+:::
+
+## See also
+
+- [InputProvider](/node/providers/input-provider) — the full provider contract
+- [FieldProvider](/node/providers/field-provider) — the display side
+- [FieldSchema](/node/types-and-schemas/field-schema) — what a field schema may carry
+- [SchemaInput](/node/input-components/schema-input#schema-mapping) — the built-in mapping you are extending

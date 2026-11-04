@@ -1,7 +1,7 @@
 require 'marcel'
 
 module Habarico
-  # The file rules of one `file_attr`: the allowed content types and the largest size its
+  # The file rules of one `file_attr` or `file_array_attr`: the allowed content types and the largest size its
   # `active_storage_validations` declarations admit - the rules a value is measured against, never
   # a value's own claimed properties. `allowed_content_types` is nil when the field declares no
   # content-type restriction; `max_size` is nil when it declares no upper bound.
@@ -22,12 +22,13 @@ module Habarico
     end
   end
 
-  # No declarations at all - what an unknown model, a non-`file_attr` attribute, or a host
-  # without `active_storage_validations` resolves to.
+  # No declarations at all - what an unknown model, an attribute that is not a file field, or a
+  # host without `active_storage_validations` resolves to.
   FileRules::NONE = FileRules.new(allowed_content_types: nil, max_size: nil).freeze
 
-  # Resolves the `FileRules` of a model's `file_attr` from the host's `active_storage_validations`
-  # declarations on its `underlying_attachment`. Mirrors the Python package's
+  # Resolves the `FileRules` of a model's `file_attr` or `file_array_attr` from the host's
+  # `active_storage_validations` declarations on its `underlying_attachment` /
+  # `underlying_attachments`. Mirrors the Python package's
   # `habarico.validators.content_types` / `habarico.validators.files`.
   #
   # `active_storage_validations` is deliberately NOT a dependency of this gem: a host that does not
@@ -38,21 +39,40 @@ module Habarico
     end
 
     # The `FileRules` of `attr_name`; `FileRules::NONE` when there is nothing to derive: no model,
-    # the attribute is not a `file_attr` or has no `underlying_attachment`, or
-    # `active_storage_validations` is not installed.
+    # the attribute is neither file field or has no underlying attachment, or
+    # `active_storage_validations` is not installed. An image `file_array_attr` keeps only the
+    # image types of its attachment's declaration, which may be shared with a file array filtered
+    # to the other types.
     def resolve(attr_name)
       return FileRules::NONE if @model.nil? || attr_name.blank?
-      return FileRules::NONE unless @model.respond_to?(:has_file_attr?) && @model.has_file_attr?(attr_name)
       return FileRules::NONE unless @model.respond_to?(:validators_on)
 
-      attachment = @model.find_file_attr(attr_name)&.fetch(:underlying_attachment, nil)
+      attachment, images_only = underlying_attachment(attr_name)
       return FileRules::NONE if attachment.blank?
 
       validators = @model.validators_on(attachment)
-      FileRules.new(allowed_content_types: content_types_from(validators), max_size: max_size_from(validators))
+      content_types = content_types_from(validators)
+      content_types = image_content_types(content_types) if images_only
+      FileRules.new(allowed_content_types: content_types, max_size: max_size_from(validators))
     end
 
     private
+
+    # The attachment name behind a file attribute, and whether only its image types apply.
+    def underlying_attachment(attr_name)
+      if @model.respond_to?(:has_file_attr?) && @model.has_file_attr?(attr_name)
+        [@model.find_file_attr(attr_name)&.fetch(:underlying_attachment, nil), false]
+      elsif @model.respond_to?(:has_file_array_attr?) && @model.has_file_array_attr?(attr_name)
+        spec = @model.find_file_array_attr(attr_name)
+        [spec[:underlying_attachments], spec[:nature] == :image]
+      end
+    end
+
+    def image_content_types(content_types)
+      return nil if content_types.nil?
+
+      content_types.select { |type| type.is_a?(::Regexp) || type.to_s.start_with?('image/') }.presence
+    end
 
     # The allowed content types of an `ActiveStorageValidations::ContentTypeValidator`, normalized
     # through Marcel exactly as the validator itself does at save time (`:png` and `'png'` both

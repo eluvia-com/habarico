@@ -1,0 +1,223 @@
+---
+title: File uploads
+sidebar_position: 5
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+Accepting files: a product photo, a gallery, a large import file — and what changes once the files
+stop being small.
+
+The reference pages cover each piece; this is the path through them.
+
+## Decide which path you need
+
+| Situation | What to set up |
+|---|---|
+| Small images and documents (< a few MB) | Nothing beyond an image or file field — they travel base64 inside the request |
+| Large files | Chunked uploads ([Python](/python/chunked-uploads/) / [Ruby](/ruby/chunked-uploads/)) with an S3 or tus provider |
+| Several files into a related model | A `many=True` serializer field, which turns the input into multi-file mode |
+
+The threshold is a number in the schema, not a decision in the UI: below it a file is embedded,
+above it the browser uploads to storage and the request carries only a key.
+
+## 1. Declare the field
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+```python
+from habarico.serializers import AdminImageFileSerializer, AdminModelSerializer
+
+
+class ProductSerializer(AdminModelSerializer):
+    photo = AdminImageFileSerializer(required=False)
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "photo"]
+```
+
+A gallery stored in a related model, written from the product's own form:
+
+```python
+class ProductSerializer(AdminModelSerializer):
+    gallery = AdminImageFileSerializer(many=True, required=False, write_only=True)
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "gallery"]
+
+    def create(self, validated_data):
+        images = validated_data.pop("gallery", [])
+        product = super().create(validated_data)
+        for position, file_obj in enumerate(images):
+            ProductImage.objects.create(product=product, file=file_obj, position=position)
+        return product
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+```ruby
+class Product < ApplicationRecord
+  include Eluvia::ActiveRecord::FileAttribute
+  include Eluvia::ActiveRecord::FileArrayAttribute
+
+  # The underlying Active Storage attachments
+  has_one_attached :photo_file
+  has_many_attached :gallery_files
+
+  # The file attributes the schema generator detects
+  file_attr :photo, underlying_attachment: :photo_file, nature: :image, declare: true
+  file_array_attr :gallery, underlying_attachments: :gallery_files, nature: :image, declare: true
+end
+```
+
+The Ruby library detects file fields through the `file_attr` / `file_array_attr` annotations from
+the `eluvia-base` gem, which the `habarico` gem depends on — a bare Active Storage attachment on
+its own is never picked up. The annotation wraps an attachment declared separately
+(`underlying_attachment:` / `underlying_attachments:`) and adds the base64 accessors;
+`nature: :image` makes the field a `base64-image` rather than a `base64-file`, and `declare: true`
+registers the attribute so the schema generator can type it.
+
+</TabItem>
+</Tabs>
+
+The field arrives as `type: "object"`, `format: "base64-image"`, and the frontend renders
+[UploadInput](/node/input-components/upload-input) without further configuration.
+
+## 2. Constrain what may be uploaded
+
+`accept`, `max_size` and `max_files` in the field's options are read by the frontend's upload
+input, which refuses a non-matching file before uploading it (`max_files` applies to multi-file
+fields only — a single field is always capped at one).
+
+**Declare the limit as a backend validator, not as an option.** Both backends derive `accept` and
+`max_size` from the field's own validators — Python from `MaxFileSizeValidator` and
+`FileExtensionValidator` (or `validate_image_file_extension`), Ruby from its
+`active_storage_validations` — so one declaration both enforces the limit on save and tells the
+browser about it beforehand. An explicit `options={"max_size": …}` overrides the derived value and
+is then a browser-side hint alone, with nothing behind it. `max_files` is always that: no backend
+emits or checks it.
+
+```json
+{"name": "photo", "type": "object", "format": "base64-image",
+ "options": {"accept": [".jpg", ".png"], "max_size": 5242880,
+             "image": {"resize_width": 1600, "crop_aspect_ratio": 1}}}
+```
+
+The keys are shown as they travel on the wire; in the TypeScript types they read camelCased —
+`options.maxSize`, `options.image.resizeWidth` — as
+[How it works](../how-it-works.md#snake_case-on-the-wire-camelcase-in-the-components) explains.
+
+## 3. Turn on chunked uploads for large files
+
+:::info[Premium]
+Chunked uploads are a paid feature on both ends: `habarico-enterprise` on the backend and
+`@eluvia/habarico-enterprise` on the frontend. Base64 uploads need neither.
+:::
+
+Install and configure the provider once for the project:
+
+<Tabs groupId="backend">
+<TabItem value="python" label="Python" default>
+
+[Installation](/python/chunked-uploads/installation),
+[Configuration](/python/chunked-uploads/configuration),
+[Provider selection](/python/chunked-uploads/provider-selection) — resolved **per field**, against
+that field's own storage.
+
+</TabItem>
+<TabItem value="ruby" label="Ruby">
+
+[Installation](/ruby/chunked-uploads/installation),
+[Configuration](/ruby/chunked-uploads/configuration),
+[Provider selection](/ruby/chunked-uploads/provider-selection) — resolved once for the whole app,
+against its single default `ActiveStorage` service.
+
+</TabItem>
+</Tabs>
+
+From then on the backend injects `options.upload` into every file field's schema.
+
+On the frontend, add the paid package and import it once, above the admin:
+
+```bash
+npm install @eluvia/habarico-enterprise
+```
+
+```ts
+import '@eluvia/habarico-enterprise';
+```
+
+That import registers the S3-multipart/tus transport into the core's registry, and the rest is
+automatic. (If you already render `EnterpriseSchemaAdmin`, importing the package is implied and this
+line is redundant.)
+
+:::caution
+Client-side resize and crop apply to the base64 path only. A file large enough to be chunked is
+uploaded untouched, so a project relying on `resizeWidth` for every image needs the threshold above
+the largest expected image — or a server-side resize.
+:::
+
+:::caution
+S3 has no server-side cleanup of its own. Without the lifecycle rules described in
+[S3 temporary file cleanup](/python/chunked-uploads/s3-temporary-file-cleanup) (or its
+[Ruby counterpart](/ruby/chunked-uploads/s3-temporary-file-cleanup)), abandoned uploads and
+incomplete multipart parts accumulate invisibly and are billed.
+:::
+
+### Supplying your own transport
+
+Which code actually moves the bytes is a registry, not a fixed import. `@eluvia/habarico-enterprise`
+registers the S3-multipart/tus transport when imported — but a project that uploads through its own
+service can register its own instead, and needs no paid package to do so:
+
+```ts
+import {registerChunkedUploadTransport} from 'habarico';
+
+registerChunkedUploadTransport((file, {transport, getAuthHeaders, onProgress}) => {
+  const controller = new AbortController();
+  return {
+    promise: myUploadService(file, {transport, getAuthHeaders, onProgress, signal: controller.signal})
+      .then((key) => ({upload_key: key})),
+    abort: () => controller.abort(),
+  };
+});
+```
+
+Register once, before the admin mounts. The transport receives the file and the resolved
+`options.upload` config, and returns a handle whose promise resolves to `{upload_key}` — the same
+shape the paid transport produces, so nothing downstream changes. Registering again replaces the
+previous transport, which is also how you override the paid one.
+
+If a field's schema asks for a chunked upload and no transport is registered — the paid package is
+missing and you registered nothing yourself — that upload fails with an explanatory error. It is
+deliberately not a silent fallback: a file past its threshold is exactly the one that must not be
+inlined into the form submit.
+
+## 4. Know what the browser sends
+
+| Path | Value in the request |
+|---|---|
+| Base64 | `{"filename": "photo.jpg", "content": "…"}` |
+| Chunked | `{"upload_key": "…"}` — the serializer moves the object into place on save |
+| Multi-file | An array of either shape |
+
+The full sequence is on Frontend contract for
+[Python](/python/chunked-uploads/frontend-contract) / [Ruby](/ruby/chunked-uploads/frontend-contract).
+
+## Bulk upload as an action
+
+To attach many files to a record without opening its form, use the `UPLOAD_FILES` action: it
+opens a bulk upload dialog and creates one record per file in a related resource. Its parameters
+are on [FieldSchema](/node/types-and-schemas/field-schema#uploadfilesactionparameters).
+
+## See also
+
+- [UploadInput](/node/input-components/upload-input) — every prop and option
+- [useUploadQueue](/node/hooks/use-upload-queue) — building your own upload UI
+- [ImageField](/node/field-components/image-field) — displaying what was uploaded
+- Chunked uploads — the backend feature in full, for [Python](/python/chunked-uploads/) / [Ruby](/ruby/chunked-uploads/)

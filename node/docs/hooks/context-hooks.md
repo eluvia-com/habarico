@@ -14,19 +14,15 @@ contexts are already in place; outside them the ones that throw will say so.
 | `useSchemaRootContext` | The resolved providers, service schemas and identity | Throws |
 | `useAdminConfig` | The app-shell configuration | Throws |
 | `useIcons` | `iconsMap` and the `getIcon` resolver | Returns an empty map |
-| `useViewSchemaContext` | The view being rendered, plus `readOnly` | Throws |
+| `useFieldDefaults` | The shape each kind of field takes | Returns the built-in defaults |
+| `useViewSchemaContext` | The view being rendered, plus its own `readOnly` | Throws |
+| `useIsReadOnly` | Whether to render a value rather than an input, here | Throws |
 | `useFieldSchemaContext` | The schema of the field being rendered | Throws |
 | `useRootRecordContext` | The record the screen belongs to | Returns `undefined` |
 | `useFormInputSourcesContext` | The sources registered on the current form | Returns empty defaults |
 | `useFormInputSourcesRegistration` | `register` / `unregister` alone, without the list | Returns `undefined` callbacks |
 | `useUnsavedChanges` | Whether the form has unsaved changes | Returns `false` |
 | `useUnsavedChangesControl` | Read or set that flag without subscribing | Returns a no-op pair |
-
-:::caution
-The single `useAdminContext` of earlier versions no longer exists. The schema-driven half of it is
-`useSchemaRootContext`, the app-shell half is `useAdminConfig`, and the icon resolver moved to
-`useIcons`.
-:::
 
 ## useSchemaRootContext
 
@@ -75,6 +71,27 @@ of value to element or a function of `(source, value)`. It returns `undefined` w
 missing from the map, which is how [ChoicesField](../field-components/choices-field.mdx) falls back
 to a plain chip.
 
+## useFieldDefaults
+
+```typescript
+const {reference, boolean, choices} = useFieldDefaults();
+```
+
+The shape each kind of field takes here — [`fieldDefaults`](../base-components/field-defaults.md) as
+the application set it, resolved: the nearest `SchemaResource` merged over `SchemaAdmin` merged over
+the built-in `'chip'`. Every key always has a value, so a field of your own reads it without
+repeating a fallback:
+
+```tsx
+const MyReferenceField = ({variant, ...rest}: MyReferenceFieldProps) => {
+  const {reference} = useFieldDefaults();
+  return <SchemaReferenceField variant={variant ?? reference} {...rest} />;
+};
+```
+
+It does **not** throw outside a provider — a field is rendered in a test and in a Storybook story
+with no admin above it, and the built-in defaults are the right answer there.
+
 ## useViewSchemaContext
 
 The view currently rendering:
@@ -88,10 +105,28 @@ The view currently rendering:
 | `actionName` | `string` | Present when the view belongs to an action |
 | `readOnly` | `boolean` | Derived — see below |
 
-`readOnly` is the flag the boxes use to decide between displaying and editing — read it instead of
-comparing `viewSchema.type` yourself. It is `true` for `list` and `show` views, and also for an
-`action` view whose root box is read-only (a routed action that only presents data, with no form to
-submit).
+`readOnly` here is the **view's** mode: `true` for `list` and `show` views, and for an `action` view
+whose root box is read-only (a routed action that only presents data, with no form to submit). Read
+it instead of comparing `viewSchema.type` yourself.
+
+It is not the whole answer to "value or input?", though — a box can be read-only inside an editable
+view. For that question use `useIsReadOnly` below.
+
+## useIsReadOnly
+
+Whether what you are rendering is a value rather than an input: the view is read-only, **or** an
+enclosing box declared `read_only: true` (see [Read-only boxes](../box-components/index.md#read-only-boxes)).
+This is what a custom box, field or input should branch on.
+
+```typescript
+const readOnly = useIsReadOnly();
+
+return readOnly ? <MyDisplay value={value} /> : <MyInput source={source} />;
+```
+
+Keep `useViewSchemaContext().readOnly` for questions about the *view* itself — whether a `<Form>` is
+in scope at all, for instance. A read-only box inside an edit view does not remove the form around
+it.
 
 ## useFieldSchemaContext
 
@@ -123,8 +158,8 @@ const {sources} = useFormInputSourcesContext();
 It re-renders the caller on every registration, because that is when the list changes. Use it only
 where you need the list itself; to register an input, use `useFormInputSourcesRegistration` below.
 
-The hook also returns `register` / `unregister`, so an existing call site keeps working — but
-reaching for them here subscribes you to the list for nothing.
+It also returns `register` / `unregister`, but calling them through this hook subscribes you to the
+list; use `useFormInputSourcesRegistration` instead.
 
 ## useFormInputSourcesRegistration
 

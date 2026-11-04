@@ -79,9 +79,17 @@ export {DraftRestoreDialog, type DraftRestoreDialogProps} from './dialogs/DraftR
 export {UnsavedChangesDialog, type UnsavedChangesDialogProps} from './dialogs/UnsavedChangesDialog';
 
 // Fields
-export {BooleanField, type BooleanFieldProps} from './fields/BooleanField';
+export {
+  BooleanField,
+  type BooleanFieldProps,
+  type BooleanFieldVariant,
+} from './fields/BooleanField';
 export {ChipArrayField, type ChipArrayFieldProps} from './fields/ChipArrayField';
-export {ChoicesField, type ChoicesFieldProps} from './fields/ChoicesField';
+export {
+  ChoicesField,
+  type ChoicesFieldProps,
+  type ChoicesFieldVariant,
+} from './fields/ChoicesField';
 export {DateField, type DateFieldProps} from './fields/DateField';
 export {EmailField} from './fields/EmailField';
 export {ImageField} from './fields/ImageField';
@@ -90,9 +98,12 @@ export {PhoneNumberField} from './fields/PhoneNumberField';
 export {ReferenceArrayField, type ReferenceArrayFieldProps} from './fields/ReferenceArrayField';
 export {ReferenceField, type ReferenceFieldProps} from './fields/ReferenceField';
 export {
-  RecordRepresentationChip,
+  RecordRepresentation,
+  type RecordRepresentationProps,
   type RecordRepresentationChipProps,
-} from './fields/RecordRepresentationChip';
+  type RecordRepresentationLinkProps,
+  type RecordRepresentationVariant,
+} from './fields/RecordRepresentation';
 export {TextField, type TextFieldProps} from './fields/TextField';
 export {TimeField, type TimeFieldProps} from './fields/TimeField';
 export {TreeArrayField, type TreeArrayFieldProps} from './fields/TreeArrayField';

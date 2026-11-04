@@ -32,7 +32,7 @@ Under `schema.gallery` (`GalleryBoxParameters`):
 | `reference` (required) | `ResourceReference` | — | Resource holding the images; its `params` are sent when fetching that resource's schema |
 | `imageField` (required) | `string` | — | Field of that resource carrying the file |
 | `target` | `string` | — | Foreign key pointing back at the parent record |
-| `filters` | `FilterDescriptor[]` | — | Currently ignored by the frontend — the gallery's filter bar is switched off |
+| `filters` | `FilterDescriptor[]` | — | Ignored by the frontend: the gallery has no filter bar |
 | `defaultSorting` | `SortDescriptor` | — | Initial sort |
 | `extraFilters` | `Filters` | — | Filters applied on top, not shown in the UI |
 

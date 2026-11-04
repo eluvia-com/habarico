@@ -61,6 +61,7 @@ const App = () => (
 | `buttonProvider` | `AdminButtonProvider` | `defaultButtonProvider` | [Custom action buttons](../providers/button-provider.md) |
 | `boxProvider` | `AdminBoxProvider` | `defaultBoxProvider` | [Custom layout containers](../providers/box-provider.md) |
 | `validatorProvider` | `AdminValidatorProvider` | `defaultValidatorProvider` | [Custom validators for the schema's validation rules](../providers/validator-provider.md) — admin-wide only |
+| `fieldDefaults` | `FieldDefaults` | `{}` | [The shape each kind of field takes](./field-defaults.md) — `{reference, boolean, choices}`, each defaulting to `'chip'`. Overridable per resource and per field |
 
 ### Layout and appearance
 

@@ -41,9 +41,9 @@ export type SchemaRecordLinkOptions = Pick<
 // `useRecordLink`: the hook is in the admin ring and cannot reach the schema.
 //
 // It is named for what it returns — options, not a link. It deliberately stops short of calling
-// `useRecordLink`, because the chip it feeds (the admin-layer `RecordRepresentationChip`) calls it
-// on them, and doing so here too would resolve the same link twice. A caller that wants the link
-// resolved spreads these into its own:
+// `useRecordLink`, because the representation it feeds (the admin-layer `RecordRepresentation`)
+// calls it on them, and doing so here too would resolve the same link twice. A caller that wants
+// the link resolved spreads these into its own:
 // `useRecordLink({...useSchemaRecordLinkOptions({link, linkMode}), keepLinkedParent, dialogWidth})`.
 export const useSchemaRecordLinkOptions = ({
   link,

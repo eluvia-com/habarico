@@ -57,6 +57,29 @@ module Habarico
       end
     end
 
+    class GalleryModel
+      def self.name
+        "GalleryModel"
+      end
+
+      def self.has_file_array_attr?(attr_name)
+        %i[gallery manuals].include?(attr_name.to_sym)
+      end
+
+      def self.find_file_array_attr(attr_name)
+        { attr_name: attr_name.to_sym, underlying_attachments: :files, nature: attr_name.to_sym == :gallery ? :image : :file }
+      end
+
+      def self.validators_on(attr_name)
+        return [] unless attr_name.to_sym == :files
+
+        [
+          ::ActiveStorageValidations::ContentTypeValidator.new(attributes: [:files], in: %w[image/png application/pdf]),
+          ::ActiveStorageValidations::SizeValidator.new(attributes: [:files], less_than: 1_001)
+        ]
+      end
+    end
+
     # ***********************************************************************
     # resolve
     # ***********************************************************************
@@ -71,6 +94,18 @@ module Habarico
       rules = FileRulesResolver.new(UnvalidatedModel).resolve(:not_a_file)
       assert_nil rules.allowed_content_types
       assert_nil rules.max_size
+    end
+
+    def test_file_array_derives_rules_from_its_attachments
+      rules = FileRulesResolver.new(GalleryModel).resolve(:manuals)
+      assert_equal %w[image/png application/pdf], rules.allowed_content_types
+      assert_equal 1_000, rules.max_size
+    end
+
+    def test_image_file_array_keeps_only_image_types
+      rules = FileRulesResolver.new(GalleryModel).resolve(:gallery)
+      assert_equal %w[image/png], rules.allowed_content_types
+      assert_equal 1_000, rules.max_size
     end
 
     def test_attribute_without_underlying_attachment_derives_none

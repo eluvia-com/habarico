@@ -10,8 +10,9 @@ import {SchemaReferenceField} from './SchemaReferenceField';
  * It has two quite different shapes, and `targetSource` is the switch:
  *
  * - **Without `targetSource`** (the default) it renders the referenced record's *representation* —
- *   its `meta.repr`, in a `SchemaRecordRepresentationChip`. This is the usual relation rendering:
- *   one chip, optionally a link.
+ *   its `meta.repr`, in a `SchemaRecordRepresentation`, whose shape `variant` picks: a chip (the
+ *   default) or a plain text link. This is the usual relation rendering: one representation,
+ *   optionally a link.
  * - **With `targetSource`** it renders **one named field** of the referenced record instead, through
  *   the full field dispatcher. Useful when a relation should read as a plain value (a category's
  *   `name` as text) rather than as a chip.

@@ -142,13 +142,6 @@ A direction that is not `asc` or `desc`, and a field name the resource does not 
 to the field instead — `order_by__placed_at`, `order_by__secret_column` — and every unknown field
 name of one request is reported together.
 
-:::caution
-`placed_at:ASC` and `placed_at:asc:desc` used to be accepted here: the first was read as ascending,
-the second silently dropped its third segment. Both are refused now, which is what the Python
-backend has always done. The frontend only ever sends `field:asc` / `field:desc`, so this reaches
-hand-written integrations.
-:::
-
 ## See also
 
 - [Data Loading](./basic-usage/data-loading.md) — `default_sorting` and `force_sorting` among the

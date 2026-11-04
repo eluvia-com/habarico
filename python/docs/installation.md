@@ -8,8 +8,8 @@ pip install habarico
 ```
 
 Requires **Python 3.10+**. Django, Django REST Framework, `django-filter`,
-`django-phonenumber-field`, `drf-extra-fields`, `jsonschema` and `pydantic` come in as
-dependencies; nothing else has to be installed for the core feature set.
+`django-phonenumber-field`, `drf-extra-fields`, `eluvia-base`, `eluvia-base-django`,
+`python-dateutil`, `jsonschema` and `pydantic` come in as dependencies; nothing else has to be installed for the core feature set.
 
 The [user preferences](./user-preferences/index.md) app is part of this package and is switched on
 by adding `habarico.contrib.preferences` to `INSTALLED_APPS`.
@@ -51,12 +51,6 @@ INSTALLED_APPS = [
 The app registers no models and switches no feature on — Django reads a translation catalog only
 from a directory named in `INSTALLED_APPS`, and this is what points it at the package's `locale/`.
 Leave it out and everything still works, in English.
-
-:::caution
-Before `habarico-enterprise` shipped its own catalog, these strings were translated in the free
-`habarico` package. If you upgrade `habarico` without upgrading `habarico-enterprise` and adding
-this entry, the paid features fall back to English.
-:::
 
 ### No configuration is required
 

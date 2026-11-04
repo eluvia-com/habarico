@@ -302,6 +302,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   repository is mirrored to GitHub — so an internal URL in them is a link no outside reader can
   follow. The `CLAUDE.md` files keep theirs: they are internal developer documentation, kept off
   the site. (HAB-923)
+- The documentation pages spanning the libraries — introduction, how it works, schema model,
+  backend parity, versioning and the guides — are in `concepts/` here, beside the contract, and
+  are released with this repository: the site reads them at its newest stable tag, so a page and
+  the library change it links to are one pull request and one release. `docs-check` runs on a
+  pull request touching `concepts/**` too. (HAB-1073)
 
 ### Added
 

@@ -25,8 +25,8 @@ export const useDatagridRowTooltip = (
   const handleMouseOver = useCallback(
     (e: React.MouseEvent) => {
       // `currentTarget` is the `<tr>` this is bound to in `DatagridRow`; `target` is whatever the
-      // pointer is really over. Two kinds of event reach this handler without belonging to the row's
-      // own content, and both are recognised by *where the target sits in the DOM*:
+      // pointer is really over. Three kinds of event reach this handler without the row's hint being
+      // the right answer, and each is recognized by *where the target sits in the DOM*:
       //
       //  - Out of a portal. A row action renders its dialog as a React descendant of the actions
       //    cell, but MUI mounts that dialog on `document.body`. React bubbles synthetic events along
@@ -37,12 +37,20 @@ export const useDatagridRowTooltip = (
       //  - In the row-actions cell. That cell is row chrome, not row content, so it gets no hint.
       //    Matching the cell class (rather than `button` / `a` / `[role=button]`) also covers the
       //    gaps between the buttons, the `span` wrappers around disabled ones and the overflow menu.
+      //  - On a control inside a content cell that owns its own click: a reference chip or link, a
+      //    URL or e-mail field, a button a project put in a cell of its own. The click the pointer
+      //    is over belongs to that control, not to the row, so the row's hint would promise the
+      //    wrong thing — and a chip, which names its own action in a tooltip, would carry two
+      //    tooltips at once. Deliberately decided here rather than by having each control stop the
+      //    event: a control that swallowed `mouseover` would leave an already-open hint standing,
+      //    because no further event would reach this handler to close it.
       const row = e.currentTarget as HTMLElement;
       const target = e.target as HTMLElement;
       const outsideRow = !row.contains(target);
       const inActionsCell = target.closest(`.${ACTIONS_COLUMN_CLASS}`) !== null;
+      const onOwnControl = target.closest('a[href], button, [role="button"]') !== null;
 
-      if (outsideRow || inActionsCell) {
+      if (outsideRow || inActionsCell || onOwnControl) {
         clearTimer();
         setOpen(false);
       } else if (!open) {
