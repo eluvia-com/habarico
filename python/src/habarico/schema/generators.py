@@ -2216,6 +2216,7 @@ class MenuSchemaGenerator(SchemaGenerator):
         return bool(view_schema_generator) and view_schema_generator.can_render()
 
     def get_schema(self) -> MenuSchema | None:
+        record_pk = self.get_record_pk()
         return (
             MenuSchema(
                 name=self.get_name(),
@@ -2225,7 +2226,9 @@ class MenuSchemaGenerator(SchemaGenerator):
                 priority=self.get_priority(),
                 parent=self.get_parent(),
                 view_name=self.get_view_name(),
-                record_pk=self.get_record_pk(),
+                # A record lives inside the address, so an item opening one names the admin it is on.
+                view_reference=self._admin.name if record_pk is not None else None,
+                record_pk=record_pk,
             )
             if self.can_render()
             else None
