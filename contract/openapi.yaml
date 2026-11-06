@@ -663,6 +663,34 @@ paths:
           $ref: '#/components/responses/AggregateSchemaResponse'
         '404':
           $ref: '#/components/responses/NotFoundResponse'
+  /{api_prefix}/{service_name}/admin/{resource_name}/dashboard/schema:
+    get:
+      summary: Get schema for the dashboard widgets of resource.
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — provided by the paid `habarico-enterprise` package; a free-only install does not expose this endpoint.
+
+        Returns the fields and filters the Table and Simple aggregate dashboard widgets may offer
+        for the resource. Both lists are a subset of the `endpoints.get` objects of the resource
+        list schema (`/admin/{resource_name}/schema`), restricted to the whitelist the admin
+        declares (`dashboard_fields`, `dashboard_filters`) and ordered as declared. The data itself
+        is still read from the resource list endpoint with the viewer's permissions; the whitelist
+        only limits what the dashboard offers.
+
+        Available only on resources with `dashboard_resource_enabled: true` in the resource schema.
+        Returns HTTP 404 otherwise, including when the user may not read the resource.
+      operationId: get_dashboard_schema
+      tags:
+        - schema
+      parameters:
+        - $ref: '#/components/parameters/api_prefix'
+        - $ref: '#/components/parameters/service_name'
+        - $ref: '#/components/parameters/resource_name'
+      responses:
+        '200':
+          $ref: '#/components/responses/DashboardSchemaResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
   /{api_prefix}/{service_name}/admin/{resource_name}/{action_name}:
     description: |
       Action is extended functionality of the resource. It can be for example:
@@ -2943,7 +2971,20 @@ components:
             free-only install.
 
             When true, this resource can be used for a dashboard. Default false – admin opts in
-            per-resource.
+            per-resource. The Table and Simple aggregate widgets additionally require
+            `dashboard_resource_enabled`.
+        dashboard_resource_enabled:
+          type: boolean
+          example: false
+          description: |
+            **Premium** — contributed by the paid `habarico-enterprise` package; absent from a
+            free-only install.
+
+            When true, the Table and Simple aggregate dashboard widgets may use this resource and
+            read their fields and filters from `/{api_prefix}/{service_name}/admin/{resource_name}/dashboard/schema`.
+            True only when `dashboard_enabled` is true, the admin declares a non-empty
+            `dashboard_fields` whitelist and the user may read the resource. Aggregation widgets
+            do not depend on it.
     ObjectResourceSchema:
       type: object
       readOnly: true
@@ -3409,6 +3450,33 @@ components:
           items:
             $ref: '#/components/schemas/FilterSchema'
           description: Filters that can be applied to the aggregated dataset.
+    DashboardSchema:
+      type: object
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — part of the paid `habarico-enterprise` package; absent from a free-only install.
+
+        Dashboard widget schema. Returned by `/admin/{resource_name}/dashboard/schema` on resources
+        where `dashboard_resource_enabled: true` is set in the resource schema. Lists the fields
+        (columns and sorting) and the filters the Table and Simple aggregate widgets may offer.
+      required:
+        - fields
+        - filters
+      properties:
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldSchema'
+          description: |
+            Whitelisted fields of the resource list endpoint, in the declared order, with the same
+            labels, format and `sortable` flag as in `endpoints.get`.
+        filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterSchema'
+          description: |
+            Whitelisted filters of the resource list endpoint, in the declared order. Empty when the
+            admin declares no `dashboard_filters`.
     EndpointsSchema:
       type: object
       description: |
@@ -4560,6 +4628,16 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/AggregateSchema'
+    DashboardSchemaResponse:
+      x-habarico-tier: enterprise
+      description: |
+        **Premium** — returned only by the paid `habarico-enterprise` package.
+
+        Dashboard widget schema response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DashboardSchema'
     UploadInitiateResponse:
       x-habarico-tier: enterprise
       description: |
