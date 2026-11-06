@@ -6,10 +6,18 @@ from app.models import Article, Author, Category, Product, Tag
 from habarico import ModelAdmin
 from habarico.export.views import ExportAdminModelViewSet
 from habarico.schema.actions import Action, ExportActionDescriptor
-from habarico.schema.generators import ListViewSchemaGenerator, ShowViewSchemaGenerator
-from habarico.schema.types import ViewModeType
+from habarico.schema.generators import (
+    ActionViewSchemaGenerator,
+    ListViewSchemaGenerator,
+    ResourceActionSchemaGenerator,
+    ShowViewSchemaGenerator,
+    ViewLinkActionSchemaGenerator,
+)
+from habarico.schema.types import RequestMethodType, ViewModeType
 from habarico.views import AdminModelViewSet
+from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission, IsAuthenticated
+from rest_framework.response import Response
 
 
 class CategoryAdmin(ModelAdmin):
@@ -346,3 +354,38 @@ class GuardedViewsetExportArticleAdmin(ModelAdmin):
     base_viewset = GuardedAdminModelViewSet
     export_enabled = True
     export_fields = ["title", "status"]
+
+
+class PublishAdminModelViewSet(AdminModelViewSet):
+    """Viewset of an application with a detail action of its own."""
+
+    @action(detail=True, methods=["put"], url_path="publish")
+    def publish(self, request, pk=None):
+        return Response({})
+
+
+class OwnActionArticleAdmin(ModelAdmin):
+    """Admin whose actions call a viewset action of its own without naming the resource."""
+
+    model = Article
+    name = "own_action_article"
+    fields = ["title", "status"]
+    can_read = True
+    can_update = True
+    base_viewset = PublishAdminModelViewSet
+    view_schema_generators = [
+        ListViewSchemaGenerator(),
+        ShowViewSchemaGenerator(),
+        ActionViewSchemaGenerator(name="publish", action_name="publish", is_detail=True, method=RequestMethodType.PUT),
+    ]
+    action_schema_generators = [
+        ViewLinkActionSchemaGenerator(name="publish", view_name="publish", is_detail=True, show_in_detail=True),
+        ViewLinkActionSchemaGenerator(name="preview", view_name="show", is_detail=True, show_in_detail=True),
+        ResourceActionSchemaGenerator(
+            name="publish-now",
+            endpoint_action_name="publish",
+            method=RequestMethodType.PUT,
+            is_detail=True,
+            show_in_detail=True,
+        ),
+    ]
