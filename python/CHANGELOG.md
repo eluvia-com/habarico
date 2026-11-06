@@ -195,6 +195,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   serialized in. It asked the declared boxes, which carry none, and failed the whole schema with
   `AttributeError: 'NoneType' object has no attribute 'read_only'` outside a read-only view.
 
+- A menu item opening one record (`MenuSchemaGenerator` with a `record_pk`) names its own resource in
+  its address, as the Ruby gem does. It failed the whole site schema (`/schema/`, the menu of every
+  resource) with `AssertionError: An endpoint's action_name and record_pk belong inside its reference`.
+
 - Serializing a schema binds the context to a copy of the object instead of to the object itself.
   A schema object is declared once — on an admin class, at import — and serialized per request, so
   two parallel requests overwrote each other's context and a getter could read the one that was not
