@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import copy
 from typing import Literal
 
 from habarico.schema.actions import (
@@ -338,7 +339,8 @@ class Box(BaseBox):
     def get_read_only(self) -> bool:
         if super().get_read_only():
             return True
-        inner_boxes = [f for f in (self._boxes or []) if isinstance(f, BaseBox)]
+        # Declared boxes carry no context; ask copies bound to the one this box is serialized in.
+        inner_boxes = [copy(f).setup(context=self.context) for f in (self._boxes or []) if isinstance(f, BaseBox)]
         plain_fields = [f for f in (self._boxes or []) if not isinstance(f, BaseBox)]
         return not plain_fields and (
             not inner_boxes or all(b.get_read_only() or not b.can_render() for b in inner_boxes)

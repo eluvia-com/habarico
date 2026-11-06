@@ -1599,6 +1599,17 @@ class ActionWithResourceSchemaGenerator(ResourceViewAndActionResourceSchemaGener
         else:
             return self.get_record_pk() if self.get_record_pk() is not None else DEFAULT_PK
 
+    def _get_endpoint_reference(self, action_name: str | None) -> str | None:
+        """
+        The resource the endpoint is on, named even when it is this one if the address carries an action.
+
+        An action name lives inside the address, and an address is either omitted or complete.
+        """
+        reference = self.get_reference()
+        if reference is None and action_name:
+            return self.get_admin().name
+        return reference
+
 
 class LinkActionSchemaGenerator(ActionSchemaGenerator):
     """
@@ -1785,6 +1796,7 @@ class ResourceActionSchemaGenerator(ActionWithResourceSchemaGenerator):
         return self.endpoint_action_name
 
     def _get_full_schema(self) -> ResourceActionSchema:
+        action_name = self.get_endpoint_action_name()
         return ResourceActionSchema(
             name=self.get_name(),
             type=self.get_type(),
@@ -1797,12 +1809,12 @@ class ResourceActionSchemaGenerator(ActionWithResourceSchemaGenerator):
             confirm_dialog_title=self.get_confirm_dialog_title(),
             confirm_dialog_message=self.get_confirm_dialog_message(),
             resource_method=self.get_method(),
-            reference=self.get_reference(),
+            reference=self._get_endpoint_reference(action_name),
             resource_path=self.get_path(),
             resource_data=self.get_data(),
             resource_is_background=self.get_is_background(),
             record_pk=self.get_record_pk(),
-            action_name=self.get_endpoint_action_name(),
+            action_name=action_name,
         )
 
 
@@ -1971,6 +1983,7 @@ class ViewLinkActionSchemaGenerator(ActionWithResourceSchemaGenerator):
             return None
 
     def _get_full_schema(self) -> ResourceActionSchema:
+        action_name = self.get_endpoint_action_name()
         return ResourceActionSchema(
             name=self.get_name(),
             type=self.get_type(),
@@ -1988,8 +2001,8 @@ class ViewLinkActionSchemaGenerator(ActionWithResourceSchemaGenerator):
             view_parameters=self.get_parameters(),
             view_mode=self.get_view_mode(),
             view_dialog_width=self.get_dialog_width(),
-            reference=self.get_reference(),
-            action_name=self.get_endpoint_action_name(),
+            reference=self._get_endpoint_reference(action_name),
+            action_name=action_name,
         )
 
     def _get_update_schema_context_kwargs(self):
