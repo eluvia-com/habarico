@@ -7,6 +7,7 @@ import {
 } from '@design/contexts/PanelGridContext';
 import {FieldSchemaMapProvider} from '@schema/contexts/FieldSchemaMapContext';
 import {ParentBoxContext} from '@schema/contexts/ParentBoxContext';
+import {ReadOnlyBoxContext} from '@schema/contexts/ReadOnlyBoxContext';
 
 type ResetBoxProviderProps = {
   children: ReactNode;
@@ -33,16 +34,22 @@ type ResetBoxProviderProps = {
 //     inherit that box's `parentBoxName`, prefixing every `getBoxName()` call the new view
 //     makes (form group names, tab keys, ...) with a path that belongs to a completely
 //     unrelated resource tree.
+//   - ReadOnlyBoxContext: drop the read-only scope of the surrounding box. A show view's boxes
+//     are all `read_only: true`, so a dialog opened from a button inside one (a box's own
+//     toolbar action, a list box's row action) would otherwise render its inputs as fields;
+//     `ReadOnlyBoxProvider` can only turn the scope on, never off, so the reset belongs here.
 export const ResetBoxProvider = ({children}: ResetBoxProviderProps) => {
   return (
     <ParentBoxContext.Provider value={undefined}>
-      <FieldSchemaMapProvider schemaMap={undefined}>
-        <RootRecordContextProvider value={undefined}>
-          <PanelGridContextProvider value={DEFAULT_PANEL_GRID_COLUMNS}>
-            <IsLastPanelContextProvider value={true}>{children}</IsLastPanelContextProvider>
-          </PanelGridContextProvider>
-        </RootRecordContextProvider>
-      </FieldSchemaMapProvider>
+      <ReadOnlyBoxContext.Provider value={false}>
+        <FieldSchemaMapProvider schemaMap={undefined}>
+          <RootRecordContextProvider value={undefined}>
+            <PanelGridContextProvider value={DEFAULT_PANEL_GRID_COLUMNS}>
+              <IsLastPanelContextProvider value={true}>{children}</IsLastPanelContextProvider>
+            </PanelGridContextProvider>
+          </RootRecordContextProvider>
+        </FieldSchemaMapProvider>
+      </ReadOnlyBoxContext.Provider>
     </ParentBoxContext.Provider>
   );
 };

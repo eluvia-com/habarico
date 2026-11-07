@@ -4,6 +4,12 @@
 
 ### Fixed
 
+- A view opened in a dialog or side panel from a button inside a read-only box — a box's own
+  toolbar action or a list box's row action in a show view — rendered its inputs as plain fields:
+  only the labels were visible, with an empty form around them. The read-only scope of the box
+  reached the dialog through the portal, and `ResetBoxProvider` reset every other box context but
+  not that one. It now drops the read-only scope too, so the view starts writeable like one opened
+  from the view toolbar. (VD-2927)
 - Every input draws its border in the theme's `palette.divider`. The date, date-time and time
   pickers used MUI X's own grey (and a different one when disabled); `InputLayout`
   (`UploadInput`, `TreeArrayInput`), `SchemaWrappedFields` and `SchemaRangeInput` each used a grey of
