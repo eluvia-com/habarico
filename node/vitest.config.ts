@@ -30,6 +30,10 @@ export default defineConfig({
           include: ['src/**/*.{test,spec}.{ts,tsx}'],
           globals: true,
           setupFiles: ['./src/test-setup.ts'],
+          // Node 25+ defines a global `localStorage` of its own, which is `undefined` without
+          // `--localstorage-file`; the jsdom environment leaves an existing global alone, so the
+          // tests would see no storage at all. Keep Node's out of the worker.
+          execArgv: ['--no-experimental-webstorage'],
           // In CI the runner is CPU-constrained (cgroup-limited cores) and the job gets
           // 2Gi, while the pool sizes itself from the *node's* core count - one worker
           // (jsdom + MUI) costs several hundred MB, so an uncapped pool would run the job
