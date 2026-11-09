@@ -1,6 +1,6 @@
 # Built from the repository root (see ../compose.yaml): the Gemfile takes habarico from
 # ../../../ruby, which only resolves in a context holding the whole monorepo.
-FROM ruby:3.2.10-slim
+FROM ruby:3.2-slim
 
 # build-essential and libpq-dev build the pg and bcrypt native extensions; curl backs the
 # healthcheck in compose.yaml.

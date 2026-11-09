@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v5
 
       # `ruby-version` is left unset on purpose: the action then reads .ruby-version from
-      # `working-directory`, i.e. ruby/.ruby-version (3.2.10).
+      # `working-directory`, i.e. ruby/.ruby-version (latest 3.2.x).
       - uses: ruby/setup-ruby@v1
         with:
           working-directory: ruby
