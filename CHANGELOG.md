@@ -27,8 +27,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Eluvia auth library a reader cannot install. (HAB-829)
 - `GET /{api_prefix}/{service_name}/admin/{resource_name}/dashboard/schema`
   (`get_dashboard_schema`, enterprise) returning `DashboardSchema` — the whitelisted fields and
-  filters the Table and Simple aggregate dashboard widgets may offer, a subset of `endpoints.get`
-  of the resource list schema — and `GlobalResourceSchema.dashboard_resource_enabled`, true when
+  filters the Table and Simple aggregate dashboard widgets may offer: filters of `endpoints.get`
+  of the resource list schema, fields of `endpoints.get` or one-hop forward relation paths
+  (`a__b`) — and `GlobalResourceSchema.dashboard_resource_enabled`, true when
   `dashboard_enabled` is set, the admin declares `dashboard_fields` and the user may read the
   resource; 404 otherwise. Additive; the paid implementation ships in `habarico-enterprise`.
   `info.version` 4.0.0, shared with the entries below. (HAB-1079)

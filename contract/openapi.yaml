@@ -671,11 +671,13 @@ paths:
         **Premium** — provided by the paid `habarico-enterprise` package; a free-only install does not expose this endpoint.
 
         Returns the fields and filters the Table and Simple aggregate dashboard widgets may offer
-        for the resource. Both lists are a subset of the `endpoints.get` objects of the resource
-        list schema (`/admin/{resource_name}/schema`), restricted to the whitelist the admin
-        declares (`dashboard_fields`, `dashboard_filters`) and ordered as declared. The data itself
-        is still read from the resource list endpoint with the viewer's permissions; the whitelist
-        only limits what the dashboard offers.
+        for the resource, restricted to the whitelist the admin declares (`dashboard_fields`,
+        `dashboard_filters`) and ordered as declared. Filters are a subset of `endpoints.get.filters`
+        of the resource list schema (`/admin/{resource_name}/schema`). A field is either an item of
+        `endpoints.get.fields` or a path `a__b` over one forward relation `a` (belongs_to / has_one
+        in Ruby, ForeignKey / OneToOne in Python) that is itself in `endpoints.get.fields` with the
+        `relation` format. The data itself is still read from the resource list endpoint with the
+        viewer's permissions; the whitelist only limits what the dashboard offers.
 
         Available only on resources with `dashboard_resource_enabled: true` in the resource schema.
         Returns HTTP 404 otherwise, including when the user may not read the resource.
@@ -3468,8 +3470,16 @@ components:
           items:
             $ref: '#/components/schemas/FieldSchema'
           description: |
-            Whitelisted fields of the resource list endpoint, in the declared order, with the same
-            labels, format and `sortable` flag as in `endpoints.get`.
+            Whitelisted fields of the resource list endpoint, in the declared order. A field of
+            `endpoints.get.fields` keeps its labels, format and `sortable` flag from there.
+
+            A relation path (`managed_unit__number`) has the path as `name`; `type`, `format`,
+            `enum` and `options` of the target field on the related model; `read_only: true` and
+            `required: false`, with no `default_value`. Its `label` is the explicit translation,
+            otherwise "<relation label> – <target field label>". It is `sortable` only when the list
+            endpoint accepts ordering by the path, with `sort_by` set when the key differs. The
+            list endpoint row does not carry the path's value: the client reads it over the
+            relation `a`, the same way as an `a__b` column of the list view.
         filters:
           type: array
           items:
