@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The paid features — change history, the cross-resource spotlight search with match highlighting, aggregations and the dashboard, and chunked tus/S3 uploads — live in the separate `habarico-enterprise` gem (a repository of its own, commercial licence). This gem never references it: the paid gem registers itself through the extension points (`Config.search_highlighter_class`, `Types.register`, `RoutingService.register_route_block`, `register_resource_route_block`, `Eluvia::Uploads.finalizer` plus `prepend` onto `FieldOptionsGenerator` / `GlobalResourceSchemaGenerator`). See HAB-812.
 
 - **Gem host**: rubygems.org for this gem; the paid gem is published privately (channel still open, HAB-812)
-- **Rails**: 7.0+
+- **Rails**: 7.0 to 8.x
 - **Key dependencies**: `pundit` (authorization), `kaminari` (pagination), `eluvia-base`. Authentication is not bundled — host apps implement `authenticate_request` in their `ApplicationController` (or point `config.authenticate_method` at an existing method), see `lib/habarico/authenticatable.rb`.
 
 ## Changelog
