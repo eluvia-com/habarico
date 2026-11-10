@@ -113,7 +113,7 @@ export type UploadFilesActionParameters = {
   target?: string;
   accept?: string[];
   resizeWidth?: number;
-  cropAspectRatio?: number;
+  cropAspectRatio?: number | string;
   maxSize?: number;
   maxFiles?: number;
   upload?: UploadFieldOptions;
@@ -283,7 +283,8 @@ export type ChoicesFieldOptions = {
 
 export type ImageFieldOptions = {
   resizeWidth?: number;
-  cropAspectRatio?: number;
+  /** Width / height, as a number (`1.5`) or a `'W:H'` string (`'16:9'`). */
+  cropAspectRatio?: number | string;
 };
 
 export type AiFieldOptions = {

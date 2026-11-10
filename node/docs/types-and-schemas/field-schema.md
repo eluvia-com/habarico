@@ -119,7 +119,7 @@ type ChoicesFieldOptions = {
 
 type ImageFieldOptions = {
   resizeWidth?: number;            // Client-side resize width in px (base64 path only)
-  cropAspectRatio?: number;        // Client-side crop ratio, e.g. 1.0 = square (base64 path only)
+  cropAspectRatio?: number | string; // Client-side crop ratio, 1.5 or '3:2' (base64 path only)
 };
 
 type AiFieldOptions = {

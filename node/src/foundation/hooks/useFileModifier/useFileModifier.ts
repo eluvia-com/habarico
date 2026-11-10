@@ -1,17 +1,18 @@
 import {useCallback} from 'react';
-import {cropImage, resizeImage} from '@foundation/utils/image';
+import {cropImage, parseAspectRatio, resizeImage} from '@foundation/utils/image';
 import {BuildFileModifier} from './types';
 
 /**
  * Builds a `BuildFileModifier` that resizes and/or crops a selected image as it is stored into the
  * field, before it is validated or uploaded. Returns a no-op factory (yielding `undefined`) when
- * neither `resizeWidth` nor `cropAspectRatio` is set. Pure foundation hook — no React Admin, no
- * schema.
+ * neither `resizeWidth` nor `cropAspectRatio` is set. `cropAspectRatio` is a number (`1.5`) or a
+ * `'W:H'` string (`'16:9'`). Pure foundation hook — no React Admin, no schema.
  */
 export const useFileModifier = (
   resizeWidth: number | undefined,
-  cropAspectRatio: number | undefined
+  cropAspectRatioValue: number | string | undefined
 ): BuildFileModifier => {
+  const cropAspectRatio = parseAspectRatio(cropAspectRatioValue);
   return useCallback<BuildFileModifier>(
     (file) => {
       if (!resizeWidth && !cropAspectRatio) return undefined;

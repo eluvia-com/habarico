@@ -28,6 +28,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `ImageFieldOptions.crop_aspect_ratio` is a number (`1.5`) or a `'W:H'` string (`'16:9'`): the
+  contract named the number alone, while the Ruby backend sends the string. `UploadFilesActionParameters`
+  states where the frontend takes the rules for an uploaded file from: the options of `file_field`
+  in the schema of `reference` (`accept`, `upload`, `max_size`, `image`). `info.version` 4.0.0 →
+  4.1.0; additive, the frontend reads both forms. (HAB-1037)
 - **BREAKING:** The `upload-images` action is renamed to `upload-files`: it is used to bulk-upload
   documents (PDF, DOCX, XLSX, ZIP, …) as much as images, and the name said otherwise. The
   `ActionType` value `upload-images` → `upload-files`, the `ActionSchema` slot `upload_images` →
