@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- The bulk upload dialog of an `upload-files` action ignored the resize, crop and maximum-size rules
+  of the target field: it read `resizeWidth`, `cropAspectRatio` and `maxSize` only from the action
+  parameters, which no backend sends, so an image was stored at full size and an oversized file was
+  refused only by the backend on save. The dialog now takes them from the options of `fileField`
+  (`options.image`, `options.maxSize`), as it already did for `accept` and `upload`, and treats a
+  file the way the create form does; a value set on the action still overrides the field's.
+  (HAB-1037)
+
 ## [7.3.0] — 2026-11-08
 
 ### Fixed
