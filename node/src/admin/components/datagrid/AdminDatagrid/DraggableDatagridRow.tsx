@@ -37,7 +37,6 @@ export const DraggableDatagridRow = ({
 
   const ref = useRef(null);
   const dragRef = useRef<HTMLDivElement>(null);
-  const dropIndex = useRef<number | null>(null);
 
   const handleDrag: DraggableEventHandler = (event) => {
     const selectedItem = dragRef.current;
@@ -60,17 +59,6 @@ export const DraggableDatagridRow = ({
       return;
     }
     if (table === dropItem.closest('tbody')) {
-      const dropItemIndex = toInteger(dropItem.dataset.index);
-      const dragItemIndex = toInteger(selectedRow.dataset.index);
-      if (
-        !dropIndex.current ||
-        dropItemIndex > dropIndex.current ||
-        dragItemIndex > dropItemIndex
-      ) {
-        dropIndex.current = dropItemIndex;
-      } else {
-        dropIndex.current = dropItemIndex - 1;
-      }
       if (dropItem === selectedRow.nextSibling) {
         dropItem = dropItem.nextSibling as HTMLTableRowElement;
       }
@@ -81,13 +69,21 @@ export const DraggableDatagridRow = ({
   const handleDragStop: DraggableEventHandler = () => {
     const selectedItem = dragRef.current;
     if (!selectedItem) return;
-
-    if (dropIndex.current) {
-      onDropRow(record!, dropIndex.current);
-    }
-
     selectedItem.classList.remove('drag-active');
-    dropIndex.current = null;
+
+    const selectedRow = selectedItem.closest('tr');
+    const table = selectedRow?.closest('tbody');
+    if (!selectedRow || !table) return;
+
+    // Each row keeps its own `data-index` while handleDrag reorders the DOM, so the n-th smallest
+    // index belongs to whichever row now sits n-th.
+    const rows = Array.from(table.rows).filter((row) => row.dataset.index !== undefined);
+    const indices = rows.map((row) => toInteger(row.dataset.index)).sort((a, b) => a - b);
+    const newIndex = indices[rows.indexOf(selectedRow)];
+
+    if (newIndex !== undefined && newIndex !== record!.index) {
+      onDropRow(record!, newIndex);
+    }
   };
 
   // --------------------------------------------------------------------------
