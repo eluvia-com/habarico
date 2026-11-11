@@ -455,20 +455,22 @@ export const RowWithActions: Story = {
 
 /**
  * Drag-and-drop reordering — with `enableDnd` and an `onDropRow` handler each row grows a drag
- * handle in a leading column; dropping a row calls back with the record and its new index. Rendered
- * as an **infinite list** (`infinite` — every row on one scrollable page, no pagination) so the whole
- * list can be reordered at once rather than a page at a time.
+ * handle in a leading column. Each record carries its position in `index` (here 1-based, as a
+ * schema list numbers them); dropping a row calls back with the record and the `index` of the place
+ * it lands on. Rendered as an **infinite list** (`infinite` — every row on one scrollable page,
+ * no pagination) so the whole list can be reordered at once.
  */
 const RowDragAndDropDemo = () => {
   const [rows, setRows] = useState(OWNERS);
+  const indexedRows = rows.map((row, i) => ({...row, index: i + 1}));
   const handleDrop = (record: RaRecord, index: number) => {
     setRows((prev) => {
       const next = prev.filter((r) => r.id !== record.id);
-      next.splice(index, 0, record as Owner);
+      next.splice(index - 1, 0, record as Owner);
       return next;
     });
   };
-  return <DemoGrid data={rows} enableDnd onDropRow={handleDrop} infinite />;
+  return <DemoGrid data={indexedRows} enableDnd onDropRow={handleDrop} infinite />;
 };
 
 export const RowDragAndDrop: Story = {
