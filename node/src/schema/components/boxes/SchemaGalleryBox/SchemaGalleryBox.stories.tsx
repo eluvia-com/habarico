@@ -7,6 +7,7 @@ import {
   PRODUCTS_RESOURCE,
   box,
   fd,
+  referenceTo,
 } from '@schema/components/_data';
 import {ShowcaseStack, withSchemaBoxShell} from '@schema/components/_storyKit';
 import {SchemaBox} from '@schema/components/boxes/SchemaBox';
@@ -25,7 +26,12 @@ const galleryBox = (
     type: 'gallery',
     label: 'Product photos',
     readOnly: true,
-    gallery: {reference: PRODUCTS_RESOURCE, target: 'category_id', imageField: 'photo', ...gallery},
+    gallery: {
+      reference: referenceTo(PRODUCTS_RESOURCE),
+      target: 'category_id',
+      imageField: 'photo',
+      ...gallery,
+    },
     boxes: [fd('name'), fd('price')],
     ...overrides,
   });
@@ -58,7 +64,12 @@ const meta = {
   title: 'schema/boxes/SchemaGalleryBox',
   component: SchemaGalleryBox,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}, ...CATEGORY_CONTEXT},
+  parameters: {
+    layout: 'padded',
+    controls: {disable: true},
+    docs: {canvas: {sourceState: 'none'}},
+    ...CATEGORY_CONTEXT,
+  },
   decorators: [withSchemaBoxShell],
 } satisfies Meta;
 

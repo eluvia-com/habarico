@@ -24,7 +24,8 @@ npx vitest run src/schema/providers/__tests__/dataProvider.test.ts  # Run a sing
 
 # Code quality
 npm run lint           # ESLint (zero warnings allowed) — includes the import-boundary rule
-npm run typecheck      # TypeScript type checking
+npm run typecheck      # TypeScript type checking of the library (tsconfig.build.json)
+npm run typecheck:all  # The same over stories and .storybook too (tsconfig.json)
 npm run prettier       # Format code
 
 # Storybook
@@ -32,9 +33,9 @@ npm run storybook      # Dev server on port 6006
 npm run build-storybook
 ```
 
-On every pull request GitHub Actions runs `node-code-quality` (lint + typecheck),
-`node-unit-tests` (`npm test`) and `node-storybook-tests` (`npm run test:storybook` +
-`npm run build-storybook`), defined in `.github/workflows/node.yml`.
+On every pull request GitHub Actions runs `node-code-quality` (lint + `typecheck` +
+`typecheck:all`), `node-unit-tests` (`npm test`) and `node-storybook-tests`
+(`npm run test:storybook` + `npm run build-storybook`), defined in `.github/workflows/node.yml`.
 
 The Storybook bucket holds the root build, one `<series>/` copy per minor series and `next/`.
 Never prune its root: the series and `next/` live beside it.
@@ -171,7 +172,8 @@ standard below. Reference implementation: `design/atoms/Button`; token foundatio
   globally — `.storybook/DocsPage.tsx` (wired via `parameters.docs.page` in
   `.storybook/preview.ts`) sets `<Stories includePrimary={false} />` to drop Storybook's default
   second, static copy of the primary story. Don't remove this, revert to the default template, or
-  reintroduce the duplicate some other way.
+  reintroduce the duplicate some other way. The same page leaves out the `<Controls />` table when
+  the primary story sets `parameters.controls.disable`: without controls it is an inert props dump.
 
 ### Misc
 
@@ -187,9 +189,13 @@ not transfer literally. Schema-layer component stories (`src/schema/components/*
   by the contexts around it, not by its props: a box takes its read-only mode from
   `ViewSchemaContext`, a field its renderer from the provider chain. Controls wired to a story-local
   arg therefore look interactive and change nothing, which is worse than no Controls at all. Every
-  story is a plain `render` showcase and sets `parameters.controls: {disable: true}`. Re-introducing
+  story is a plain `render` showcase; its meta sets `controls: {disable: true}` and
+  `docs: {canvas: {sourceState: 'none'}}` (a showcase `render` is not copyable usage). Re-introducing
   a Playground is fine **only** once the arg demonstrably changes the canvas — verify it, do not
   assume it (`?args=readOnly:true` on the story's `iframe.html` is enough to check).
+- **Write the meta's `docs` as a literal object.** `@storybook/csf-plugin` appends the meta's JSDoc
+  as its own `docs: {description}` key, which replaces a `docs` that came in through a spread or a
+  variable — `sourceState` is then silently lost.
 - **Export order is display order:** the plain case (`Default`, or the dispatch matrix `FieldTypes` /
   `BoxTypes` / `InputTypes`) → states (`ReadOnlyAndWritable`, `EmptyValue`) → the named edge cases.
 - **One component = one autodocs page:** `component` + `tags: ['autodocs']`. Type the meta as

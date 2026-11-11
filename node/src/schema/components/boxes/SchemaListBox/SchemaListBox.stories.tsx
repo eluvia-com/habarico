@@ -8,15 +8,17 @@ import {
   PRODUCTS_RESOURCE,
   box,
   fd,
+  referenceTo,
 } from '@schema/components/_data';
-import {ShowcaseStack, withSchemaBoxShell} from '@schema/components/_storyKit';
+import {Showcase, ShowcaseStack, withSchemaBoxShell} from '@schema/components/_storyKit';
 import {SchemaBox} from '@schema/components/boxes/SchemaBox';
 import type {BoxSchema, ListBoxParameters} from '@schema/types';
 import type {Meta, StoryObj} from '@storybook/react-vite';
 import {SchemaListBox} from './SchemaListBox';
 
 // A list box hangs a *referenced* resource off the record in context. Here the record is a category
-// and the reference is `products`, joined on `category_id` — the fixture's one-to-many.
+// and the reference is `products`, joined on `category_id` — the fixture's one-to-many. The row slot
+// carries what a backend sends for one its author left unset.
 const listBox = (
   overrides: Partial<BoxSchema> = {},
   list: Partial<ListBoxParameters> = {}
@@ -26,7 +28,12 @@ const listBox = (
     type: 'list',
     label: 'Products',
     readOnly: true,
-    list: {reference: PRODUCTS_RESOURCE, target: 'category_id', ...list},
+    list: {
+      reference: referenceTo(PRODUCTS_RESOURCE),
+      target: 'category_id',
+      rowActions: [{type: 'default_actions', scope: 'detail'}],
+      ...list,
+    },
     boxes: [fd('name'), fd('sku'), fd('price')],
     ...overrides,
   });
@@ -54,12 +61,11 @@ const CATEGORY_CONTEXT = {
  *   are the *referenced* resource's, not the parent's.
  * - **Joins on `list.target`.** The target is the foreign key on the referenced side
  *   (`products.category_id`), filtered to the parent record's id.
- * - **Falls back for its toolbar.** With `list.listActions` unset the datagrid toolbar reuses the
- *   referenced resource's `showInList` actions — the same set the per-row buttons come from, so the
- *   row buttons appear a second time above the grid. Setting `listActions` explicitly replaces that
- *   fallback.
+ * - **Shows only the actions it is given.** `list.rowActions` fills each row, `list.listActions` the
+ *   datagrid toolbar; a slot left unset stays empty. A backend fills a slot its author did not
+ *   configure with a `default_actions` entry, which expands into the referenced resource's actions.
  *
- * The three action slots (`box.toolbarActions`, `list.toolbarActions`, `list.listActions`) resolve
+ * The three action slots (`box.toolbarActions`, `list.listActions`, `list.rowActions`) resolve
  * against **different** resources, and the rules are subtle enough to look like a bug — they have
  * their own dedicated story, `schema/boxes/BoxActions`.
  */
@@ -67,7 +73,12 @@ const meta = {
   title: 'schema/boxes/SchemaListBox',
   component: SchemaListBox,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}, ...CATEGORY_CONTEXT},
+  parameters: {
+    layout: 'padded',
+    controls: {disable: true},
+    docs: {canvas: {sourceState: 'none'}},
+    ...CATEGORY_CONTEXT,
+  },
   decorators: [withSchemaBoxShell],
 } satisfies Meta;
 
@@ -76,8 +87,8 @@ export default meta;
 type Story = StoryObj;
 
 /**
- * The plain case: no action slots set at all, so everything visible is the library's own behaviour —
- * the `showInList` row buttons, and the toolbar fallback that mirrors them.
+ * The plain case: the row slot's `default_actions` expands into the products' record actions
+ * (Detail / Edit); no toolbar slot is set, so the toolbar holds only the grid's own controls.
  */
 export const Default: Story = {
   render: () => <SchemaBox isRoot schema={listBox()} />,
@@ -98,23 +109,25 @@ export const Columns: Story = {
 };
 
 /**
- * `list.listActions` set explicitly replaces the `showInList` fallback in the datagrid toolbar —
- * here with a single inline action, which always resolves because it carries its own `action`.
+ * `list.listActions` fills the datagrid toolbar: a `default_actions` entry expands into the
+ * collection actions of `products`, an inline action always resolves because it carries its own
+ * `action`.
  */
 export const ExplicitListActions: Story = {
   render: () => (
     <ShowcaseStack title={'SchemaListBox — datagrid toolbar'}>
-      <SchemaBox
-        isRoot
-        schema={listBox({name: 'fallback', label: 'listActions unset → showInList fallback'})}
-      />
-      <SchemaBox
-        isRoot
-        schema={listBox(
-          {name: 'explicit', label: 'listActions: [inline] → replaces the fallback'},
-          {listActions: [INLINE_ACTION]}
-        )}
-      />
+      <Showcase caption={"listActions: [{type: 'default_actions', scope: 'list'}]"}>
+        <SchemaBox
+          isRoot
+          schema={listBox(
+            {name: 'defaults'},
+            {listActions: [{type: 'default_actions', scope: 'list'}]}
+          )}
+        />
+      </Showcase>
+      <Showcase caption={'listActions: [inline]'}>
+        <SchemaBox isRoot schema={listBox({name: 'inline'}, {listActions: [INLINE_ACTION]})} />
+      </Showcase>
     </ShowcaseStack>
   ),
 };

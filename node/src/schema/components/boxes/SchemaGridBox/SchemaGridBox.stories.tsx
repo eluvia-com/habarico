@@ -37,7 +37,7 @@ const meta = {
   title: 'schema/boxes/SchemaGridBox',
   component: SchemaGridBox,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}},
+  parameters: {layout: 'padded', controls: {disable: true}, docs: {canvas: {sourceState: 'none'}}},
   decorators: [withSchemaBoxShell],
 } satisfies Meta;
 

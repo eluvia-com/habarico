@@ -49,7 +49,7 @@ const meta = {
   title: 'schema/fields/SchemaFieldContent',
   component: SchemaFieldContent,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}},
+  parameters: {layout: 'padded', controls: {disable: true}, docs: {canvas: {sourceState: 'none'}}},
   decorators: [withSchemaFieldShell],
 } satisfies Meta;
 

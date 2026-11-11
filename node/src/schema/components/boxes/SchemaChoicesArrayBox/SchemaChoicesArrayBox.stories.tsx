@@ -88,7 +88,7 @@ const withFeatures = (features: Record<string, unknown>[], fieldOverrides = {}) 
  *   use*, so anything still unchecked stays reachable only through its own checklist row.
  * - **A checklist row toggles on click anywhere**, not just on the checkbox — except when the click
  *   lands in one of the row's own inputs, buttons or links, so editing a row cannot untick it. Free
- *   rows have no choice to toggle and ignore the gesture entirely (HAB-879).
+ *   rows have no choice to toggle and ignore the gesture entirely.
  * - **Only a free row carries a delete action.** On a checklist row the checkbox already is one.
  *
  * **Read-only falls back to `SchemaArrayBox`** — a checklist has nothing to toggle in a read view.
@@ -102,7 +102,12 @@ const meta = {
   title: 'schema/boxes/SchemaChoicesArrayBox',
   component: SchemaChoicesArrayBox,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}, ...withFeatures([])},
+  parameters: {
+    layout: 'padded',
+    controls: {disable: true},
+    docs: {canvas: {sourceState: 'none'}},
+    ...withFeatures([]),
+  },
   decorators: [withSchemaBoxShell],
 } satisfies Meta;
 

@@ -45,6 +45,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # `tsconfig.build.json` leaves out the stories and `.storybook`; `tsconfig.json` covers them.
+      - name: Typecheck stories
+        run: npm run typecheck:all
+
   node-unit-tests:
     name: node-unit-tests
     runs-on: ubuntu-latest

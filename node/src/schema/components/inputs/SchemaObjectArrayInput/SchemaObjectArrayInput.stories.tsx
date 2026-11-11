@@ -20,7 +20,7 @@ const meta = {
   title: 'schema/inputs/SchemaObjectArrayInput',
   component: SchemaObjectArrayInput,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}},
+  parameters: {layout: 'padded', controls: {disable: true}, docs: {canvas: {sourceState: 'none'}}},
   decorators: [withSchemaInputShell],
 } satisfies Meta;
 
