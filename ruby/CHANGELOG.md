@@ -15,6 +15,7 @@ version and date when a release is finalized.
 
 - Rails 8.0 and 8.1 are supported: the `rails` dependency is `>= 7.0, < 9` (HAB-1045).
 - Requires `eluvia-base` 3.43.0, the first release that supports Rails 8 (HAB-1045).
+- **BREAKING:** `Habarico::UploadFilesActionParametersGenerator` raises `Eluvia::Errors::StandardError` when an `upload-files` action has no `upload_files_file_field`; the error names the action and its resource. Such an action saved nothing. The check runs on the value `generate_file_field` returns, so a generator overriding it still works (HAB-1036).
 
 ## [7.3.0] — 2026-11-08
 

@@ -339,6 +339,7 @@ the current record.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `file_field` | `str` | **Required.** Field name on the file model that holds the uploaded file. An empty value raises `ValueError`. |
 | `name` | `str` | Action name. Defaults to `upload-files`. |
 | `label` | `str` | Button label. Defaults to `Upload files`. |
 | `icon` | `str` | Button icon. Defaults to `UploadFile`. |
@@ -347,7 +348,6 @@ the current record.
 | `target` | `str` | Field name on the file model linking to the parent record. When set together with `reference`, the current record's ID is used as the target value. |
 | `accept` | `list[str]` | List of accepted file types (e.g. `[".pdf", ".docx"]`). When not set, the frontend uses its own default (`.png,.jpg,.jpeg,.bmp,.gif`), which accepts images only — set it whenever the action uploads other files. |
 | `data` | `dict` | Additional data that will be added to each uploaded file record. |
-| `file_field` | `str` | Field name on the file model that holds the uploaded file. There is no default: an action without it saves nothing. |
 
 ```python
 from habarico import ModelAdmin

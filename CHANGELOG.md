@@ -28,6 +28,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **BREAKING:** `UploadFilesActionParameters.file_field` is required, and the object is present on
+  every `upload-files` action; it is no longer `nullable` or omitted when no parameter is set. An
+  action without `file_field` saved nothing. The Python and Ruby backends reject such an action;
+  the frontend already treated `fileField` as required. `info.version` 4.0.0 → 4.1.0. (HAB-1036)
 - **BREAKING:** The `upload-images` action is renamed to `upload-files`: it is used to bulk-upload
   documents (PDF, DOCX, XLSX, ZIP, …) as much as images, and the name said otherwise. The
   `ActionType` value `upload-images` → `upload-files`, the `ActionSchema` slot `upload_images` →

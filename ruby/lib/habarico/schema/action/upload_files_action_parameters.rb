@@ -16,8 +16,8 @@ module Habarico
     # images only - set it whenever the action uploads other files.
     any_attr :accept
 
-    # Field name on the target model that holds the uploaded file. Required by the
-    # frontend to know which attribute to set on the record it creates for each upload.
+    # Field name on the target model that holds the uploaded file (required). The frontend sets it
+    # on the record it creates for each upload.
     string_attr :file_field
 
     # Additional data added to every file record the frontend creates for an upload
