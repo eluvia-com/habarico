@@ -262,6 +262,11 @@ Habarico::UploadFilesAction.new(
 ```
 
 :::caution
+`upload_files_file_field` is required. Generating the schema of an `upload-files` action without it
+raises `Eluvia::Errors::StandardError`.
+:::
+
+:::caution
 Without `upload_files_accept` the frontend falls back to its default `.png,.jpg,.jpeg,.bmp,.gif`,
 which admits images only — set it whenever the action uploads documents.
 :::

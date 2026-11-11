@@ -6,12 +6,21 @@ module Habarico
       raise Eluvia::Errors::StandardError.new('Argument `action` must be a Habarico::Action') unless action.is_a?(Habarico::Action)
       raise Eluvia::Errors::StandardError.new('Argument `action` must be of :"upload-files" type') unless action.type.to_sym == :"upload-files"
 
+      file_field = generate_file_field(action, context)
+      if file_field.blank?
+        # An action declared inline in an `ActionReference` carries no name of its own
+        raise Eluvia::Errors::StandardError.new(
+          "Upload-files action `#{action.name.presence || action.label}` of resource `#{resource_path&.last}` " \
+          'has no `upload_files_file_field`, the field that holds the uploaded file.'
+        )
+      end
+
       # Create model
       Habarico::UploadFilesActionParameters.new(
         reference: Habarico::ResourceReference.build(generate_reference(action, context)),
         target: generate_target(action, context),
         accept: generate_accept(action, context),
-        file_field: generate_file_field(action, context),
+        file_field: file_field,
         data: generate_data(action, context)
       )
     end

@@ -1374,32 +1374,37 @@ class TestSchemaConsistency:
 class TestUploadFilesActionParameters:
     """Tests for UploadFilesActionParameters serialization."""
 
-    def test_no_args_yields_none(self):
-        assert UploadFilesActionParameters().to_dict() is None
+    def test_file_field_is_required(self):
+        with pytest.raises(TypeError):
+            UploadFilesActionParameters()
 
-    def test_reference_in_dict(self):
-        result = UploadFilesActionParameters(reference="attachments").to_dict()
-        assert result == {"reference": {"resource": "attachments"}}
+    def test_empty_file_field_is_rejected(self):
+        with pytest.raises(ValueError, match="file_field"):
+            UploadFilesActionParameters(file_field="")
 
-    def test_target_in_dict(self):
-        result = UploadFilesActionParameters(target="article").to_dict()
-        assert result == {"target": "article"}
-
-    def test_accept_in_dict(self):
-        result = UploadFilesActionParameters(accept=[".pdf", ".docx"]).to_dict()
-        assert result == {"accept": [".pdf", ".docx"]}
-
-    def test_data_in_dict(self):
-        result = UploadFilesActionParameters(data={"public": True}).to_dict()
-        assert result == {"data": {"public": True}}
-
-    def test_file_field_in_dict(self):
+    def test_file_field_alone_in_dict(self):
         result = UploadFilesActionParameters(file_field="file").to_dict()
         assert result == {"file_field": "file"}
 
+    def test_reference_in_dict(self):
+        result = UploadFilesActionParameters(file_field="file", reference="attachments").to_dict()
+        assert result == {"file_field": "file", "reference": {"resource": "attachments"}}
+
+    def test_target_in_dict(self):
+        result = UploadFilesActionParameters(file_field="file", target="article").to_dict()
+        assert result == {"file_field": "file", "target": "article"}
+
+    def test_accept_in_dict(self):
+        result = UploadFilesActionParameters(file_field="file", accept=[".pdf", ".docx"]).to_dict()
+        assert result == {"file_field": "file", "accept": [".pdf", ".docx"]}
+
+    def test_data_in_dict(self):
+        result = UploadFilesActionParameters(file_field="file", data={"public": True}).to_dict()
+        assert result == {"file_field": "file", "data": {"public": True}}
+
     def test_all_params_in_dict(self):
         result = UploadFilesActionParameters(
-            reference="attachments", target="article", accept=[".pdf"], data={"public": True}, file_field="file"
+            file_field="file", reference="attachments", target="article", accept=[".pdf"], data={"public": True}
         ).to_dict()
         assert result == {
             "reference": {"resource": "attachments"},
@@ -1413,65 +1418,76 @@ class TestUploadFilesActionParameters:
 class TestUploadFilesActionDescriptor:
     """Tests for UploadFilesActionDescriptor serialization."""
 
+    def test_file_field_is_required(self):
+        with pytest.raises(TypeError):
+            UploadFilesActionDescriptor()
+
+    def test_empty_file_field_is_rejected(self):
+        with pytest.raises(ValueError, match="file_field"):
+            UploadFilesActionDescriptor(file_field="")
+
     def test_default_name(self):
-        assert UploadFilesActionDescriptor().to_dict()["name"] == "upload-files"
+        assert UploadFilesActionDescriptor(file_field="file").to_dict()["name"] == "upload-files"
 
     def test_default_icon(self):
-        assert UploadFilesActionDescriptor().to_dict()["icon"] == "UploadFile"
+        assert UploadFilesActionDescriptor(file_field="file").to_dict()["icon"] == "UploadFile"
 
     def test_has_label(self):
-        result = UploadFilesActionDescriptor().to_dict()
+        result = UploadFilesActionDescriptor(file_field="file").to_dict()
         assert "label" in result
         assert result["label"]
 
     def test_no_color_by_default(self):
-        assert "color" not in UploadFilesActionDescriptor().to_dict()
+        assert "color" not in UploadFilesActionDescriptor(file_field="file").to_dict()
 
     def test_action_type_is_upload_files(self):
-        assert UploadFilesActionDescriptor().to_dict()["action"]["type"] == "upload-files"
+        assert UploadFilesActionDescriptor(file_field="file").to_dict()["action"]["type"] == "upload-files"
 
-    def test_no_upload_files_params_when_empty(self):
-        assert "upload_files" not in UploadFilesActionDescriptor().to_dict()["action"]
+    def test_upload_files_params_carry_only_file_field_by_default(self):
+        result = UploadFilesActionDescriptor(file_field="file").to_dict()
+        assert result["action"]["upload_files"] == {"file_field": "file"}
 
     def test_the_upload_target_resource_is_an_address(self):
         """File records are created in that resource, and its schema is where the upload config is read."""
-        params = UploadFilesActionDescriptor(reference="attachment", target="article").to_dict()["action"][
-            "upload_files"
-        ]
+        params = UploadFilesActionDescriptor(file_field="file", reference="attachment", target="article").to_dict()[
+            "action"
+        ]["upload_files"]
 
         assert params["reference"] == {"resource": "attachment"}
         assert params["target"] == "article"
 
     def test_an_upload_into_another_service_splits_the_address(self):
-        params = UploadFilesActionDescriptor(reference="files/attachment").to_dict()["action"]["upload_files"]
+        params = UploadFilesActionDescriptor(file_field="file", reference="files/attachment").to_dict()["action"][
+            "upload_files"
+        ]
 
         assert params["reference"] == {"service": "files", "resource": "attachment"}
 
     def test_accept_propagates_to_action(self):
-        result = UploadFilesActionDescriptor(accept=[".pdf", ".xlsx"]).to_dict()
+        result = UploadFilesActionDescriptor(file_field="file", accept=[".pdf", ".xlsx"]).to_dict()
         assert result["action"]["upload_files"]["accept"] == [".pdf", ".xlsx"]
 
     def test_reference_and_target_propagate(self):
-        result = UploadFilesActionDescriptor(reference="attachments", target="article").to_dict()
+        result = UploadFilesActionDescriptor(file_field="file", reference="attachments", target="article").to_dict()
         upload = result["action"]["upload_files"]
         assert upload["reference"] == {"resource": "attachments"}
         assert upload["target"] == "article"
 
     def test_data_propagates_to_action(self):
-        result = UploadFilesActionDescriptor(data={"public": True}).to_dict()
+        result = UploadFilesActionDescriptor(file_field="file", data={"public": True}).to_dict()
         assert result["action"]["upload_files"]["data"] == {"public": True}
 
     def test_file_field_propagates_to_action(self):
-        result = UploadFilesActionDescriptor(file_field="file").to_dict()
-        assert result["action"]["upload_files"]["file_field"] == "file"
+        result = UploadFilesActionDescriptor(file_field="document").to_dict()
+        assert result["action"]["upload_files"]["file_field"] == "document"
 
     def test_custom_name_overrides_default(self):
-        assert UploadFilesActionDescriptor(name="my-upload").to_dict()["name"] == "my-upload"
+        assert UploadFilesActionDescriptor(file_field="file", name="my-upload").to_dict()["name"] == "my-upload"
 
     def test_custom_color_in_dict(self):
         from habarico.schema.types import ColorType
 
-        result = UploadFilesActionDescriptor(color=ColorType.PRIMARY).to_dict()
+        result = UploadFilesActionDescriptor(file_field="file", color=ColorType.PRIMARY).to_dict()
         assert result["color"] == ColorType.PRIMARY
 
 

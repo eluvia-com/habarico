@@ -1875,13 +1875,14 @@ components:
           $ref: '#/components/schemas/AfterSaveType'
     UploadFilesActionParameters:
       type: object
-      nullable: true
       description: |
-        Upload files action parameters, present when action type is `upload-files` and at least
-        one parameter is set. Omitted entirely when no parameter is provided. The frontend takes the
-        rules for a file — `accept`, `upload`, `max_size` and `image` (resize, crop) — from the
-        options of `file_field` in the schema of `reference`, so a file is treated the way the
-        create form of that resource treats it; `accept` and `upload` set here override them.
+        Upload files action parameters, present on every action of type `upload-files`.
+        The frontend takes the rules for a file — `accept`, `upload`, `max_size` and `image` 
+        (resize, crop) — from the options of `file_field` in the schema of `reference`, so a 
+        file is treated the way the create form of that resource treats it; `accept` and 
+        `upload` set here override them.
+      required:
+        - file_field
       properties:
         reference:
           oneOf:
@@ -1914,9 +1915,7 @@ components:
         file_field:
           type: string
           example: file
-          description: |
-            Field name on the file model that holds the uploaded file. There is no default: an
-            action without it saves nothing.
+          description: Field name on the file model that holds the uploaded file.
     ExportActionParameters:
       type: object
       nullable: true
