@@ -93,7 +93,7 @@ standard below. Reference implementation: `design/atoms/Button`; token foundatio
   whose real interactivity is a click rather than a Controls change skip the Playground and keep
   a single `Default` story instead.
 - **A pure Showcase `render` (a fixed matrix, no args read) may be zero-arity** (`render: () =>
-  ...`). Verified against this repo's pinned Storybook (10.3.5): a zero-arity `render` does *not*
+  ...`). Verified against Storybook 10.3.5: a zero-arity `render` does *not*
   bypass `controls.include`/`exclude` filtering in practice — a curated list still renders curated,
   and an empty `controls.include: []` still renders empty (checked directly in the browser on
   `Button`'s `Variants` and `Table`'s `Default`). Don't chase this as a Controls bug.
