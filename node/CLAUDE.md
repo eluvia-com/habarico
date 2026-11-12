@@ -33,8 +33,8 @@ npm run storybook      # Dev server on port 6006
 npm run build-storybook
 ```
 
-On every pull request GitHub Actions runs `node-code-quality` (lint + `typecheck` +
-`typecheck:all`), `node-unit-tests` (`npm test`) and `node-storybook-tests`
+On every pull request GitHub Actions runs `node-code-quality` (lint + `typecheck:all`),
+`node-unit-tests` (`npm test`) and `node-storybook-tests`
 (`npm run test:storybook` + `npm run build-storybook`), defined in `.github/workflows/node.yml`.
 
 The Storybook bucket holds the root build, one `<series>/` copy per minor series and `next/`.

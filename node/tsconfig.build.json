@@ -1,10 +1,10 @@
 {
-  // Emit / CI-typecheck config. Narrow, source-only view of the library — this
-  // is what the Rollup build and `npm run typecheck` use. Keeping `include` to
-  // just `src` (and excluding stories + `.storybook`) pins the inferred rootDir
-  // to `src/`, so declaration output lands at `lib/dts/index.d.ts` where
-  // `rollup.config.mjs` expects it. The broader `tsconfig.json` also covers
-  // `.storybook` and stories; the IDE and `npm run typecheck:all` use it.
+  // Emit config: the source-only view of the library that the Rollup build and
+  // `npm run typecheck` use. Keeping `include` to just `src` (and excluding
+  // stories + `.storybook`) pins the inferred rootDir to `src/`, so declaration
+  // output lands at `lib/dts/index.d.ts` where `rollup.config.mjs` expects it.
+  // The broader `tsconfig.json` also covers `.storybook` and stories; the IDE
+  // and `npm run typecheck:all` (CI) use it.
   "extends": "./tsconfig.json",
   "include": ["src"],
   "exclude": ["node_modules", "lib", "src/**/*.stories.tsx", "src/**/*.stories.ts", ".storybook"]
