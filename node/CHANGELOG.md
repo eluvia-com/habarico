@@ -6,8 +6,8 @@
 
 - A datagrid row dragged one way and then back the other way before release (to the top of the
   list and then down) was saved one place above where it was dropped, so it landed at the top. The
-  drop index is now read from the row's final position in the grid when the row is released.
-  (HAB-1087)
+  drop index is now read from the row's final position in the grid when the row is released, which
+  also holds for an `AdminDatagrid` sorted descending by its index. (HAB-1087)
 
 ## [7.3.0] — 2026-11-08
 

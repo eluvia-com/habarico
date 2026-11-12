@@ -6,6 +6,7 @@ import {
   Pagination,
   RaRecord,
   ResourceContextProvider,
+  SortPayload,
   TestMemoryRouter,
   memoryStore,
   useList,
@@ -232,7 +233,7 @@ const SelectionCount = () => {
 // A shared preference-store key so the datagrid's persisted state (column widths, column
 // selection) and the toolbar buttons that reset/toggle it all point at the same entry.
 const PREFERENCE_KEY = 'owners.datagrid';
-const DEFAULT_SORT = {field: 'id', order: 'ASC'} as const;
+const DEFAULT_SORT: SortPayload = {field: 'id', order: 'ASC'};
 
 /**
  * Wires a client-side `ListContext` from static rows around an `AdminDatagrid` and frames it like a
@@ -246,6 +247,7 @@ const DemoGrid = ({
   children = columns,
   preselect,
   perPage = 5,
+  sort = DEFAULT_SORT,
   infinite,
   extraActions,
   selectOnRowClick,
@@ -254,6 +256,7 @@ const DemoGrid = ({
   data?: Owner[];
   preselect?: Identifier[];
   perPage?: number;
+  sort?: SortPayload;
   /**
    * Render the whole list in one scrollable container instead of paginating — every row on a single
    * page (`perPage` = row count) and no pagination bar. The `ResponsiveScrollbar` caps the height, so
@@ -273,7 +276,7 @@ const DemoGrid = ({
   const listContext = useList<Owner>({
     data,
     perPage: infinite ? Math.max(data.length, 1) : perPage,
-    sort: DEFAULT_SORT,
+    sort,
   });
   const {configurableColumns} = props;
 
@@ -295,7 +298,7 @@ const DemoGrid = ({
        */}
       <ListConfigProvider
         preferenceKey={PREFERENCE_KEY}
-        sort={DEFAULT_SORT}
+        sort={sort}
         filterDefaultValues={{}}
         filters={[]}
       >
@@ -453,14 +456,7 @@ export const RowWithActions: Story = {
   render: (_args) => <DemoGrid rowActionButtons={rowActions} />,
 };
 
-/**
- * Drag-and-drop reordering — with `enableDnd` and an `onDropRow` handler each row grows a drag
- * handle in a leading column. Each record carries its position in `index` (here 1-based, as a
- * schema list numbers them); dropping a row calls back with the record and the `index` of the place
- * it lands on. Rendered as an **infinite list** (`infinite` — every row on one scrollable page,
- * no pagination) so the whole list can be reordered at once.
- */
-const RowDragAndDropDemo = () => {
+const RowDragAndDropDemo = ({order = 'ASC'}: {order?: SortPayload['order']}) => {
   const [rows, setRows] = useState(OWNERS);
   const indexedRows = rows.map((row, i) => ({...row, index: i + 1}));
   const handleDrop = (record: RaRecord, index: number) => {
@@ -470,12 +466,36 @@ const RowDragAndDropDemo = () => {
       return next;
     });
   };
-  return <DemoGrid data={indexedRows} enableDnd onDropRow={handleDrop} infinite />;
+  return (
+    <DemoGrid
+      data={indexedRows}
+      sort={{field: 'index', order}}
+      enableDnd
+      onDropRow={handleDrop}
+      infinite
+    />
+  );
 };
 
+/**
+ * Drag-and-drop reordering — with `enableDnd` and an `onDropRow` handler each row grows a drag
+ * handle in a leading column. Each record carries its position in `index` (here 1-based, as a
+ * schema list numbers them); dropping a row calls back with the record and the `index` of the place
+ * it lands on. Rendered as an **infinite list** (`infinite` — every row on one scrollable page,
+ * no pagination) so the whole list can be reordered at once.
+ */
 export const RowDragAndDrop: Story = {
   parameters: {docs: {canvas: {sourceState: 'none'}}},
   render: (_args) => <RowDragAndDropDemo />,
+};
+
+/**
+ * Drag-and-drop reordering in a list sorted by `index` descending — reordering works the same in
+ * either sort direction.
+ */
+export const RowDragAndDropDescending: Story = {
+  parameters: {docs: {canvas: {sourceState: 'none'}}},
+  render: (_args) => <RowDragAndDropDemo order="DESC" />,
 };
 
 /**
