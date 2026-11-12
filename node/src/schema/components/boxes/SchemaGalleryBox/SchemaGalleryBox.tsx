@@ -85,7 +85,7 @@ export const SchemaGalleryBox = ({schema, label = schema.label, isRoot}: SchemaB
           empty={false}
           resource={reference}
         >
-          <SchemaGalleryContent imageField={gallerySchema.imageField} />
+          <SchemaGalleryContent imageField={gallerySchema.imageField} fitViewport={isLast} />
         </InfiniteList>
       </MethodSchemaProvider>
     </LocalResourceSchemaProvider>

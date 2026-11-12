@@ -25,6 +25,29 @@
   list and then down) was saved one place above where it was dropped, so it landed at the top. The
   drop index is now read from the row's final position in the grid when the row is released, which
   also holds for an `AdminDatagrid` sorted descending by its index. (HAB-1087)
+### Changed
+
+- `Gallery` takes `objectFit="auto"` as its new default, and `SchemaGalleryBox` uses it. An image
+  close to the frame's shape still fills the frame. One far from it, such as a portrait, a scanned
+  receipt or a wide banner, is shown whole instead of cropped to a magnified slice. Pass
+  `objectFit="cover"` for the previous behaviour. (HAB-1070)
+
+### Added
+
+- `Gallery` takes `fitViewport`: the frame's height is capped at the viewport space below it.
+  (HAB-1070)
+- `useViewportFitHeight` returns the height an element may take to end above the bottom of the
+  viewport. Without a `bottomReserve` it measures the padding and content below the element.
+  `ResponsiveScrollbar` is built on it. (HAB-1070)
+
+### Fixed
+
+- `SchemaGalleryBox` filling the view, such as the only or last box of a tab, no longer grows
+  taller than the viewport with a wide panel. Its 4:3 frame pushed the arrows and dots below the
+  fold; it now sets `fitViewport`. (HAB-1070)
+- A list in a tab of an edit view kept the height it was measured with while the tab was hidden,
+  nearly the whole viewport, and pushed its pagination below the fold. `ResponsiveScrollbar` skips
+  measuring a hidden table and measures again once it is shown. (HAB-1070)
 
 ## [7.3.0] — 2026-11-08
 
