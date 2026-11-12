@@ -1370,6 +1370,42 @@ const PROPERTY_DETAIL_BOX: BoxSchema = {
         },
       ],
     },
+    // A gallery box as the whole tab — it fills the view, so its frame fits the viewport height.
+    {
+      name: 'gallery_tab',
+      type: 'gallery',
+      label: 'Galerie',
+      card: true,
+      readOnly: true,
+      gallery: {
+        reference: referenceTo(PHOTOS_RESOURCE),
+        target: 'property_id',
+        imageField: 'image',
+      },
+    },
+    // The same gallery nested last in a card below a field — still on the last path.
+    {
+      name: 'nested_gallery_tab',
+      type: 'simple',
+      label: 'Vnořená galerie',
+      card: true,
+      readOnly: false,
+      boxes: [
+        fd('note'),
+        {
+          name: 'nested_photos',
+          type: 'gallery',
+          label: 'Fotografie',
+          card: true,
+          readOnly: false,
+          gallery: {
+            reference: referenceTo(PHOTOS_RESOURCE),
+            target: 'property_id',
+            imageField: 'image',
+          },
+        },
+      ],
+    },
   ],
 };
 
@@ -2372,6 +2408,8 @@ const LABELS_EN: Record<string, string> = {
   Dokumenty: 'Documents',
   Platby: 'Payments',
   Fotografie: 'Photos',
+  Galerie: 'Gallery',
+  'Vnořená galerie': 'Nested gallery',
   // View / box titles
   Nemovitost: 'Property',
   'Úprava nemovitosti': 'Edit property',

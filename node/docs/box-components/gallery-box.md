@@ -46,6 +46,10 @@ upload or manage button goes. `bottomActions` render right-aligned underneath.
 - Only records whose `imageField` resolves to a file with a `url` are shown; the rest are skipped.
 - Without a `record` in context nothing renders — like the list box, this is a detail-view container.
 - The image strip carries at most ten position dots, however many images there are.
+- An image close to the frame's 4:3 shape fills the frame. A portrait, a scanned receipt or a wide
+  banner is shown whole on the frame's background.
+- A gallery that is the last box of the view (the only or last box of a tab, say) caps its frame at
+  the viewport height left below it, so the arrows and dots are visible without scrolling.
 
 :::caution
 `SchemaImagesBox` is a different component with a similar name. It renders a **list box** of images
