@@ -25,4 +25,7 @@ group :development, :test do
   # itself (HAB-966) - so it stays outside the gemspec and the suite brings it in the way a host
   # app would.
   gem "active_storage_validations"
+  # Minitest 6, which Rails 8 allows, no longer ships `minitest/mock`; this gem provides it
+  # for minitest 5 as well.
+  gem "minitest-mock"
 end

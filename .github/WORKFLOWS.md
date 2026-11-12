@@ -19,7 +19,7 @@ ruleset; job names carry the library because the ruleset matches checks by name 
 |----------|------|
 | `node.yml` | `node-code-quality` (lint + typecheck), `node-unit-tests`, `node-storybook-tests`; on a manual run also `node-pack`, the branch as a tarball artifact |
 | `python.yml` | `python-code-quality` (flake8 + black), `python-unit-tests` (pipenv + pytest) |
-| `ruby.yml` | `ruby-code-quality` (rubocop), `ruby-unit-tests` (`rake test`) |
+| `ruby.yml` | `ruby-code-quality` (rubocop), `ruby-unit-tests` (`rake test` on Ruby 3.2 + Rails 7.2, Ruby 3.4 + Rails 8.0 and Ruby 4.0 + Rails 8.1, one `ruby/gemfiles/` Gemfile each; the required check sums up the three) |
 | `examples.yml` | `examples-django`, `examples-rails`: `examples/eshop` built against the libraries in the tree, each on a PostgreSQL service |
 | `beta-bump.yml` | `beta-bump` |
 | `major.yml` | `major` (the major button) |

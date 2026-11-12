@@ -24,7 +24,8 @@ module PreferencesTestApp
       config.consider_all_requests_local = true
       config.secret_key_base = "test"
       config.hosts.clear
-      config.active_support.to_time_preserves_timezone = :zone if config.active_support.respond_to?(:to_time_preserves_timezone=)
+      # Rails 8.1 always preserves the zone and deprecates the setting.
+      config.active_support.to_time_preserves_timezone = :zone if Rails.gem_version < Gem::Version.new("8.1")
     end
     app.initialize!
 

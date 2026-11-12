@@ -9,6 +9,13 @@ Releases are cut through the CI `next` flow: merges to `next` publish beta
 pre-releases, and the `## [0.56.0] — 2026-08-03` section below is stamped with the
 version and date when a release is finalized.
 
+## [Unreleased]
+
+### Changed
+
+- Rails 8.0 and 8.1 are supported: the `rails` dependency is `>= 7.0, < 9` (HAB-1045).
+- Requires `eluvia-base` 3.43.0, the first release that supports Rails 8 (HAB-1045).
+
 ## [7.3.0] — 2026-11-08
 
 ### Added
