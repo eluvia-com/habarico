@@ -25,8 +25,11 @@ const dataProvider = {
   getList: () => Promise.resolve({data: [], total: 0}),
 } as never;
 
-const Harness = ({onDropRow}: {onDropRow: (record: RaRecord, index: number) => void}) => {
-  const listContext = useList({data: RECORDS, sort: {field: 'index', order: 'ASC'}});
+type OnDropRow = (record: RaRecord, index: number) => void;
+type SortOrder = 'ASC' | 'DESC';
+
+const Harness = ({onDropRow, order}: {onDropRow: OnDropRow; order: SortOrder}) => {
+  const listContext = useList({data: RECORDS, sort: {field: 'index', order}});
   return (
     <ListContextProvider value={listContext}>
       <AdminDatagrid bulkActionButtons={false} enableDnd onDropRow={onDropRow}>
@@ -36,13 +39,13 @@ const Harness = ({onDropRow}: {onDropRow: (record: RaRecord, index: number) => v
   );
 };
 
-const renderGrid = (onDropRow: (record: RaRecord, index: number) => void) =>
+const renderGrid = (onDropRow: OnDropRow, order: SortOrder = 'ASC') =>
   render(
     <MemoryRouter>
       <CoreAdminContext dataProvider={dataProvider} i18nProvider={i18nProvider}>
         <ThemeProvider theme={createLightTheme()}>
           <ResourceContextProvider value="colors">
-            <Harness onDropRow={onDropRow} />
+            <Harness onDropRow={onDropRow} order={order} />
           </ResourceContextProvider>
         </ThemeProvider>
       </CoreAdminContext>
@@ -92,6 +95,18 @@ describe('DraggableDatagridRow', () => {
 
     expect(renderedOrder()).toEqual(['Green', 'Blue', 'Red', 'Yellow', 'Black']);
     expect(onDropRow).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({id: 1}), 3);
+  });
+
+  it('reports the index of the place the row is released on in a descending list', () => {
+    const onDropRow = vi.fn();
+    renderGrid(onDropRow, 'DESC');
+
+    fireEvent.mouseDown(handleOf('Red'), {button: 0, clientX: 10, clientY: 10});
+    dragOver(['Green', 'Blue', 'Yellow', 'Black']);
+    fireEvent.mouseUp(document, {clientX: 10, clientY: 200});
+
+    expect(renderedOrder()).toEqual(['Red', 'Black', 'Yellow', 'Blue', 'Green']);
+    expect(onDropRow).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({id: 1}), 5);
   });
 
   it('does not report a drop back on the starting place', () => {

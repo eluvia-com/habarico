@@ -15,6 +15,9 @@ const BoxWithSource = forwardRef<HTMLDivElement, BoxProps & {source: string}>((p
 
 BoxWithSource.displayName = 'BoxWithSource';
 
+const indexedRows = (table: HTMLTableSectionElement) =>
+  Array.from(table.rows).filter((row) => row.dataset.index !== undefined);
+
 type DraggableDatagridRowProps = DatagridRowProps & {
   onDropRow: (record: RaRecord, index: number) => void;
   loadingDnd?: boolean;
@@ -37,6 +40,14 @@ export const DraggableDatagridRow = ({
 
   const ref = useRef(null);
   const dragRef = useRef<HTMLDivElement>(null);
+  // The rows' indices in display order when the drag starts; the n-th entry is the index of the
+  // n-th place, whichever way the list is sorted.
+  const slots = useRef<number[]>([]);
+
+  const handleDragStart: DraggableEventHandler = () => {
+    const table = dragRef.current?.closest('tbody');
+    slots.current = table ? indexedRows(table).map((row) => toInteger(row.dataset.index)) : [];
+  };
 
   const handleDrag: DraggableEventHandler = (event) => {
     const selectedItem = dragRef.current;
@@ -75,11 +86,7 @@ export const DraggableDatagridRow = ({
     const table = selectedRow?.closest('tbody');
     if (!selectedRow || !table) return;
 
-    // Each row keeps its own `data-index` while handleDrag reorders the DOM, so the n-th smallest
-    // index belongs to whichever row now sits n-th.
-    const rows = Array.from(table.rows).filter((row) => row.dataset.index !== undefined);
-    const indices = rows.map((row) => toInteger(row.dataset.index)).sort((a, b) => a - b);
-    const newIndex = indices[rows.indexOf(selectedRow)];
+    const newIndex = slots.current[indexedRows(table).indexOf(selectedRow)];
 
     if (newIndex !== undefined && newIndex !== record!.index) {
       onDropRow(record!, newIndex);
@@ -96,6 +103,7 @@ export const DraggableDatagridRow = ({
     <DatagridRow {...props} ref={ref} data-index={record?.index} rowTooltip={rowTooltip}>
       <DraggableCore
         disabled={loadingDnd}
+        onStart={handleDragStart}
         onDrag={handleDrag}
         onStop={handleDragStop}
         nodeRef={dragRef}
