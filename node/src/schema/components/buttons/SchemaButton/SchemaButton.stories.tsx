@@ -1,6 +1,12 @@
 import React from 'react';
 import {ListContextProvider, useList} from 'react-admin';
-import {PRODUCTS, PRODUCTS_RESOURCE, habRecord, redirectView} from '@schema/components/_data';
+import {
+  PRODUCTS,
+  PRODUCTS_RESOURCE,
+  habRecord,
+  redirectView,
+  referenceTo,
+} from '@schema/components/_data';
 import {Showcase, ShowcaseStack, withSchemaInputShell} from '@schema/components/_storyKit';
 import type {ActionSchema, HabRecord} from '@schema/types';
 import type {Meta, StoryObj} from '@storybook/react-vite';
@@ -23,7 +29,10 @@ const RESOURCE_ACTION: ActionSchema = {
   isDetail: true,
   label: 'Archive',
   icon: 'Archive',
-  resource: {endpoint: {method: 'post', actionName: 'archive'}, data: {}},
+  resource: {
+    endpoint: {method: 'post', reference: referenceTo(PRODUCTS_RESOURCE, {actionName: 'archive'})},
+    data: {},
+  },
 };
 
 const LINK_ACTION: ActionSchema = {
@@ -93,7 +102,7 @@ const meta = {
   title: 'schema/buttons/SchemaButton',
   component: SchemaButton,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}},
+  parameters: {layout: 'padded', controls: {disable: true}, docs: {canvas: {sourceState: 'none'}}},
   decorators: [withSchemaInputShell],
 } satisfies Meta;
 

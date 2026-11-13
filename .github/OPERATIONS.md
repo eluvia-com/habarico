@@ -54,7 +54,7 @@ Three workflows, all of them on every pull request. Every check has a local equi
 
 | Check | Locally |
 |-------|---------|
-| `node-code-quality` | `cd node && npm ci && npm run lint && npm run typecheck` |
+| `node-code-quality` | `cd node && npm ci && npm run lint && npm run typecheck:all` |
 | `node-unit-tests` | `cd node && npm test` |
 | `node-storybook-tests` | `cd node && npx playwright install --with-deps chromium && npm run test:storybook && npm run build-storybook` |
 | `python-code-quality` | `cd python && pip install black flake8 flake8-pyproject 'django==4.2' && flake8 && black src tests --check` |

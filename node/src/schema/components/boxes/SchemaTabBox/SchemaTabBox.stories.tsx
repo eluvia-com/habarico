@@ -35,7 +35,7 @@ const meta = {
   title: 'schema/boxes/SchemaTabBox',
   component: SchemaTabBox,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}},
+  parameters: {layout: 'padded', controls: {disable: true}, docs: {canvas: {sourceState: 'none'}}},
   decorators: [withSchemaBoxShell],
 } satisfies Meta;
 
