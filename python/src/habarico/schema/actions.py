@@ -163,16 +163,17 @@ class UploadFilesActionParameters(BaseSchema):
     def __init__(
         self,
         *,
+        file_field: str,
         reference: ResourceReference | str | ContextResourceReference | None = None,
         target: str | None = None,
         accept: list[str] | None = None,
         data: dict | None = None,
-        file_field: str | None = None,
     ):
         """
         Object represents schema of the upload files action parameters.
 
         Args:
+            file_field (str): Field name on the file model that holds the uploaded file.
             reference (ResourceReference | str, optional): Resource where a record is created for each
                 uploaded file, and whose schema the upload configuration is read from. A plain resource
                 name is normalized into an address. Defaults to None.
@@ -181,9 +182,13 @@ class UploadFilesActionParameters(BaseSchema):
                 When not set, the frontend uses its own default, which accepts images only. Defaults to None.
             data (dict, optional): Additional data that will be added to each uploaded file record.
                 Defaults to None.
-            file_field (str, optional): Field name on the file model that holds the uploaded file.
-                There is no default: an action without it saves nothing. Defaults to None.
+
+        Raises:
+            ValueError: When ``file_field`` is empty.
         """
+        if not file_field:
+            raise ValueError("Upload files action requires `file_field`, the field that holds the uploaded file.")
+        self._file_field = file_field
         if reference:
             self._reference = generate_resource_reference(reference)
         if target:
@@ -192,8 +197,6 @@ class UploadFilesActionParameters(BaseSchema):
             self._accept = accept
         if data:
             self._data = data
-        if file_field:
-            self._file_field = file_field
 
 
 class ExportActionParameters(BaseSchema):
@@ -399,7 +402,7 @@ class ActionSchema(BaseSchema):
             upload_data (dict, optional): Additional data that will be added to each uploaded file record.
                 Used for UPLOAD_FILES. Defaults to None.
             upload_file_field (str, optional): Field name on the file model that holds the uploaded file.
-                Used for UPLOAD_FILES. There is no default: an action without it saves nothing. Defaults to None.
+                Required for UPLOAD_FILES. Defaults to None.
             export_format (str, optional): Export format (e.g. "csv", "xlsx"). Used for EXPORT.
                 When not set, the backend default format is used. Defaults to None.
             export_fields (list[str], optional): List of field names to export. Used for EXPORT.
@@ -436,14 +439,13 @@ class ActionSchema(BaseSchema):
                 after_save=after_save,
             )
         elif type == ActionType.UPLOAD_FILES:
-            if reference or target or accept or upload_data or upload_file_field:
-                self._upload_files = UploadFilesActionParameters(
-                    reference=reference,
-                    target=target,
-                    accept=accept,
-                    data=upload_data,
-                    file_field=upload_file_field,
-                )
+            self._upload_files = UploadFilesActionParameters(
+                file_field=upload_file_field,
+                reference=reference,
+                target=target,
+                accept=accept,
+                data=upload_data,
+            )
         elif type == ActionType.EXPORT:
             if export_format or export_fields:
                 self._export = ExportActionParameters(
@@ -736,6 +738,7 @@ class UploadFilesActionDescriptor(ActionDescriptor):
     def __init__(
         self,
         *,
+        file_field: str,
         name: str | None = None,
         label: str | None = None,
         icon: str | None = None,
@@ -744,12 +747,12 @@ class UploadFilesActionDescriptor(ActionDescriptor):
         target: str | None = None,
         accept: list[str] | None = None,
         data: dict | None = None,
-        file_field: str | None = None,
     ):
         """
         Object represents schema of the upload files action descriptor.
 
         Args:
+            file_field (str): Field name on the file model that holds the uploaded file.
             name (str, optional): Name of the action. Defaults to 'upload-files'.
             label (str, optional): Label of the action. Defaults to 'Upload files'.
             icon (str, optional): Icon of the action. Defaults to 'UploadFile'.
@@ -765,8 +768,9 @@ class UploadFilesActionDescriptor(ActionDescriptor):
                 images only — set it whenever the action uploads other files. Defaults to None.
             data (dict, optional): Additional data that will be added to each uploaded file record.
                 Defaults to None.
-            file_field (str, optional): Field name on the file model that holds the uploaded file.
-                There is no default: an action without it saves nothing. Defaults to None.
+
+        Raises:
+            ValueError: When ``file_field`` is empty.
         """
         super().__init__(
             name=name or self.name,

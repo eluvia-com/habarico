@@ -14,7 +14,7 @@ info:
     `/admin/user` and `/admin/user/{record_pk}` endpoints. `/admin/user/schema` returns only actions and views 
     that are supported in `/admin/user` endpoint and `/admin/user/{record_pk}/schema` returns only actions and views 
     that are supported in `/admin/user/{record_pk}` endpoint but with higher detail.
-  version: 4.0.0
+  version: 4.1.0
   contact:
     email: lubos.matl@eluvia.com
 servers:
@@ -1845,10 +1845,10 @@ components:
           $ref: '#/components/schemas/AfterSaveType'
     UploadFilesActionParameters:
       type: object
-      nullable: true
       description: |
-        Upload files action parameters, present when action type is `upload-files` and at least
-        one parameter is set. Omitted entirely when no parameter is provided.
+        Upload files action parameters, present on every action of type `upload-files`.
+      required:
+        - file_field
       properties:
         reference:
           oneOf:
@@ -1881,9 +1881,7 @@ components:
         file_field:
           type: string
           example: file
-          description: |
-            Field name on the file model that holds the uploaded file. There is no default: an
-            action without it saves nothing.
+          description: Field name on the file model that holds the uploaded file.
     ExportActionParameters:
       type: object
       nullable: true
