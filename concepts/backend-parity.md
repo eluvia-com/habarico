@@ -29,6 +29,7 @@ Everything the generated admin is made of works the same on both sides:
 | Global search (paid) | [✅](/python/filtering-and-searching/global-search) | [✅](/ruby/basic-usage/global-search) |
 | Aggregations (paid) — the `/aggregate` endpoint | [✅](/python/aggregations/) | [✅](/ruby/basic-usage/aggregation) |
 | `dashboard_enabled` on a resource (paid) | [✅](/python/dashboard) | ✅ (`dashboard_enabled` in the DSL) |
+| Dashboard widget whitelist (paid) — `dashboard_fields`, `dashboard_filters` and the `/dashboard/schema` endpoint, including one-hop relation paths (`a__b`) | [✅](/python/dashboard) | [✅](/ruby/dashboard) |
 | [Chunked uploads](/python/chunked-uploads/) (paid) — TUS / S3 multipart | ✅ | ✅ ([paid gem](/ruby/chunked-uploads/)) |
 
 :::caution
