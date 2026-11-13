@@ -15,6 +15,9 @@ const BoxWithSource = forwardRef<HTMLDivElement, BoxProps & {source: string}>((p
 
 BoxWithSource.displayName = 'BoxWithSource';
 
+const indexedRows = (table: HTMLTableSectionElement) =>
+  Array.from(table.rows).filter((row) => row.dataset.index !== undefined);
+
 type DraggableDatagridRowProps = DatagridRowProps & {
   onDropRow: (record: RaRecord, index: number) => void;
   loadingDnd?: boolean;
@@ -37,7 +40,14 @@ export const DraggableDatagridRow = ({
 
   const ref = useRef(null);
   const dragRef = useRef<HTMLDivElement>(null);
-  const dropIndex = useRef<number | null>(null);
+  // The rows' indices in display order when the drag starts; the n-th entry is the index of the
+  // n-th place, whichever way the list is sorted.
+  const slots = useRef<number[]>([]);
+
+  const handleDragStart: DraggableEventHandler = () => {
+    const table = dragRef.current?.closest('tbody');
+    slots.current = table ? indexedRows(table).map((row) => toInteger(row.dataset.index)) : [];
+  };
 
   const handleDrag: DraggableEventHandler = (event) => {
     const selectedItem = dragRef.current;
@@ -60,17 +70,6 @@ export const DraggableDatagridRow = ({
       return;
     }
     if (table === dropItem.closest('tbody')) {
-      const dropItemIndex = toInteger(dropItem.dataset.index);
-      const dragItemIndex = toInteger(selectedRow.dataset.index);
-      if (
-        !dropIndex.current ||
-        dropItemIndex > dropIndex.current ||
-        dragItemIndex > dropItemIndex
-      ) {
-        dropIndex.current = dropItemIndex;
-      } else {
-        dropIndex.current = dropItemIndex - 1;
-      }
       if (dropItem === selectedRow.nextSibling) {
         dropItem = dropItem.nextSibling as HTMLTableRowElement;
       }
@@ -81,13 +80,17 @@ export const DraggableDatagridRow = ({
   const handleDragStop: DraggableEventHandler = () => {
     const selectedItem = dragRef.current;
     if (!selectedItem) return;
-
-    if (dropIndex.current) {
-      onDropRow(record!, dropIndex.current);
-    }
-
     selectedItem.classList.remove('drag-active');
-    dropIndex.current = null;
+
+    const selectedRow = selectedItem.closest('tr');
+    const table = selectedRow?.closest('tbody');
+    if (!selectedRow || !table) return;
+
+    const newIndex = slots.current[indexedRows(table).indexOf(selectedRow)];
+
+    if (newIndex !== undefined && newIndex !== record!.index) {
+      onDropRow(record!, newIndex);
+    }
   };
 
   // --------------------------------------------------------------------------
@@ -100,6 +103,7 @@ export const DraggableDatagridRow = ({
     <DatagridRow {...props} ref={ref} data-index={record?.index} rowTooltip={rowTooltip}>
       <DraggableCore
         disabled={loadingDnd}
+        onStart={handleDragStart}
         onDrag={handleDrag}
         onStop={handleDragStop}
         nodeRef={dragRef}
