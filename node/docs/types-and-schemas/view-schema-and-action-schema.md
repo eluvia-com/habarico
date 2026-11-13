@@ -214,6 +214,13 @@ belongs to the parent record its `reference` links back to (`params._target`), a
 the resource when it links to none. Filters the user set or the box's `extraFilters` do not apply
 there.
 
+### Where an upload-files action takes its file rules
+
+An `upload-files` action resizes, crops, size-checks and filters the files it uploads by the
+options of its `fileField` in the resource it creates the records in — the same rules the create
+form of that resource applies. Set them on that field on the backend; a value in
+[`UploadFilesActionParameters`](./field-schema.md#uploadfilesactionparameters) overrides it.
+
 ### Presentation mode inside a dialog or side panel
 
 A view action fired from a view that is itself shown in a dialog or in the side panel is resolved

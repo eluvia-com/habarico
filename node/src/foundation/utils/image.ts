@@ -2,6 +2,17 @@
 // `@foundation/utils/upload` for upload orchestration.
 
 /**
+ * Reads an aspect ratio given as a number (`1.5`) or a `'W:H'` string (`'16:9'`) as width / height.
+ * Returns `undefined` for a missing, malformed or non-positive ratio.
+ */
+export const parseAspectRatio = (value: number | string | undefined): number | undefined => {
+  if (value === undefined) return undefined;
+  const [width, height = '1'] = typeof value === 'number' ? [String(value)] : value.split(':');
+  const ratio = Number(width) / Number(height);
+  return Number.isFinite(ratio) && ratio > 0 ? ratio : undefined;
+};
+
+/**
  * Resizes a Data URI image to `resizeWidth` (keeping aspect ratio) and re-encodes it.
  * @param dataUrl base64-encoded Data URI
  * @param fileType output mime type (e.g. `image/jpeg`)
