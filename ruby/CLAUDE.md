@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The paid features — change history, the cross-resource spotlight search with match highlighting, aggregations and the dashboard, and chunked tus/S3 uploads — live in the separate `habarico-enterprise` gem (a repository of its own, commercial licence). This gem never references it: the paid gem registers itself through the extension points (`Config.search_highlighter_class`, `Types.register`, `RoutingService.register_route_block`, `register_resource_route_block`, `Eluvia::Uploads.finalizer` plus `prepend` onto `FieldOptionsGenerator` / `GlobalResourceSchemaGenerator`). See HAB-812.
 
 - **Gem host**: rubygems.org for this gem; the paid gem is published privately (channel still open, HAB-812)
-- **Rails**: 7.0+
+- **Rails**: 7.0 to 8.x
 - **Key dependencies**: `pundit` (authorization), `kaminari` (pagination), `eluvia-base`. Authentication is not bundled — host apps implement `authenticate_request` in their `ApplicationController` (or point `config.authenticate_method` at an existing method), see `lib/habarico/authenticatable.rb`.
 
 ## Changelog
@@ -32,9 +32,13 @@ bundle install                # Install dependencies
 bundle exec rake build        # Build the gem (.gem file in pkg/)
 bundle exec rake install      # Build and install gem locally
 bundle exec rake test         # Run all tests
-bundle exec rake statistics   # Code statistics
 bundle exec rake release      # Release to rubygems.org
+BUNDLE_GEMFILE=gemfiles/rails_8_1.gemfile bundle exec rake test   # Tests against one Rails minor
 ```
+
+CI runs the tests once per `gemfiles/rails_*.gemfile` (Ruby 3.2 + Rails 7.2, 3.4 + 8.0, 4.0 + 8.1).
+Each of them evaluates `Gemfile` and pins only `rails`, so a development dependency goes into
+`Gemfile`.
 
 ## Testing
 

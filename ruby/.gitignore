@@ -3,6 +3,7 @@
 # resolve from the gemspec). Not committed, so CI/contributors always resolve
 # fresh against the newest allowed dependency versions.
 /Gemfile.lock
+/gemfiles/*.gemfile.lock
 /doc/
 /log/*.log
 /pkg/

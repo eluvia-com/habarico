@@ -41,7 +41,7 @@ require 'habarico_enterprise/uploads'       # chunked uploads - s3 provider need
 Pages documenting a paid feature carry a **premium** badge. Without the gem the free engine works
 unchanged; the paid options simply do not exist.
 
-It requires **Rails 7.0+** and brings in `pundit` (authorization), `kaminari` (pagination) and the
+It requires **Rails 7.0 to 8.x** and brings in `pundit` (authorization), `kaminari` (pagination) and the
 `eluvia-base` library. Authentication is not bundled: the application implements the
 `authenticate_request` hook itself, with whatever mechanism it already uses — see
 [Authentication](./authentication.md).
