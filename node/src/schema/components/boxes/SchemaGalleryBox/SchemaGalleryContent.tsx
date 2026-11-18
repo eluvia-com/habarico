@@ -4,6 +4,8 @@ import {Gallery, type GalleryImage} from '@design/organisms/Gallery';
 
 type SchemaGalleryContentProps = {
   imageField: string;
+  /** Fit the frame into the viewport — set when the box fills the view. */
+  fitViewport?: boolean;
 };
 
 type ImageFile = {url: string; filename?: string};
@@ -14,7 +16,7 @@ type ImageFile = {url: string; filename?: string};
  * the React Admin infinite-list context: `total` lets the gallery navigate past the slides loaded so
  * far, and reaching an as-yet-unloaded slide fetches the next page.
  */
-export const SchemaGalleryContent = ({imageField}: SchemaGalleryContentProps) => {
+export const SchemaGalleryContent = ({imageField, fitViewport}: SchemaGalleryContentProps) => {
   const {data, isPending, total} = useListContext();
   const {fetchNextPage, hasNextPage, isFetchingNextPage} = useInfinitePaginationContext();
   const translate = useTranslate();
@@ -40,6 +42,7 @@ export const SchemaGalleryContent = ({imageField}: SchemaGalleryContentProps) =>
       total={effectiveTotal}
       index={index}
       onIndexChange={setIndex}
+      fitViewport={fitViewport}
       loading={isPending}
       slideLoading={isFetchingNextPage}
       emptyMessage={translate('ra.gallery.no_photos')}

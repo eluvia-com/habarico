@@ -1,1 +1,1 @@
-export {Gallery, type GalleryProps, type GalleryImage} from './Gallery';
+export {Gallery, type GalleryProps, type GalleryImage, type GalleryObjectFit} from './Gallery';

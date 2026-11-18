@@ -76,6 +76,7 @@ export * from './hooks/useDialog';
 export * from './hooks/useMenu';
 export * from './hooks/useOverflowCount';
 export * from './hooks/usePopover';
+export * from './hooks/useViewportFitHeight';
 
 // Contexts (presentation-only)
 export * from './contexts/PanelGridContext';
