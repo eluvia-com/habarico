@@ -72,10 +72,10 @@
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.3.0",
-    "@storybook/addon-docs": "10.3.5",
-    "@storybook/addon-themes": "10.3.5",
-    "@storybook/addon-vitest": "10.3.5",
-    "@storybook/react-vite": "10.3.5",
+    "@storybook/addon-docs": "10.6.6",
+    "@storybook/addon-themes": "10.6.6",
+    "@storybook/addon-vitest": "10.6.6",
+    "@storybook/react-vite": "10.6.6",
     "@svgr/rollup": "^8.1.0",
     "@tanstack/react-query": "^5.100.10",
     "@testing-library/jest-dom": "^6.9.1",
@@ -87,8 +87,8 @@
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitest/browser-playwright": "^4.1.4",
-    "@vitest/coverage-v8": "^4.1.4",
+    "@vitest/browser-playwright": "^4.1.12",
+    "@vitest/coverage-v8": "^4.1.12",
     "concurrently": "^9.2.1",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
@@ -99,7 +99,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "eslint-plugin-sonarjs": "4.0.3",
-    "eslint-plugin-storybook": "10.3.5",
+    "eslint-plugin-storybook": "10.6.6",
     "globals": "^17.5.0",
     "js-yaml": "^4.3.2",
     "jsdom": "^29.0.2",
@@ -122,13 +122,13 @@
     "rollup-plugin-postcss": "^4.0.2",
     "rollup-plugin-tsconfig-paths": "^1.5.2",
     "simplebar-core": "^1.3.2",
-    "storybook": "10.3.5",
+    "storybook": "10.6.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.58.1",
     "vite": "^8.0.8",
     "vite-plugin-svgr": "^5.2.0",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.12"
   },
   "peerDependencies": {
     "@emotion/react": "^11.0.0",
@@ -158,7 +158,6 @@
     "@bicstone/ra-language-japanese@5.12.1": true,
     "esbuild@0.28.1": true,
     "fsevents@2.3.2 || 2.3.3": true,
-    "esbuild@0.27.2": true,
     "unrs-resolver@1.12.2": true
   }
 }
