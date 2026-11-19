@@ -119,7 +119,7 @@ type ChoicesFieldOptions = {
 
 type ImageFieldOptions = {
   resizeWidth?: number;            // Client-side resize width in px (base64 path only)
-  cropAspectRatio?: number;        // Client-side crop ratio, e.g. 1.0 = square (base64 path only)
+  cropAspectRatio?: number | string; // Client-side crop ratio, 1.5 or '3:2' (base64 path only)
 };
 
 type AiFieldOptions = {
@@ -283,18 +283,23 @@ type UploadFilesActionParameters = {
   target?: string;                 // FK field on the file model linking to the parent record
   fileField: string;               // Field on the created record that holds the file
   accept?: string[];               // Allowed file types e.g. [".pdf", ".docx"]; defaults to common image types
-  resizeWidth?: number;            // Client-side resize width in px before upload (images only)
-  cropAspectRatio?: number;        // Client-side crop ratio before upload (images only)
-  maxSize?: number;                // Max file size in bytes — rejected client-side
+  resizeWidth?: number;            // Overrides the field's resize width in px (images only)
+  cropAspectRatio?: number;        // Overrides the field's crop ratio (images only)
+  maxSize?: number;                // Overrides the field's max file size in bytes, checked client-side
   maxFiles?: number;               // Max selectable files
   upload?: UploadFieldOptions;     // Chunked-upload config (auto-injected when a chunked provider is configured)
   data?: Record<string, string | number | boolean>;   // Extra fields sent with every created record
 };
 ```
 
-When `accept` or `upload` is not set, the button takes it from the options of `fileField` in the
-schema of the resource the records are created in. Without either, `accept` falls back to `.png`,
-`.jpg`, `.jpeg`, `.bmp` and `.gif`, and every other file is rejected.
+The rules for a file — `accept`, `upload`, `resizeWidth`, `cropAspectRatio` and `maxSize` — come
+from the options of `fileField` in the schema of the resource the records are created in
+(`options.accept`, `options.upload`, `options.image`, `options.maxSize`), so the dialog resizes,
+crops and size-checks a file the way the create form does. A value set on the action overrides the
+field's. Set them on the backend field: `AdminImageFileSerializer(resize_width=…,
+crop_aspect_ratio=…)` and `MaxFileSizeValidator` in Python, `resize_width`, `crop_aspect_ratio` and
+`max_size` on the field (or `active_storage_validations`) in Ruby. Without `accept` on either,
+it falls back to `.png`, `.jpg`, `.jpeg`, `.bmp` and `.gif`, and every other file is rejected.
 
 :::caution
 An action that uploads documents (PDF, DOCX, XLSX, ZIP, …) must set `accept`, here or on the

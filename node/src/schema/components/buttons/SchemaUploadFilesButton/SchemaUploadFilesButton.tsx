@@ -24,18 +24,17 @@ export const SchemaUploadFilesButton = ({uploadFiles, ...props}: SchemaUploadFil
     reference,
     target,
     accept: acceptParam,
-    resizeWidth,
-    cropAspectRatio,
-    maxSize,
+    resizeWidth: resizeWidthParam,
+    cropAspectRatio: cropAspectRatioParam,
+    maxSize: maxSizeParam,
     maxFiles,
     upload: uploadParam,
     data,
     fileField,
   } = uploadFiles ?? {};
 
-  // The action params rarely carry the upload/accept config; it lives on the target field's
-  // schema (fileField.options). Fall back to it so the button matches the create form behaviour
-  // (e.g. S3 multipart uploads instead of always base64).
+  // The file rules live on the target field (fileField.options) so the dialog treats a file the
+  // way the create form does; an action parameter only overrides them.
   const {getMethodSchema} = useGetLocalResourceSchema({resource: resourceKey(reference)});
   const fileFieldOptions = fileField
     ? (getMethodSchema('post')?.fields ?? getMethodSchema('get')?.fields)?.find(
@@ -44,6 +43,9 @@ export const SchemaUploadFilesButton = ({uploadFiles, ...props}: SchemaUploadFil
     : undefined;
   const upload = uploadParam ?? fileFieldOptions?.upload;
   const accept = acceptParam ?? fileFieldOptions?.accept ?? DEFAULT_IMAGE_ACCEPT;
+  const resizeWidth = resizeWidthParam ?? fileFieldOptions?.image?.resizeWidth;
+  const cropAspectRatio = cropAspectRatioParam ?? fileFieldOptions?.image?.cropAspectRatio;
+  const maxSize = maxSizeParam ?? fileFieldOptions?.maxSize;
 
   const translate = useTranslate();
   const {Dialog, openDialog, closeDialog} = useDialog();

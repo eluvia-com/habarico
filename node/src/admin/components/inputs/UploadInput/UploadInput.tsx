@@ -32,7 +32,8 @@ export type UploadInputProps = {
   maxFileSize?: number;
   upload?: UploadTransportConfig;
   resizeWidth?: number;
-  cropAspectRatio?: number;
+  /** Width / height, as a number (`1.5`) or a `'W:H'` string (`'16:9'`). */
+  cropAspectRatio?: number | string;
   showImagePreview?: boolean;
   /** Override the upload UI strings. Defaults to translations of `ra.upload_files.*`. */
   labels?: UploadAreaLabels;

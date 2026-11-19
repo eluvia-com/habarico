@@ -24,8 +24,9 @@ type UploadInputStoryArgs = UploadInputProps & {
  * `resizeWidth` / `cropAspectRatio` are real props (see `useFileModifier`) but aren't exposed here
  * as Controls: the row thumbnail (`FileImagePreview`) is a fixed 40×48 `object-fit: cover` tile, so
  * neither a resize nor a crop ever changes what's on screen — only the stored bytes/dimensions,
- * which nothing in this Playground reads out. The dedicated stories below (`ImageResize` and its
- * siblings) prove the actual effect via a `StoredValue` readout instead of the canvas.
+ * which nothing in this Playground reads out. The dedicated stories below (`ImageResize`,
+ * `ImageCrop` and their siblings) prove the actual effect via a `StoredValue` readout instead of the
+ * canvas.
  */
 const meta = {
   title: 'admin/inputs/UploadInput',
@@ -266,6 +267,52 @@ export const ImageResize: Story = {
     resizeWidth: 200,
   },
   render: (args) => <WithReadout {...(args as UploadInputProps)} />,
+};
+
+/** Crop ratio presets: the `'W:H'` strings a Rails backend sends, and the number form Django sends. */
+const CROP_RATIOS: Record<string, number | string> = {
+  "'16:9'": '16:9',
+  "'4:3'": '4:3',
+  "'1:1'": '1:1',
+  "'9:16'": '9:16',
+  '1.5 (number)': 1.5,
+};
+
+/**
+ * Gives every crop ratio a field of its own, so switching the ratio starts from an empty field and
+ * the readout never shows a file cropped to the previous one.
+ */
+const ImageCropDemo = (args: UploadInputProps) => {
+  const ratio = String(args.cropAspectRatio);
+  const source = `${args.source}_${ratio.replace(/\W/g, '_')}`;
+  return <WithReadout key={source} {...args} source={source} />;
+};
+
+/**
+ * Crop to a `'W:H'` ratio, the form a Rails backend sends (`crop_aspect_ratio: '16:9'`); a number
+ * such as `1.5` works the same. Drop a photo — the stored value is cut to the ratio around its
+ * centre, so a 1000×800 picture is stored as 1000×562 at 16:9 and as 800×800 at 1:1. Pick another
+ * ratio and drop the photo again to compare.
+ */
+export const ImageCrop: Story = {
+  parameters: {docs: {canvas: {sourceState: 'none'}}, controls: {include: ['cropAspectRatio']}},
+  argTypes: {
+    cropAspectRatio: {
+      control: 'select',
+      options: Object.keys(CROP_RATIOS),
+      mapping: CROP_RATIOS,
+      description: "Width / height, as a `'W:H'` string or a number.",
+    },
+  },
+  args: {
+    source: 'photo',
+    label: 'Photo (cropped)',
+    maxFiles: 1,
+    showImagePreview: true,
+    accept: IMAGE_ACCEPT,
+    cropAspectRatio: "'16:9'",
+  },
+  render: (args) => <ImageCropDemo {...(args as UploadInputProps)} />,
 };
 
 /**

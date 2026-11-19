@@ -23,3 +23,17 @@ describe('useFileModifier', () => {
     expect(result.current(file('application/pdf'))).toBeUndefined();
   });
 });
+
+describe('useFileModifier crop ratio', () => {
+  it('returns a modifier for a W:H crop ratio', () => {
+    const {result} = renderHook(() => useFileModifier(undefined, '16:9'));
+
+    expect(result.current(file('image/jpeg'))).toBeInstanceOf(Function);
+  });
+
+  it('returns no modifier for a malformed crop ratio alone', () => {
+    const {result} = renderHook(() => useFileModifier(undefined, 'wide'));
+
+    expect(result.current(file('image/jpeg'))).toBeUndefined();
+  });
+});
