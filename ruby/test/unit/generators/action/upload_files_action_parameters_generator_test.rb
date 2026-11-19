@@ -34,9 +34,43 @@ class UploadFilesActionParametersGeneratorTest < Minitest::Test
   end
 
   def test_generates_upload_files_parameters
-    action = Habarico::UploadFilesAction.new
+    action = Habarico::UploadFilesAction.new(upload_files_file_field: 'file')
     result = build_generator.generate(action, stub_context)
     assert_instance_of Habarico::UploadFilesActionParameters, result
+  end
+
+  def test_raises_without_file_field
+    action = Habarico::UploadFilesAction.new(name: 'upload_attachments')
+    error = assert_raises(Eluvia::Errors::StandardError) do
+      build_generator.generate(action, stub_context)
+    end
+    assert_includes error.message, 'upload_attachments'
+    assert_includes error.message, 'upload_files_file_field'
+  end
+
+  def test_error_names_an_unnamed_action_by_its_label
+    action = Habarico::UploadFilesAction.new(label: 'Upload documents')
+    error = assert_raises(Eluvia::Errors::StandardError) do
+      build_generator.generate(action, stub_context)
+    end
+    assert_includes error.message, 'Upload documents'
+  end
+
+  def test_raises_with_blank_file_field
+    action = Habarico::UploadFilesAction.new(upload_files_file_field: '')
+    assert_raises(Eluvia::Errors::StandardError) do
+      build_generator.generate(action, stub_context)
+    end
+  end
+
+  def test_file_field_from_overridden_generator_passes
+    custom_generator = Class.new(Habarico::UploadFilesActionParametersGenerator) do
+      def generate_file_field(_action, _context)
+        'document'
+      end
+    end
+    result = custom_generator.new(build_definition, ['things']).generate(Habarico::UploadFilesAction.new, stub_context)
+    assert_equal 'document', result.file_field
   end
 
   def test_passes_upload_files_attributes_through
@@ -54,17 +88,20 @@ class UploadFilesActionParametersGeneratorTest < Minitest::Test
   end
 
   def test_data_is_nil_by_default
-    assert_nil build_generator.generate(Habarico::UploadFilesAction.new, stub_context).data
+    action = Habarico::UploadFilesAction.new(upload_files_file_field: 'file')
+    assert_nil build_generator.generate(action, stub_context).data
   end
 
   def test_data_is_passed_through
-    action = Habarico::UploadFilesAction.new(upload_files_data: { 'source' => 'catalogue' })
+    action = Habarico::UploadFilesAction.new(upload_files_file_field: 'file', upload_files_data: { 'source' => 'catalogue' })
     result = build_generator.generate(action, stub_context)
     assert_equal({ 'source' => 'catalogue' }, result.data)
   end
 
   def test_data_is_resolved_from_a_callable
-    action = Habarico::UploadFilesAction.new(upload_files_data: ->(_context) { { 'source' => 'catalogue' } })
+    action = Habarico::UploadFilesAction.new(
+      upload_files_file_field: 'file', upload_files_data: ->(_context) { { 'source' => 'catalogue' } }
+    )
     result = build_generator.generate(action, stub_context)
     assert_equal({ 'source' => 'catalogue' }, result.data)
   end
