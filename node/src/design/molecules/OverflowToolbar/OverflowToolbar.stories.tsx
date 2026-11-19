@@ -109,8 +109,7 @@ export const Playground: Story = {};
  * Responsiveness is **viewport-breakpoint** based (variant 2): it reacts only when `maxVisible` is a
  * per-breakpoint map and/or `iconOnly` is a breakpoint — a plain number / boolean (as in the Playground)
  * has nothing to switch on. **Resize the Storybook canvas** to watch the inline count fall (`{xs: 1, …,
- * lg: 4}`) and the labels drop below `sm` (`iconOnly="sm"`). Width-aware (container, not viewport)
- * collapsing is tracked in HAB-786.
+ * lg: 4}`) and the labels drop below `sm` (`iconOnly="sm"`). The toolbar's own width plays no part.
  */
 export const Responsive: Story = {
   parameters: {docs: {canvas: {sourceState: 'none'}}},

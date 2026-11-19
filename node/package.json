@@ -15,6 +15,7 @@
     "prettier": "prettier --write .",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "typecheck": "node --max-old-space-size=4096 node_modules/typescript/bin/tsc --noEmit -p tsconfig.build.json",
+    "typecheck:all": "node --max-old-space-size=4096 node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest run --project=unit && npm run test:scripts",

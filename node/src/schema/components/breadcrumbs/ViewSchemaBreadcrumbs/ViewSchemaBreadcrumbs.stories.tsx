@@ -89,6 +89,7 @@ const meta = {
   parameters: {
     layout: 'padded',
     controls: {disable: true},
+    docs: {canvas: {sourceState: 'none'}},
     schemaStory: {viewSchema: viewWith(TRAIL)},
   },
   decorators: [withSchemaFieldShell],

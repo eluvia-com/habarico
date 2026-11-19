@@ -1,5 +1,5 @@
 import React from 'react';
-import {CATEGORIES_RESOURCE, PRODUCT_STATUSES} from '@schema/components/_data';
+import {CATEGORIES_RESOURCE, PRODUCT_STATUSES, referenceTo} from '@schema/components/_data';
 import {Showcase, ShowcaseStack, withSchemaInputShell} from '@schema/components/_storyKit';
 import type {FilterSchema} from '@schema/types';
 import type {Meta, StoryObj} from '@storybook/react-vite';
@@ -18,7 +18,7 @@ const FILTERS: FilterSchema[] = [
     type: 'integer',
     format: 'relation',
     label: 'Category',
-    reference: CATEGORIES_RESOURCE,
+    reference: referenceTo(CATEGORIES_RESOURCE),
   },
 ];
 
@@ -53,7 +53,7 @@ const meta = {
   title: 'schema/filters/SchemaFilter',
   component: SchemaFilter,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}},
+  parameters: {layout: 'padded', controls: {disable: true}, docs: {canvas: {sourceState: 'none'}}},
   decorators: [withSchemaInputShell],
 } satisfies Meta;
 

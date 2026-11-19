@@ -19,9 +19,8 @@ import {PAGE_STORY_PARAMETERS} from './_storyParameters';
  * `options.dynamicRender.showQuery` (`show_query` on the python descriptor) hides the button on
  * rows already settled or cancelled, and the mock provider really writes the change, so clicking
  * it flips the status chip to Uhrazeno and the button disappears from that row on the refresh
- * that follows. The condition names the accented `"Stornováno"` status directly —
- * `createConditionFunction` parses expressions into an AST, so string literals are not limited
- * to ASCII (HAB-901).
+ * that follows. The condition names the accented `"Stornováno"` status directly: string literals
+ * in a condition may hold any Unicode text.
  */
 const meta: Meta<typeof SchemaStoryShell> = {
   title: 'schema/pages/PaymentList',

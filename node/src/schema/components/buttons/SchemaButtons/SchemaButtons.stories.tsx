@@ -24,8 +24,9 @@ const NAMED: ActionDescriptor[] = [{name: 'show'}, {name: 'edit'}, {name: 'archi
  * name does not resolve the descriptor is **dropped silently** — no button, no error. The
  * slot-by-slot consequences have their own dedicated story, `schema/boxes/BoxActions`.
  *
- * With no `descriptors` at all it **generates** them from the resource schema, filtered by `scope`
- * (`'detail'` for record actions, `'list'` for collection actions, `'all'` for both).
+ * A `{type: 'default_actions'}` entry stands for the resource's own actions and expands into one
+ * descriptor per action, narrowed by its `scope` (`'detail'` for record actions, `'list'` for
+ * collection actions, `'all'` for both). With no `descriptors` at all nothing renders.
  *
  * Overflow is handled by `OverflowToolbar`: `maxVisibleButtons` (a number, or a per-breakpoint map
  * like `{xs: 1, lg: 3}`) is how many stay inline before the rest collapse into a `⋮` menu — the
@@ -36,7 +37,7 @@ const meta = {
   title: 'schema/buttons/SchemaButtons',
   component: SchemaButtons,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}},
+  parameters: {layout: 'padded', controls: {disable: true}, docs: {canvas: {sourceState: 'none'}}},
   decorators: [withSchemaFieldShell],
 } satisfies Meta;
 
@@ -109,15 +110,21 @@ export const Appearance: Story = {
 };
 
 /**
- * With **no** `descriptors` the buttons are generated from the resource schema, narrowed by
- * `scope`: record actions, collection actions, or both.
+ * A `default_actions` entry expands into the resource's own actions, narrowed by `scope`: record
+ * actions, collection actions, or both. Rendered on a list surface (`isList`), which keeps the
+ * `showInList` record actions; a detail surface leaves out the collection actions altogether.
  */
-export const GeneratedByScope: Story = {
+export const DefaultActionsByScope: Story = {
   render: () => (
-    <ShowcaseStack title={'SchemaButtons — generated descriptors, by scope'}>
+    <ShowcaseStack title={'SchemaButtons — default actions, by scope'}>
       {(['detail', 'list', 'all'] as const).map((scope) => (
-        <Showcase key={scope} caption={`scope: '${scope}'`}>
-          <SchemaButtons scope={scope} size={'small'} variant={'contained'} />
+        <Showcase key={scope} caption={`[{type: 'default_actions', scope: '${scope}'}]`}>
+          <SchemaButtons
+            isList
+            descriptors={[{type: 'default_actions', scope}]}
+            size={'small'}
+            variant={'contained'}
+          />
         </Showcase>
       ))}
     </ShowcaseStack>

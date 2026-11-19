@@ -27,7 +27,9 @@ type PlaygroundArgs = Omit<ActionButtonWithChoicesProps, 'confirm'> & {confirm?:
 
 const meta = {
   title: 'admin/buttons/ActionButtonWithChoices',
-  component: ActionButtonWithChoices,
+  // Cast: `confirm` is a boolean in `PlaygroundArgs` for the Controls panel; `render` maps it to the
+  // real object, which `ComponentType<PlaygroundArgs>` can't express statically.
+  component: ActionButtonWithChoices as React.ComponentType<PlaygroundArgs>,
   tags: ['autodocs'],
   parameters: {
     layout: 'padded',

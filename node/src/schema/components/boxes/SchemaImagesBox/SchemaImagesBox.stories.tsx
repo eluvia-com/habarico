@@ -7,6 +7,7 @@ import {
   PRODUCTS_RESOURCE,
   box,
   fd,
+  referenceTo,
 } from '@schema/components/_data';
 import {withSchemaBoxShell} from '@schema/components/_storyKit';
 import type {BoxSchema, ListBoxParameters} from '@schema/types';
@@ -25,7 +26,7 @@ const imagesBox = (
     label: 'Product photos',
     card: true,
     readOnly: true,
-    list: {reference: PRODUCTS_RESOURCE, target: 'category_id', ...list},
+    list: {reference: referenceTo(PRODUCTS_RESOURCE), target: 'category_id', ...list},
     boxes: [fd('photo'), fd('name'), fd('price')],
     ...overrides,
   });
@@ -69,7 +70,12 @@ const meta = {
   title: 'schema/boxes/SchemaImagesBox',
   component: SchemaImagesBox,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}, ...CATEGORY_CONTEXT},
+  parameters: {
+    layout: 'padded',
+    controls: {disable: true},
+    docs: {canvas: {sourceState: 'none'}},
+    ...CATEGORY_CONTEXT,
+  },
   decorators: [withSchemaBoxShell],
 } satisfies Meta;
 

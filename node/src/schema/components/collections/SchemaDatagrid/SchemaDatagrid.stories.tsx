@@ -84,6 +84,7 @@ const meta = {
   parameters: {
     layout: 'padded',
     controls: {disable: true},
+    docs: {canvas: {sourceState: 'none'}},
     schemaStory: {list: true, width: false},
   },
   decorators: [withSchemaFieldShell],

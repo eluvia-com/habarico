@@ -1,5 +1,10 @@
 import React from 'react';
-import {CATEGORIES_RESOURCE, PRODUCT_TAGS, productField} from '@schema/components/_data';
+import {
+  CATEGORIES_RESOURCE,
+  PRODUCT_TAGS,
+  productField,
+  referenceTo,
+} from '@schema/components/_data';
 import {Showcase, ShowcaseStack, withSchemaInputShell} from '@schema/components/_storyKit';
 import {FieldSchemaProvider} from '@schema/contexts/FieldSchemaContext';
 import type {FieldSchema, ItemFieldSchema} from '@schema/types';
@@ -15,12 +20,12 @@ const CHOICES_ITEMS: ItemFieldSchema = {type: 'string', format: 'choices', enum:
 const RELATION_ITEMS: ItemFieldSchema = {
   type: 'integer',
   format: 'relation',
-  reference: CATEGORIES_RESOURCE,
+  reference: referenceTo(CATEGORIES_RESOURCE),
 };
 const TREE_ITEMS: ItemFieldSchema = {
   type: 'integer',
   format: 'tree-relation',
-  reference: CATEGORIES_RESOURCE,
+  reference: referenceTo(CATEGORIES_RESOURCE),
 };
 const PLAIN_ITEMS: ItemFieldSchema = {type: 'string'};
 
@@ -64,7 +69,7 @@ const meta = {
   title: 'schema/inputs/SchemaArrayInput',
   component: SchemaArrayInput,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}},
+  parameters: {layout: 'padded', controls: {disable: true}, docs: {canvas: {sourceState: 'none'}}},
   decorators: [withSchemaInputShell],
 } satisfies Meta;
 

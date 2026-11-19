@@ -41,9 +41,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # Runs tsc with --max-old-space-size=4096; the hosted runner has 16 GB.
+      # `tsconfig.json` covers the library, the stories and `.storybook`. Runs tsc with
+      # --max-old-space-size=4096; the hosted runner has 16 GB.
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run typecheck:all
 
   node-unit-tests:
     name: node-unit-tests

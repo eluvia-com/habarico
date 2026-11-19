@@ -7,6 +7,7 @@ import {
   PRODUCTS_RESOURCE,
   box,
   fd,
+  referenceTo,
 } from '@schema/components/_data';
 import {Showcase, ShowcaseStack, withSchemaBoxShell} from '@schema/components/_storyKit';
 import type {BoxSchema, BoxType} from '@schema/types';
@@ -127,7 +128,7 @@ const meta = {
   title: 'schema/boxes/SchemaBox',
   component: SchemaBox,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}},
+  parameters: {layout: 'padded', controls: {disable: true}, docs: {canvas: {sourceState: 'none'}}},
   decorators: [withSchemaBoxShell],
 } satisfies Meta;
 
@@ -168,7 +169,7 @@ export const CollectionTypes: Story = {
             type: 'list',
             label: 'Products',
             readOnly: true,
-            list: {reference: PRODUCTS_RESOURCE, target: 'category_id'},
+            list: {reference: referenceTo(PRODUCTS_RESOURCE), target: 'category_id'},
             boxes: [fd('name'), fd('price')],
           })}
         />
@@ -182,7 +183,7 @@ export const CollectionTypes: Story = {
             label: 'Photos',
             readOnly: true,
             gallery: {
-              reference: PRODUCTS_RESOURCE,
+              reference: referenceTo(PRODUCTS_RESOURCE),
               target: 'category_id',
               imageField: 'photo',
             },

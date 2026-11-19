@@ -71,6 +71,7 @@ const meta = {
   parameters: {
     layout: 'padded',
     controls: {disable: true},
+    docs: {canvas: {sourceState: 'none'}},
     schemaStory: {viewSchema: showView({detail: {box: DETAIL_BOX, toolbarActions: ACTIONS}})},
   },
   decorators: [withSchemaFieldShell],

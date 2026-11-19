@@ -55,7 +55,12 @@ const meta = {
   title: 'schema/collections/SchemaImages',
   component: SchemaImages,
   tags: ['autodocs'],
-  parameters: {layout: 'padded', controls: {disable: true}, schemaStory: {width: 720}},
+  parameters: {
+    layout: 'padded',
+    controls: {disable: true},
+    docs: {canvas: {sourceState: 'none'}},
+    schemaStory: {width: 720},
+  },
   decorators: [withSchemaFieldShell],
 } satisfies Meta;
 
