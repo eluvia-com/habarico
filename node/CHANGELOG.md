@@ -15,6 +15,10 @@
   `'W:H'` string (`'16:9'`), which the crop compared as a number. `cropAspectRatio` — in
   `ImageFieldOptions`, on `UploadInput` and in `useFileModifier` — takes a number (`1.5`) or a
   `'W:H'` string, and the new `parseAspectRatio` reads either (HAB-1037).
+- A datagrid row dragged one way and then back the other way before release (to the top of the
+  list and then down) was saved one place above where it was dropped, so it landed at the top. The
+  drop index is now read from the row's final position in the grid when the row is released, which
+  also holds for an `AdminDatagrid` sorted descending by its index. (HAB-1087)
 
 ## [7.3.0] — 2026-11-08
 
