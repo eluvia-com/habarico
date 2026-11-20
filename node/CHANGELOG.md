@@ -4,6 +4,12 @@
 
 ### Fixed
 
+- In Firefox a preference set through the per-user store could fall back to its previous value
+  right after it was saved: Firefox can answer `localStorage.getItem` with the value from before the
+  last write, and `useStore` re-reads the store after each write. A widget added to the dashboard
+  disappeared again this way. The store built by `createPerUserStore` / `usePerUserStore` (and so
+  by `SchemaAdmin`) now reads every value it wrote from memory; a write from another tab still
+  replaces it. (HAB-1091)
 - The bulk upload dialog of an `upload-files` action ignored the resize, crop and maximum-size rules
   of the target field: it read `resizeWidth`, `cropAspectRatio` and `maxSize` only from the action
   parameters, which no backend sends, so an image was stored at full size and an oversized file was
