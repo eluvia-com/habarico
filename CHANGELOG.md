@@ -36,6 +36,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `WidgetConfig.filters` accepts any JSON value: a stored dashboard keeps each filter value in the
+  type of its filter (a boolean, an array of a multiple choice, a number), while the contract named
+  strings only and the backends refused the whole dashboard over one such value. String values
+  validate as before. Additive, part of `info.version` 4.1.0. (HAB-1091)
 - `ImageFieldOptions.crop_aspect_ratio` is a number (`1.5`) or a `'W:H'` string (`'16:9'`): the
   contract named the number alone, while the Ruby backend sends the string. `UploadFilesActionParameters`
   states where the frontend takes the rules for an uploaded file from: the options of `file_field`
