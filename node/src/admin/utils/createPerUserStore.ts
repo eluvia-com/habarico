@@ -1,5 +1,6 @@
 import {Store, UserIdentity, localStorageStore} from 'react-admin';
 import {BackendApi, createBackendStore} from './createBackendStore';
+import {createWriteThroughStore} from './createWriteThroughStore';
 
 // Keys that are ALSO written globally (without userId prefix) so the value
 // survives logout. These match React Admin's hardcoded store keys.
@@ -117,7 +118,7 @@ export const createScopedStore = (
   storeUserId: string | undefined,
   options: Omit<PerUserStoreOptions, 'identity'> = {}
 ): Store => {
-  const localBase = localStorageStore();
+  const localBase = createWriteThroughStore(localStorageStore());
   const userScoped = createUserScopedStore(
     localBase,
     () => storeUserId,

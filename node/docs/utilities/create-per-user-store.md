@@ -61,6 +61,14 @@ and `createPerUserStore` takes `identity`:
 | `backendApi` | `BackendApi` | — | With `whitelist`, wraps the store in [`createBackendStore`](./create-backend-store-backend-synced-preferences.md) once a user is signed in — not while the store is unscoped. Keep it a stable reference for `usePerUserStore` |
 | `whitelist` | `string[]` | — | Which keys are mirrored to the backend. `usePerUserStore` compares it by contents, so an inline array is fine |
 
+## Reading back what was written
+
+The store remembers every value it wrote and answers `getItem` for that key from memory; a key it
+has not written is read from `localStorage`. Firefox can answer `localStorage.getItem` with the
+previous value of a key written moments before, and `useStore` re-reads the store after each write,
+so without this a value just set could be replaced by the one before it. A write from another tab
+(a `storage` event) replaces the remembered value, so preferences still follow other tabs.
+
 ## Global keys
 
 Some keys are written **both** under the user prefix and globally, so they apply before an identity
