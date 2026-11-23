@@ -4119,11 +4119,12 @@ components:
           $ref: '#/components/schemas/WidgetLayout'
         filters:
           type: object
-          additionalProperties:
-            type: string
+          additionalProperties: {}
           description: |
             Filter values applied to the widget's data source, keyed by field name.
-            Frontend passes them through to react-admin's `filter` prop.
+            Frontend passes them through to react-admin's `filter` prop. A value is any JSON
+            value and keeps the type of its filter: a boolean for a yes/no filter, an array for
+            a multiple choice (`status__in`), a number for a numeric one.
         sort:
           $ref: '#/components/schemas/SortPreference'
         perPage:
