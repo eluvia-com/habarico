@@ -29,6 +29,7 @@ import {createDarkTheme, createLightTheme} from '@design/theme';
 import {findClosestLanguage} from '@foundation/utils/locale';
 import {Theme} from '@mui/material';
 import {AdminLanguage, IconsMap} from '@typing';
+import {type LoginNoticeSlot} from '../../auth/AuthPage';
 import {
   ChangePasswordDialog,
   type ChangePasswordDialogProps,
@@ -82,6 +83,7 @@ export type BaseAdminProps = {
   // Auth & Account
   requireAuth?: boolean;
   onLogout?: () => void;
+  loginNotice?: LoginNoticeSlot;
   // Account dialogs. Each is a full dialog component (not just a form) — the layout injects its
   // `open` / `onClose` — so an override replaces the whole dialog. `false` hides the menu item.
   // (Same shape as `SchemaAdmin`'s `UpdateIdentityComponent` / `ChangePasswordComponent`.)
@@ -120,6 +122,7 @@ export const BaseAdmin = ({
   iconsMap,
   requireAuth = true,
   onLogout,
+  loginNotice,
   UpdateIdentityComponent = UpdateIdentityDialog,
   ChangePasswordComponent = ChangePasswordDialog,
   navigationGuard = false,
@@ -174,6 +177,7 @@ export const BaseAdmin = ({
       breadcrumbs={breadcrumbs}
       contentMaxWidth={contentMaxWidth}
       onLogout={onLogout}
+      loginNotice={loginNotice}
       updateIdentity={UpdateIdentityComponent ? <UpdateIdentityComponent /> : false}
       changePassword={ChangePasswordComponent ? <ChangePasswordComponent /> : false}
       navigationGuard={navigationGuard}

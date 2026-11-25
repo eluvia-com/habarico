@@ -85,6 +85,7 @@ const App = () => (
 | `dashboard` | `DashboardComponentType` | — | Component on `/`. No default: the dashboard ships in `habarico-enterprise`. Left unset, the admin has no root page and every resource is still reachable from the menu |
 | `search` | `SearchComponentType` | — | Renders the global search overlay's contents. Left unset the shell offers no search at all — not even the toggle or <kbd>Cmd</kbd>+<kbd>K</kbd> — because the results come from an endpoint only a paid backend serves. `habarico-enterprise` exports `SchemaSearch` for it, and `EnterpriseSchemaAdmin` passes it for you |
 | `authPage` | `LoginComponentType` | `<AuthPage />` | [Login page](../page-components/auth-page-component.md) |
+| `LoginNoticeComponent` | `ComponentType` | — | Your content under the login form, such as a link to the terms of service — see [Login notice](../page-components/auth-page-component.md#login-notice). Ignored with your own `authPage` |
 | `resetPasswordPage` | `ReactElement` | `<ResetPasswordPage />` | [Reset password page](../page-components/reset-password-page-component.md) |
 | `UpdateIdentityComponent` | `FC \| false` | `UpdateIdentityDialog` | The whole profile dialog; `false` removes the account-menu item |
 | `ChangePasswordComponent` | `FC \| false` | `ChangePasswordDialog` | The whole change-password dialog; `false` removes the account-menu item |

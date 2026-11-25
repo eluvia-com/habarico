@@ -6,7 +6,12 @@ import {Box, Fade, Typography} from '@mui/material';
 import {AdminAuthLayout} from '../../layouts/AdminAuthLayout';
 import {ForgottenPasswordForm} from '../ForgottenPasswordForm';
 import {LoginForm} from '../LoginForm';
-import {ForgottenPasswordComponent, LoginComponent, RegisterComponent} from './types';
+import {
+  ForgottenPasswordComponent,
+  LoginComponent,
+  LoginNoticeSlot,
+  RegisterComponent,
+} from './types';
 
 type FormVariant = 'login' | 'register' | 'forgottenPassword';
 
@@ -24,6 +29,8 @@ export type AuthPageProps = {
   logo?: LogoSlot;
   /** Languages offered by the auth shell's header switcher. */
   availableLanguages?: LayoutLanguage[];
+  /** Content under the login form, above the public-computer hint. Not shown on the other forms. */
+  loginNotice?: LoginNoticeSlot;
 };
 
 export const AuthPage = ({
@@ -38,10 +45,12 @@ export const AuthPage = ({
   RegisterComponent,
   logo = {Component: NoLogo},
   availableLanguages,
+  loginNotice,
 }: AuthPageProps) => {
   const t = useTranslate();
 
   const [formVariant, setFormType] = useState<FormVariant>('login');
+  const LoginNotice = formVariant === 'login' ? loginNotice?.Component : undefined;
 
   // Only the active screen is mounted; a `key`ed `Fade` replays its enter transition on each
   // switch. Rendering a single screen (rather than three overlapping `Slide`s) keeps the card from
@@ -80,13 +89,12 @@ export const AuthPage = ({
       <Fade key={formVariant} in appear timeout={200}>
         <Box>{renderActiveScreen()}</Box>
       </Fade>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{display: 'block', mt: 2, textAlign: 'center'}}
-      >
-        {t('ra.auth.public_computer_hint')}
-      </Typography>
+      <Box display="flex" flexDirection="column" gap={1} sx={{mt: 2, textAlign: 'center'}}>
+        {LoginNotice && <LoginNotice />}
+        <Typography variant="caption" color="text.secondary">
+          {t('ra.auth.public_computer_hint')}
+        </Typography>
+      </Box>
     </AdminAuthLayout>
   );
 };

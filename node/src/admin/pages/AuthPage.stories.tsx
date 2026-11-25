@@ -8,7 +8,7 @@ import {withRaDefaults} from '@admin/theme';
 import {HabaricoLogo} from '@design/atoms/HabaricoLogo';
 import {SocialIcon, SocialIconType} from '@design/atoms/SocialIcon';
 import {createDarkTheme, createLightTheme} from '@design/theme';
-import type {Theme} from '@mui/material';
+import {Link, type Theme, Typography} from '@mui/material';
 import {Meta, StoryObj} from '@storybook/react-vite';
 import {createFakeDataProvider} from './_data';
 import {LANGUAGES, i18nProvider} from './_i18n';
@@ -54,12 +54,24 @@ const authProvider: AuthProvider & {
   getSsoLoginMethods: () => [googleLoginMethod],
 };
 
+// The application's own notice under the login form, typically a link to its terms of service.
+const TermsNotice = () => (
+  <Typography variant="caption" color="text.secondary">
+    By signing in you agree to the{' '}
+    <Link href="https://example.com/terms" target="_blank" rel="noopener">
+      terms of service
+    </Link>
+    .
+  </Typography>
+);
+
 // The real `AuthPage` rendered as React Admin's login page, with registration enabled.
 const AuthPageScreen = () => (
   <AuthPage
     logo={{Component: HabaricoLogo}}
     availableLanguages={LANGUAGES}
     RegisterComponent={RegisterForm}
+    loginNotice={{Component: TermsNotice}}
   />
 );
 
@@ -93,7 +105,8 @@ type Story = StoryObj<typeof AuthPageDemo>;
 /**
  * The admin-layer **auth screen** — the real `AuthPage` rendered through `AdminAuthLayout` as React
  * Admin's `loginPage`, with every path live from this one story:
- * - **login** with a **Google** SSO button under the credentials form;
+ * - **login** with a **Google** SSO button under the credentials form and the application's
+ *   **notice** (a link to its terms of service) below them;
  * - **forgotten password** via the link (submit succeeds against the mocked `resetPassword`);
  * - **registration** via the header link;
  * - **MFA** — submitting the credentials raises a two-method challenge, so the **method-selection**
@@ -112,6 +125,7 @@ const PLAYGROUND_SOURCE = `<Admin loginPage={AuthPageScreen} requireAuth>
   logo={{Component: HabaricoLogo}}
   availableLanguages={LANGUAGES}
   RegisterComponent={RegisterForm}
+  loginNotice={{Component: TermsNotice}}
 />`;
 
 export const Default: Story = {

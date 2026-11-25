@@ -31,9 +31,38 @@ import {SchemaAdmin, AuthPage} from 'habarico';
 | `onForgottenPasswordSuccess` / `onForgottenPasswordError` | `() => void` / `(error: Error) => void` | — | The same for the forgotten-password form |
 | `logo` | `LogoSlot` | the "no logo" placeholder | `{Component}` — logo in the header |
 | `availableLanguages` | `LayoutLanguage[]` | — | Languages offered by the header switcher |
+| `loginNotice` | `LoginNoticeSlot` | — | `{Component}` — your content under the login form, see below |
 
-Mounted by `SchemaAdmin`, the last two are filled from its `LogoComponent` and `availableLanguages`
-props. The page is framed by [AuthLayout](../layout-components/auth-layout.md).
+Mounted by `SchemaAdmin`, the last three are filled from its `LogoComponent`, `availableLanguages`
+and `LoginNoticeComponent` props. The page is framed by [AuthLayout](../layout-components/auth-layout.md).
+
+## Login notice
+
+`loginNotice` renders your component under the login form and its MFA steps, above the hint about
+signing in on a shared computer. It is typically a link to your terms of service, but any content
+fits; the page renders it as is, so it brings its own typography:
+
+```tsx
+import {useTranslate} from 'react-admin';
+import {Link, Typography} from '@mui/material';
+import {SchemaAdmin} from 'habarico';
+
+const TermsNotice = () => {
+  const translate = useTranslate();
+  return (
+    <Typography variant="caption" color="text.secondary">
+      {translate('eshop.login.consent')}{' '}
+      <Link href="https://shop.example.com/terms" target="_blank" rel="noopener">
+        {translate('eshop.login.terms')}
+      </Link>
+    </Typography>
+  );
+};
+
+<SchemaAdmin LoginNoticeComponent={TermsNotice} {...rest} />
+```
+
+With your own `authPage` on `SchemaAdmin`, pass `loginNotice` to the `AuthPage` you render there.
 
 Which steps appear depends on the [AuthProvider](../providers/auth-provider.md): without
 `resetPassword` there is no forgotten-password link, without `requestMfaChallenge` /
