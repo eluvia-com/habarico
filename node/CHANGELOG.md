@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- `SchemaAdmin` takes a `LoginNoticeComponent` (`BaseAdmin` and `AuthPage` a `loginNotice` slot,
+  `{Component}`): your own content under the login form, such as a link to the terms of service,
+  rendered above the hint about signing in on a shared computer. (HAB-1088)
+
 ### Fixed
 
 - In Firefox a preference set through the per-user store could fall back to its previous value

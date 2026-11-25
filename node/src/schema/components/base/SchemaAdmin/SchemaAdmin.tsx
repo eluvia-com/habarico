@@ -1,4 +1,5 @@
 import React, {
+  ComponentType,
   FC,
   ReactElement,
   ReactNode,
@@ -133,7 +134,7 @@ const SchemaAdminRuntime = ({
   search,
 }: SchemaAdminRuntimeProps) => {
   const {dataProvider, authProvider} = useSchemaRootContext();
-  const {logo, availableLanguages} = useAdminConfig();
+  const {logo, availableLanguages, loginNotice} = useAdminConfig();
 
   // Always run the RA defaults, even over a caller-supplied theme — `lightTheme`/`darkTheme` stay
   // `object` (mirroring RA's own loose `<Admin>` theme prop) rather than `Theme`, since a caller may
@@ -168,9 +169,10 @@ const SchemaAdminRuntime = ({
     [LayoutComponent, extraMenuItems, search]
   );
 
-  // The auth pages take their shell config as props; feed them the logo from `AdminConfigContext`.
+  // The auth pages take their shell config as props; feed them the logo and login notice from
+  // `AdminConfigContext`.
   const effectiveAuthPage = authPage ?? (
-    <AuthPage logo={logo} availableLanguages={availableLanguages} />
+    <AuthPage logo={logo} availableLanguages={availableLanguages} loginNotice={loginNotice} />
   );
   const effectiveResetPasswordPage = resetPasswordPage ?? (
     <ResetPasswordPage logo={logo} availableLanguages={availableLanguages} />
@@ -272,6 +274,7 @@ export type SchemaAdminProps = Omit<
   iconsMap?: IconsMap;
 
   // Auth & Account
+  LoginNoticeComponent?: ComponentType;
   UpdateIdentityComponent?: FC<UpdateIdentityDialogProps> | false;
   ChangePasswordComponent?: FC<ChangePasswordDialogProps> | false;
 
@@ -313,6 +316,7 @@ export const SchemaAdmin = ({
   contentMaxWidth = 'xl',
   extraMenuItems,
   iconsMap,
+  LoginNoticeComponent,
   UpdateIdentityComponent = UpdateIdentityDialog,
   ChangePasswordComponent = ChangePasswordDialog,
   defaultPerPage = 25,
@@ -375,6 +379,7 @@ export const SchemaAdmin = ({
           contentMaxWidth={contentMaxWidth}
           arrangement={arrangement}
           columnSelector={columnSelector || false}
+          loginNotice={LoginNoticeComponent ? {Component: LoginNoticeComponent} : undefined}
           updateIdentity={UpdateIdentityComponent ? <UpdateIdentityComponent /> : false}
           changePassword={ChangePasswordComponent ? <ChangePasswordComponent /> : false}
           navigationGuard={navigationGuard}

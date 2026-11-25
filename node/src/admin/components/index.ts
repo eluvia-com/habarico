@@ -9,7 +9,7 @@ export type {InputProps} from './inputs/types';
 // Auth dialogs and pages
 export {ChangePasswordDialog, type ChangePasswordDialogProps} from './auth/ChangePasswordDialog';
 export {UpdateIdentityDialog, type UpdateIdentityDialogProps} from './auth/UpdateIdentityDialog';
-export {AuthPage, type AuthPageProps} from './auth/AuthPage';
+export {AuthPage, type AuthPageProps, type LoginNoticeSlot} from './auth/AuthPage';
 export {ResetPasswordPage, type ResetPasswordPageProps} from './auth/ResetPasswordPage';
 export {LogoutPage} from './auth/LogoutPage';
 

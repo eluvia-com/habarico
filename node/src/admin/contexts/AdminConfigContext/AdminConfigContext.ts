@@ -1,4 +1,5 @@
 import {type ReactNode, createContext, useContext} from 'react';
+import type {LoginNoticeSlot} from '@admin/components/auth/AuthPage';
 import {
   type ArrangementSlot,
   type BreadcrumbsSlot,
@@ -26,6 +27,7 @@ export type AdminConfig = {
   arrangement?: ArrangementSlot;
   columnSelector?: boolean;
   onLogout?: () => void;
+  loginNotice?: LoginNoticeSlot;
   updateIdentity?: ReactNode | false;
   changePassword?: ReactNode | false;
   navigationGuard: boolean;
