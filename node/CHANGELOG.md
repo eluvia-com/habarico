@@ -25,6 +25,10 @@
   list and then down) was saved one place above where it was dropped, so it landed at the top. The
   drop index is now read from the row's final position in the grid when the row is released, which
   also holds for an `AdminDatagrid` sorted descending by its index. (HAB-1087)
+- The full-size dialog of a `Gallery` was taller than a short screen, so the image and its arrows
+  had to be scrolled to. Its height is now capped at the screen and it turns wider than the
+  gallery's aspect ratio instead. (HAB-1070)
+
 ### Changed
 
 - `Gallery` takes `objectFit="auto"` as its new default, and `SchemaGalleryBox` uses it. An image
@@ -34,6 +38,9 @@
 
 ### Added
 
+- `Gallery` takes `backdrop`: with the default `'blur'`, a photo shown whole fills the rest of the
+  frame and of the full-size dialog with an enlarged, blurred copy of itself, as `SchemaGalleryBox`
+  does. `'none'` leaves the background. (HAB-1070)
 - `Gallery` takes `fitViewport`: the frame's height is capped at the viewport space below it.
   (HAB-1070)
 - `useViewportFitHeight` returns the height an element may take to end above the bottom of the

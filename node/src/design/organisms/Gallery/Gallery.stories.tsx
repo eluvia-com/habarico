@@ -10,36 +10,29 @@ import {Gallery, type GalleryImage} from './Gallery';
 
 /* -- sample photos (remote — Storybook needs network to load them) -- */
 
-const photo = (seed: string, alt: string): GalleryImage => ({
-  url: `https://picsum.photos/seed/${seed}/1200/900`,
+const photo = (seed: string, alt: string, size: string): GalleryImage => ({
+  url: `https://picsum.photos/seed/${seed}/${size}`,
   alt,
 });
 
 const IMAGES: GalleryImage[] = [
-  photo('hab-room-1', 'Living room'),
-  photo('hab-room-2', 'Kitchen'),
-  photo('hab-room-3', 'Bedroom'),
-  photo('hab-room-4', 'Bathroom'),
-  photo('hab-room-5', 'Balcony'),
+  photo('hab-room-1', 'Living room', '1200/900'),
+  photo('hab-room-2', 'Kitchen', '1200/900'),
+  photo('hab-room-3', 'Bedroom', '1200/900'),
+  photo('hab-room-4', 'Bathroom', '1200/900'),
+  photo('hab-room-5', 'Balcony', '1200/900'),
 ];
 
 // More slides than the dot cap, to show the proportional dots.
 const MANY_IMAGES: GalleryImage[] = Array.from({length: 14}, (_, i) =>
-  photo(`hab-many-${i}`, `Photo ${i + 1}`)
+  photo(`hab-many-${i}`, `Photo ${i + 1}`, '1200/900')
 );
 
-// Inline SVG of the given size, so the odd-shape demo renders offline.
-const shape = (alt: string, width: number, height: number, color: string): GalleryImage => {
-  const fontSize = Math.min(height * 0.5, (width * 1.4) / alt.length);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${color}" stroke="#fff" stroke-width="6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="${fontSize}" fill="#fff">${alt}</text></svg>`;
-  return {url: `data:image/svg+xml,${encodeURIComponent(svg)}`, alt};
-};
-
 const ODD_SHAPES: GalleryImage[] = [
-  shape('Photo 3:2', 1200, 800, '#2f6f6f'),
-  shape('Portrait', 600, 900, '#3f7fae'),
-  shape('Receipt', 300, 1500, '#8a5fae'),
-  shape('Banner', 1600, 200, '#ae5f5f'),
+  photo('hab-odd-0', 'Landscape 3:2', '1200/800'),
+  photo('hab-odd-2', 'Portrait', '600/900'),
+  photo('hab-odd-3', 'Receipt', '300/1500'),
+  photo('hab-odd-4', 'Banner', '1600/200'),
 ];
 
 // A frame that mirrors the real placement (a gallery is ~half of the detail-view width).
@@ -70,6 +63,7 @@ const meta: Meta<typeof Gallery> = {
     controls: {
       include: [
         'objectFit',
+        'backdrop',
         'aspectRatio',
         'total',
         'maxDots',
@@ -82,6 +76,7 @@ const meta: Meta<typeof Gallery> = {
   },
   argTypes: {
     objectFit: {control: 'inline-radio', options: ['auto', 'cover', 'contain']},
+    backdrop: {control: 'inline-radio', options: ['blur', 'none']},
     aspectRatio: {control: 'text'},
     total: {control: 'number'},
     maxDots: {control: 'number'},
@@ -97,6 +92,7 @@ const meta: Meta<typeof Gallery> = {
   },
   args: {
     objectFit: 'auto',
+    backdrop: 'blur',
     aspectRatio: '4 / 3',
     loading: false,
     slideLoading: false,
@@ -147,7 +143,7 @@ export const ManyImages: Story = {
 /**
  * Images far from the frame's shape — a portrait, a scanned receipt, a wide banner. With the default
  * `objectFit="auto"` a photo close to the frame's shape still fills it, and the rest are shown whole
- * on the frame's background instead of being cropped to a magnified slice.
+ * over a blurred copy of themselves instead of being cropped to a magnified slice.
  */
 export const OddShapes: Story = {
   parameters: {docs: {canvas: {sourceState: 'none'}}},

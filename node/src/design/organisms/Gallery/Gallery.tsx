@@ -9,7 +9,7 @@ import {useViewportFitHeight} from '../../hooks/useViewportFitHeight';
 const DEFAULT_MAX_DOTS = 10;
 
 // `auto` fills the frame only while the image's aspect ratio is within this factor of the frame's.
-const AUTO_COVER_MAX_RATIO_FACTOR = 1.4;
+const AUTO_COVER_MAX_RATIO_FACTOR = 1.15;
 
 // The smallest frame height `fitViewport` caps to.
 const FIT_VIEWPORT_MIN_HEIGHT_PX = 320;
@@ -27,6 +27,8 @@ export type GalleryImage = {
 };
 
 export type GalleryObjectFit = 'auto' | 'cover' | 'contain';
+
+export type GalleryBackdrop = 'blur' | 'none';
 
 export type GalleryProps = {
   /** Images to display, in order (the slides loaded so far). */
@@ -55,6 +57,11 @@ export type GalleryProps = {
    * (default) covers when the photo's shape is close to the frame's and contains it otherwise.
    */
   objectFit?: GalleryObjectFit;
+  /**
+   * What fills the frame and the lightbox around a contained photo. `blur` (default) shows an
+   * enlarged, blurred copy of the photo; `none` leaves the background.
+   */
+  backdrop?: GalleryBackdrop;
   /** Aspect ratio of the viewer frame. Defaults to `'4 / 3'`. */
   aspectRatio?: number | string;
   /**
@@ -78,17 +85,39 @@ const autoFit = (imageRatio: number, frameRatio: number): 'cover' | 'contain' =>
   return factor <= AUTO_COVER_MAX_RATIO_FACTOR ? 'cover' : 'contain';
 };
 
+/** An enlarged, blurred and dimmed copy of the photo, filling the frame behind it. */
+const BlurredBackdrop = ({url}: {url: string}) => (
+  <Box
+    component={'img'}
+    src={url}
+    alt={''}
+    aria-hidden
+    sx={{
+      position: 'absolute',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      // The scale pushes the blur's faded edges outside the frame, which clips them.
+      transform: 'scale(1.2)',
+      filter: 'blur(24px) brightness(0.7)',
+      pointerEvents: 'none',
+    }}
+  />
+);
+
 type SlideImageProps = {
   image: GalleryImage;
   objectFit: GalleryObjectFit;
+  backdrop: GalleryBackdrop;
   onClick?: () => void;
 };
 
 /**
  * The current photo. Under `auto` it stays hidden until it has loaded, and its fit follows the
- * frame's shape as the frame resizes.
+ * frame's shape as the frame resizes. A contained photo that loaded gets the `backdrop` behind it.
  */
-const SlideImage = ({image, objectFit, onClick}: SlideImageProps) => {
+const SlideImage = ({image, objectFit, backdrop, onClick}: SlideImageProps) => {
   const ref = useRef<HTMLImageElement>(null);
   const [imageRatio, setImageRatio] = useState<number | null>(null);
   const [frameRatio, setFrameRatio] = useState<number | null>(null);
@@ -106,31 +135,36 @@ const SlideImage = ({image, objectFit, onClick}: SlideImageProps) => {
   const autoResolved =
     imageRatio !== null && frameRatio !== null ? autoFit(imageRatio, frameRatio) : null;
   const fit = objectFit === 'auto' ? autoResolved : objectFit;
+  const showBackdrop = backdrop === 'blur' && fit === 'contain' && !Number.isNaN(imageRatio);
   return (
-    <Box
-      ref={ref}
-      component={'img'}
-      src={image.url}
-      alt={image.alt ?? ''}
-      onClick={onClick}
-      onLoad={(event: React.SyntheticEvent<HTMLImageElement>) => {
-        const element = event.currentTarget;
-        setImageRatio(element.naturalWidth / element.naturalHeight);
-        setFrameRatio(element.clientWidth / element.clientHeight);
-      }}
-      onError={() => {
-        setImageRatio(NaN);
-        setFrameRatio(NaN);
-      }}
-      sx={{
-        display: 'block',
-        width: '100%',
-        height: '100%',
-        objectFit: fit ?? 'contain',
-        visibility: fit ? 'visible' : 'hidden',
-        cursor: onClick ? 'pointer' : 'default',
-      }}
-    />
+    <>
+      {showBackdrop && <BlurredBackdrop url={image.url} />}
+      <Box
+        ref={ref}
+        component={'img'}
+        src={image.url}
+        alt={image.alt ?? ''}
+        onClick={onClick}
+        onLoad={(event: React.SyntheticEvent<HTMLImageElement>) => {
+          const element = event.currentTarget;
+          setImageRatio(element.naturalWidth / element.naturalHeight);
+          setFrameRatio(element.clientWidth / element.clientHeight);
+        }}
+        onError={() => {
+          setImageRatio(NaN);
+          setFrameRatio(NaN);
+        }}
+        sx={{
+          position: 'relative',
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          objectFit: fit ?? 'contain',
+          visibility: fit ? 'visible' : 'hidden',
+          cursor: onClick ? 'pointer' : 'default',
+        }}
+      />
+    </>
   );
 };
 
@@ -246,6 +280,7 @@ export const Gallery = ({
   loading = false,
   slideLoading = false,
   objectFit = 'auto',
+  backdrop = 'blur',
   aspectRatio = '4 / 3',
   fitViewport = false,
   emptyMessage = 'No photos',
@@ -341,6 +376,7 @@ export const Gallery = ({
                 key={current.url}
                 image={current}
                 objectFit={objectFit}
+                backdrop={backdrop}
                 onClick={disableLightbox ? undefined : () => openDialog()}
               />
             )}
@@ -362,19 +398,22 @@ export const Gallery = ({
 
       {!disableLightbox && (
         <Dialog maxWidth={false} closeButtonSx={{color: 'common.white'}}>
-          <Box sx={{position: 'relative', width: 'min(90vw, 1200px)', aspectRatio}}>
+          <Box
+            sx={{
+              position: 'relative',
+              width: 'min(90vw, 1200px)',
+              aspectRatio,
+              // The dialog paper's own margins; a short viewport gets a wider frame, not a scrollbar.
+              maxHeight: 'calc(100vh - 64px)',
+              overflow: 'hidden',
+            }}
+          >
             {current && (
-              <Box
-                component={'img'}
-                src={current.url}
-                alt={current.alt ?? ''}
-                sx={{
-                  position: 'absolute',
-                  inset: 0,
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                }}
+              <SlideImage
+                key={current.url}
+                image={current}
+                objectFit={'contain'}
+                backdrop={backdrop}
               />
             )}
 
