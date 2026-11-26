@@ -1,11 +1,18 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {varAlpha} from '@design/theme/utils';
 import {Box, CircularProgress, IconButton, Skeleton, Typography} from '@mui/material';
 import type {SxProps, Theme} from '@mui/material';
 import {Icon, IconType} from '../../atoms/Icon';
 import {useDialog} from '../../hooks/useDialog';
+import {useViewportFitHeight} from '../../hooks/useViewportFitHeight';
 
 const DEFAULT_MAX_DOTS = 10;
+
+// `auto` fills the frame only while the image's aspect ratio is within this factor of the frame's.
+const AUTO_COVER_MAX_RATIO_FACTOR = 1.15;
+
+// The smallest frame height `fitViewport` caps to.
+const FIT_VIEWPORT_MIN_HEIGHT_PX = 320;
 
 // Translucent dark scrim used behind the overlaid controls (arrows, dots, loading), so they read on
 // top of any photo. `common.blackChannel` keeps it theme-token driven rather than a hardcoded rgba.
@@ -18,6 +25,10 @@ export type GalleryImage = {
   /** Alt text / caption for the image. */
   alt?: string;
 };
+
+export type GalleryObjectFit = 'auto' | 'cover' | 'contain';
+
+export type GalleryBackdrop = 'blur' | 'none';
 
 export type GalleryProps = {
   /** Images to display, in order (the slides loaded so far). */
@@ -41,10 +52,23 @@ export type GalleryProps = {
    * Also inferred automatically when the current index is beyond the loaded `images`.
    */
   slideLoading?: boolean;
-  /** How the photo fills the frame. `cover` (default) fills edge-to-edge; `contain` never crops. */
-  objectFit?: 'cover' | 'contain';
+  /**
+   * How the photo fills the frame. `cover` fills edge-to-edge; `contain` never crops; `auto`
+   * (default) covers when the photo's shape is close to the frame's and contains it otherwise.
+   */
+  objectFit?: GalleryObjectFit;
+  /**
+   * What fills the frame and the lightbox around a contained photo. `blur` (default) shows an
+   * enlarged, blurred copy of the photo; `none` leaves the background.
+   */
+  backdrop?: GalleryBackdrop;
   /** Aspect ratio of the viewer frame. Defaults to `'4 / 3'`. */
   aspectRatio?: number | string;
+  /**
+   * Cap the frame's height at the viewport space below its top, so the whole frame (arrows and dots
+   * included) is visible without scrolling. Meant for a gallery that fills the view.
+   */
+  fitViewport?: boolean;
   /** Centered, muted message shown when there are no images (and not `loading`). */
   emptyMessage?: React.ReactNode;
   /** Disable the click-to-open fullscreen lightbox. */
@@ -53,6 +77,95 @@ export type GalleryProps = {
   maxDots?: number;
   /** Extra styles merged onto the viewer frame. */
   sx?: SxProps<Theme>;
+};
+
+/** The fit `auto` resolves to; a ratio that cannot be read (a failed load) resolves to `contain`. */
+const autoFit = (imageRatio: number, frameRatio: number): 'cover' | 'contain' => {
+  const factor = Math.max(imageRatio / frameRatio, frameRatio / imageRatio);
+  return factor <= AUTO_COVER_MAX_RATIO_FACTOR ? 'cover' : 'contain';
+};
+
+/** An enlarged, blurred and dimmed copy of the photo, filling the frame behind it. */
+const BlurredBackdrop = ({url}: {url: string}) => (
+  <Box
+    component={'img'}
+    src={url}
+    alt={''}
+    aria-hidden
+    sx={{
+      position: 'absolute',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      // The scale pushes the blur's faded edges outside the frame, which clips them.
+      transform: 'scale(1.2)',
+      filter: 'blur(24px) brightness(0.7)',
+      pointerEvents: 'none',
+    }}
+  />
+);
+
+type SlideImageProps = {
+  image: GalleryImage;
+  objectFit: GalleryObjectFit;
+  backdrop: GalleryBackdrop;
+  onClick?: () => void;
+};
+
+/**
+ * The current photo. Under `auto` it stays hidden until it has loaded, and its fit follows the
+ * frame's shape as the frame resizes. A contained photo that loaded gets the `backdrop` behind it.
+ */
+const SlideImage = ({image, objectFit, backdrop, onClick}: SlideImageProps) => {
+  const ref = useRef<HTMLImageElement>(null);
+  const [imageRatio, setImageRatio] = useState<number | null>(null);
+  const [frameRatio, setFrameRatio] = useState<number | null>(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || objectFit !== 'auto' || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) =>
+      setFrameRatio(entry.contentRect.width / entry.contentRect.height)
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [objectFit]);
+
+  const autoResolved =
+    imageRatio !== null && frameRatio !== null ? autoFit(imageRatio, frameRatio) : null;
+  const fit = objectFit === 'auto' ? autoResolved : objectFit;
+  const showBackdrop = backdrop === 'blur' && fit === 'contain' && !Number.isNaN(imageRatio);
+  return (
+    <>
+      {showBackdrop && <BlurredBackdrop url={image.url} />}
+      <Box
+        ref={ref}
+        component={'img'}
+        src={image.url}
+        alt={image.alt ?? ''}
+        onClick={onClick}
+        onLoad={(event: React.SyntheticEvent<HTMLImageElement>) => {
+          const element = event.currentTarget;
+          setImageRatio(element.naturalWidth / element.naturalHeight);
+          setFrameRatio(element.clientWidth / element.clientHeight);
+        }}
+        onError={() => {
+          setImageRatio(NaN);
+          setFrameRatio(NaN);
+        }}
+        sx={{
+          position: 'relative',
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          objectFit: fit ?? 'contain',
+          visibility: fit ? 'visible' : 'hidden',
+          cursor: onClick ? 'pointer' : 'default',
+        }}
+      />
+    </>
+  );
 };
 
 /** A translucent, circular previous/next control overlaid on the photo. */
@@ -166,8 +279,10 @@ export const Gallery = ({
   onIndexChange,
   loading = false,
   slideLoading = false,
-  objectFit = 'cover',
+  objectFit = 'auto',
+  backdrop = 'blur',
   aspectRatio = '4 / 3',
+  fitViewport = false,
   emptyMessage = 'No photos',
   disableLightbox = false,
   maxDots = DEFAULT_MAX_DOTS,
@@ -181,6 +296,10 @@ export const Gallery = ({
   const index = Math.min(Math.max(isControlled ? indexProp : internalIndex, 0), maxIndex);
 
   const {Dialog, openDialog, open} = useDialog();
+  const {ref: frameRef, maxHeight: frameMaxHeight} = useViewportFitHeight({
+    minHeight: FIT_VIEWPORT_MIN_HEIGHT_PX,
+    enabled: fitViewport,
+  });
 
   const navigate = useCallback(
     (next: number) => {
@@ -218,11 +337,13 @@ export const Gallery = ({
   return (
     <>
       <Box
+        ref={frameRef}
         sx={[
           (theme) => ({
             position: 'relative',
             width: '100%',
             aspectRatio,
+            maxHeight: frameMaxHeight,
             overflow: 'hidden',
             borderRadius: `${theme.radius.md}px`,
             backgroundColor: 'background.default',
@@ -251,19 +372,12 @@ export const Gallery = ({
         {!loading && images.length > 0 && (
           <>
             {current && (
-              <Box
-                component={'img'}
-                key={index}
-                src={current.url}
-                alt={current.alt ?? ''}
+              <SlideImage
+                key={current.url}
+                image={current}
+                objectFit={objectFit}
+                backdrop={backdrop}
                 onClick={disableLightbox ? undefined : () => openDialog()}
-                sx={{
-                  display: 'block',
-                  width: '100%',
-                  height: '100%',
-                  objectFit,
-                  cursor: disableLightbox ? 'default' : 'pointer',
-                }}
               />
             )}
 
@@ -284,19 +398,22 @@ export const Gallery = ({
 
       {!disableLightbox && (
         <Dialog maxWidth={false} closeButtonSx={{color: 'common.white'}}>
-          <Box sx={{position: 'relative', width: 'min(90vw, 1200px)', aspectRatio}}>
+          <Box
+            sx={{
+              position: 'relative',
+              width: 'min(90vw, 1200px)',
+              aspectRatio,
+              // The dialog paper's own margins; a short viewport gets a wider frame, not a scrollbar.
+              maxHeight: 'calc(100vh - 64px)',
+              overflow: 'hidden',
+            }}
+          >
             {current && (
-              <Box
-                component={'img'}
-                src={current.url}
-                alt={current.alt ?? ''}
-                sx={{
-                  position: 'absolute',
-                  inset: 0,
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                }}
+              <SlideImage
+                key={current.url}
+                image={current}
+                objectFit={'contain'}
+                backdrop={backdrop}
               />
             )}
 

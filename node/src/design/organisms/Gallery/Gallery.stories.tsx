@@ -10,23 +10,30 @@ import {Gallery, type GalleryImage} from './Gallery';
 
 /* -- sample photos (remote — Storybook needs network to load them) -- */
 
-const photo = (seed: string, alt: string): GalleryImage => ({
-  url: `https://picsum.photos/seed/${seed}/1200/900`,
+const photo = (seed: string, alt: string, size: string): GalleryImage => ({
+  url: `https://picsum.photos/seed/${seed}/${size}`,
   alt,
 });
 
 const IMAGES: GalleryImage[] = [
-  photo('hab-room-1', 'Living room'),
-  photo('hab-room-2', 'Kitchen'),
-  photo('hab-room-3', 'Bedroom'),
-  photo('hab-room-4', 'Bathroom'),
-  photo('hab-room-5', 'Balcony'),
+  photo('hab-room-1', 'Living room', '1200/900'),
+  photo('hab-room-2', 'Kitchen', '1200/900'),
+  photo('hab-room-3', 'Bedroom', '1200/900'),
+  photo('hab-room-4', 'Bathroom', '1200/900'),
+  photo('hab-room-5', 'Balcony', '1200/900'),
 ];
 
 // More slides than the dot cap, to show the proportional dots.
 const MANY_IMAGES: GalleryImage[] = Array.from({length: 14}, (_, i) =>
-  photo(`hab-many-${i}`, `Photo ${i + 1}`)
+  photo(`hab-many-${i}`, `Photo ${i + 1}`, '1200/900')
 );
+
+const ODD_SHAPES: GalleryImage[] = [
+  photo('hab-odd-0', 'Landscape 3:2', '1200/800'),
+  photo('hab-odd-2', 'Portrait', '600/900'),
+  photo('hab-odd-3', 'Receipt', '300/1500'),
+  photo('hab-odd-4', 'Banner', '1600/200'),
+];
 
 // A frame that mirrors the real placement (a gallery is ~half of the detail-view width).
 const Frame = ({children}: {children: React.ReactNode}) => (
@@ -56,6 +63,7 @@ const meta: Meta<typeof Gallery> = {
     controls: {
       include: [
         'objectFit',
+        'backdrop',
         'aspectRatio',
         'total',
         'maxDots',
@@ -67,7 +75,8 @@ const meta: Meta<typeof Gallery> = {
     },
   },
   argTypes: {
-    objectFit: {control: 'inline-radio', options: ['cover', 'contain']},
+    objectFit: {control: 'inline-radio', options: ['auto', 'cover', 'contain']},
+    backdrop: {control: 'inline-radio', options: ['blur', 'none']},
     aspectRatio: {control: 'text'},
     total: {control: 'number'},
     maxDots: {control: 'number'},
@@ -82,7 +91,8 @@ const meta: Meta<typeof Gallery> = {
     },
   },
   args: {
-    objectFit: 'cover',
+    objectFit: 'auto',
+    backdrop: 'blur',
     aspectRatio: '4 / 3',
     loading: false,
     slideLoading: false,
@@ -126,6 +136,20 @@ export const ManyImages: Story = {
   render: () => (
     <Frame>
       <Gallery images={MANY_IMAGES} />
+    </Frame>
+  ),
+};
+
+/**
+ * Images far from the frame's shape — a portrait, a scanned receipt, a wide banner. With the default
+ * `objectFit="auto"` a photo close to the frame's shape still fills it, and the rest are shown whole
+ * over a blurred copy of themselves instead of being cropped to a magnified slice.
+ */
+export const OddShapes: Story = {
+  parameters: {docs: {canvas: {sourceState: 'none'}}},
+  render: () => (
+    <Frame>
+      <Gallery images={ODD_SHAPES} />
     </Frame>
   ),
 };
